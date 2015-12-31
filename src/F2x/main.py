@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-u""" Main program for F2x - A versatile FORTRAN wrapper.
+u""" Main program for F2x - A versatile, template based FORTRAN wrapper.
 """
 from __future__ import print_function
 
@@ -40,14 +40,24 @@ PREPROCESS_RULES = (
     (u'end/type',       r'(?i)END\s+TYPE',         r'ENDTYPE'),
     (u'end/where',      r'(?i)END\s+WHERE',        r'ENDWHERE'),
     
+    # Remove spaces from data types
+    (u'type/double precision', r'(?i)DOUBLE\s+PRECISION', r'DOUBLEPRECISION'),
+    (u'type/double complex',   r'(?i)DOUBLE\s+COMPLEX',   r'DOUBLECOMPLEX'),
+    
     # Remove empty function arguments
-    (u'empty args', r'([(.=]\s*([a-zA-Z][a-zA-Z0-9_]*)(%[a-zA-Z][a-zA-Z0-9_]*)*)\(\s*\)', r'\1'),
+    (u'empty args',
+        r'([(.=]\s*([a-zA-Z][a-zA-Z0-9_]*)(%[a-zA-Z][a-zA-Z0-9_]*)*)\(\s*\)',
+        r'\1'),
 
     # Remove substring range on LHS comparison
-    (u'substring/lhs', r'\((\d+|[a-zA-Z][a-zA-Z0-9_]*)(:(\d+|[a-zA-Z][a-zA-Z0-9_]*))?\)(\s*=)', r'\4'),
+    (u'substring/lhs',
+        r'\((\d+|[a-zA-Z][a-zA-Z0-9_]*)(:(\d+|[a-zA-Z][a-zA-Z0-9_]*))?\)(\s*=)',
+        r'\4'),
     
     # Convert substring range to arguments on RHS
-    (u'substring/rhs', r'\((\d+|[a-zA-Z][a-zA-Z0-9_]*):(\d+|[a-zA-Z][a-zA-Z0-9_]*)\)(?!\s*=)', r'(\1,\2)'),
+    (u'substring/rhs',
+        r'\((\d+|[a-zA-Z][a-zA-Z0-9_]*):(\d+|[a-zA-Z][a-zA-Z0-9_]*)\)(?!\s*=)',
+        r'(\1,\2)'),
     
     # Prefix Type-Casts
     (u'cast', r'(?i)([(.=]\s*REAL)\s*\(', r'\1_CAST('),
@@ -172,9 +182,26 @@ class TreeAccess(object):
         u'type_defs': (u'derived_type_def', True, {
             u'name': (u'derived_type_stmt name', False, None),
             u'fields': (u'component_def_stmt', True, {
-                u'name': (u'name', False, None),
+                u'name': (u'component_decl name', False, None),
+                u'type': (u'intrinsic_type_kind', False, None),
+                u'kind': (u'kind_selector part_ref', False, None),
+                u'double_type': (u'intrinsic_type_spec', False, None),
+                u'type_name': (u'derived_type_spec name', False, None),
+                u'char_length': (u'char_selector int_literal_constant', False, None),
             }),
-        })
+        }),
+        u'functions': (u'function_subprogram', True, {
+            u'name': (u'function_stmt name', False, None),
+            u'args': (u'dummy_arg', True, {
+                u'name': (u'name', False, None),
+            })
+        }),
+        u'subroutines': (u'subroutine_subprogram', True, {
+            u'name': (u'subroutine_stmt name', False, None),
+            u'args': (u'dummy_arg', True, {
+                u'name': (u'name', False, None),
+            })
+        }),
     }
     
     def __init__(self, source_tree, mapping=None):
@@ -232,4 +259,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-    

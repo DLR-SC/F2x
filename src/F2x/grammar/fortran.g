@@ -686,16 +686,20 @@ type_param_value
     |   T_COLON
     ;
 
+intrinsic_type_char : T_CHARACTER (char_selector)?;
+
+intrinsic_type_kind
+    : T_INTEGER
+    | T_REAL
+    | T_COMPLEX
+    | T_LOGICAL
+    ;
+
 intrinsic_type_spec
-    :   T_INTEGER (kind_selector)?
-    |   T_REAL (kind_selector)?
-    |   T_DOUBLE T_PRECISION
+    :   intrinsic_type_kind (kind_selector)?
     |   T_DOUBLEPRECISION
-    |   T_COMPLEX (kind_selector)?
-    |   T_DOUBLE T_COMPLEX
     |   T_DOUBLECOMPLEX
-    |   T_CHARACTER (char_selector)?
-    |   T_LOGICAL (kind_selector)?
+    |   intrinsic_type_char (char_selector)?
     ;
 
 kind_selector
@@ -2945,7 +2949,7 @@ function_subprogram
     ;
 
 function_stmt
-    :   (label)? T_FUNCTION T_IDENT
+    :   (label)? T_FUNCTION name
             T_LPAREN ( generic_name_list)? T_RPAREN 
             ( suffix )? end_of_stmt
     ;
@@ -3002,12 +3006,12 @@ subroutine_subprogram
 
 subroutine_stmt
     :   (label)? (t_prefix)? T_SUBROUTINE 
-            T_IDENT ( T_LPAREN ( dummy_arg_list )? 
+            name ( T_LPAREN ( dummy_arg_list )? 
             T_RPAREN ( proc_language_binding_spec )? )? end_of_stmt
     ;
 
 dummy_arg
-    :   T_IDENT
+    :   name
     |   T_ASTERISK
     ;
 

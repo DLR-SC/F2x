@@ -17,11 +17,11 @@ F2x differs from other FORTRAN quite a bit. The basic flow is as follows: It use
 
 This design makes the whole process very flexible as you can easily replace the used grammar as well as the templates to generate your wrapper code. This is however at the cost of performance. But as it does not target at runtime code generation, this should be fine.
 
-## Requirements and acknoledgements
+## Requirements and acknowledgements
 F2x reuses a lot of stuff from other Open Source projects. Namely the following parts were really helpful:
 
 * It is developed in Python (and should run with both Python 2 and 3).
-* The PLY project is used as parser generator. PlyPlus does the heavy lifiting of converting ANTLR-like grammars to to PYL.
+* The PLY project is used as parser generator. PlyPlus does the heavy lifiting of converting ANTLR-like grammars to to PLY.
 * The FORTRAN grammar that comes bundled with F2x originates from the OpenFortranProject.
 * Templates are based on Jinja2.
 
