@@ -194,13 +194,15 @@ class TreeAccess(object):
             u'name': (u'function_stmt name', False, None),
             u'args': (u'dummy_arg', True, {
                 u'name': (u'name', False, None),
-            })
+            }),
+            u'arg_types': (u'type_declaration_stmt', True, None),
         }),
         u'subroutines': (u'subroutine_subprogram', True, {
             u'name': (u'subroutine_stmt name', False, None),
             u'args': (u'dummy_arg', True, {
                 u'name': (u'name', False, None),
-            })
+            }),
+            u'arg_types': (u'type_declaration_stmt', True, None),
         }),
     }
     
@@ -254,6 +256,7 @@ def main():
             log.debug(u"* Generating {0}...".format(output_filename))
             output = template.render({
                 u'ast': source_tree, u'src': access_tree,
+                u'config': config,
                 u'context': { u'filename': source_filename, u'basename': os.path.basename(output_basename), u'args': args } })
             output_file = open(output_filename, 'wb').write(output.encode(args.encoding))
 
