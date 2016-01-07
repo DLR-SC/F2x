@@ -73,10 +73,6 @@ T_RPAREN        : '\)'  ;
 T_UNDERSCORE    : '_'   ;
 T_SEMICOLON     : ';'   ;
 
-// begin Rice additions --------------------------
-T_AT            : '@'   ;
-// end Rice additions ----------------------------
-
 T_DEFINED_OP : '\.[a-zA-Z]+\.' (%unless
     T_EQ            : '\.EQ\.' ;
     T_NE            : '\.NE\.' ;
@@ -99,13 +95,7 @@ T_PERIOD_EXPONENT
     : '(\.[0-9]+[EedD][+-]?[0-9]+)|(\.[EedD][+-]?[0-9]+)|(\.[0-9]+)|([0-9]+[eEdD][+-]?[0-9]+)'
     ;
 
-T_PERIOD : '\.' ;
-
 T_HOLLERITH : '$no hollerith'; // shouldn't be recognized
-
-T_EDIT_DESC_MISC
-   :   '[0-9]+[eE][nNsS][a-zA-Z0-9_]*'
-   ;
 
 LINE_COMMENT
     : '![^\n\r]*' (%ignore);
@@ -115,7 +105,6 @@ LINE_COMMENT
 /* Part Ib: Keywords - Extracted from FortranLexer.g, collected for disambiguation.                                  */
 /*********************************************************************************************************************/
 T_IDENT : '[a-zA-Z][a-zA-Z0-9_]*' (%unless
-    T_INCLUDE       : '(?i)INCLUDE';
     T_INTEGER       : '(?i)INTEGER'       ;
     T_REAL          : '(?i)REAL'          ;
     T_COMPLEX       : '(?i)COMPLEX'       ;
@@ -123,8 +112,6 @@ T_IDENT : '[a-zA-Z][a-zA-Z0-9_]*' (%unless
     T_LOGICAL       : '(?i)LOGICAL'       ;
 
     T_ABSTRACT      : '(?i)ABSTRACT'      ;
-    T_ACQUIRED_LOCK : '(?i)ACQUIRED_LOCK' ;   /* F2008 token */
-    T_ALL           : '(?i)ALL'           ;   /* F2008 token (also in F2003?) */
     T_ALLOCATABLE   : '(?i)ALLOCATABLE'   ;
     T_ALLOCATE      : '(?i)ALLOCATE'      ;
     T_ASSIGNMENT    : '(?i)ASSIGNMENT'    ;
@@ -145,14 +132,12 @@ T_IDENT : '[a-zA-Z][a-zA-Z0-9_]*' (%unless
     T_CONTAINS      : '(?i)CONTAINS'      ;
     T_CONTIGUOUS    : '(?i)CONTIGUOUS'    ;
     T_CONTINUE      : '(?i)CONTINUE'      ;
-    T_CRITICAL      : '(?i)CRITICAL'      ;
     T_CYCLE         : '(?i)CYCLE'         ;
     T_DATA          : '(?i)DATA'          ;
     T_DEFAULT       : '(?i)DEFAULT'       ;
     T_DEALLOCATE    : '(?i)DEALLOCATE'    ;
     T_DEFERRED      : '(?i)DEFERRED'      ;
     T_DO            : '(?i)DO'            ;
-    T_DOUBLE        : '(?i)DOUBLE'        ;
     T_DOUBLEPRECISION: '(?i)DOUBLEPRECISION';
     T_DOUBLECOMPLEX:  '(?i)DOUBLECOMPLEX' ;
     T_ELEMENTAL     : '(?i)ELEMENTAL'     ;
@@ -162,7 +147,6 @@ T_IDENT : '[a-zA-Z][a-zA-Z0-9_]*' (%unless
     T_ENTRY         : '(?i)ENTRY'         ;
     T_ENUM          : '(?i)ENUM'          ;
     T_ENUMERATOR    : '(?i)ENUMERATOR'    ;
-    T_ERROR         : '(?i)ERROR'         ;
     T_EQUIVALENCE   : '(?i)EQUIVALENCE'   ;
     T_EXIT          : '(?i)EXIT'          ;
     T_EXTENDS       : '(?i)EXTENDS'       ;
@@ -178,7 +162,6 @@ T_IDENT : '[a-zA-Z][a-zA-Z0-9_]*' (%unless
     T_GO            : '(?i)GO'            ;
     T_GOTO          : '(?i)GOTO'          ;
     T_IF            : '(?i)IF'            ;
-    T_IMAGES        : '(?i)IMAGES'        ;
     T_IMPLICIT      : '(?i)IMPLICIT'      ;
     T_IMPORT        : '(?i)IMPORT'        ;
     T_IMPURE        : '(?i)IMPURE'        ;
@@ -188,8 +171,6 @@ T_IDENT : '[a-zA-Z][a-zA-Z0-9_]*' (%unless
     T_INTERFACE     : '(?i)INTERFACE'     ;
     T_INTRINSIC     : '(?i)INTRINSIC'     ;
     T_INQUIRE       : '(?i)INQUIRE'       ;
-    T_LOCK          : '(?i)LOCK'          ;   /* F2008 token */
-    T_MEMORY        : '(?i)MEMORY'        ;
     T_MODULE        : '(?i)MODULE'        ;
     T_NAMELIST      : '(?i)NAMELIST'      ;
     T_NONE          : '(?i)NONE'          ;
@@ -207,7 +188,6 @@ T_IDENT : '[a-zA-Z][a-zA-Z0-9_]*' (%unless
     T_PAUSE         : '(?i)PAUSE'         ;
     T_POINTER       : '(?i)POINTER'       ;
     T_PRINT         : '(?i)PRINT'         ;
-    T_PRECISION     : '(?i)PRECISION'     ;
     T_PRIVATE       : '(?i)PRIVATE'       ;
     T_PROCEDURE     : '(?i)PROCEDURE'     ;
     T_PROGRAM       : '(?i)PROGRAM'       ;
@@ -227,13 +207,11 @@ T_IDENT : '[a-zA-Z][a-zA-Z0-9_]*' (%unless
     T_STOP          : '(?i)STOP'          ;
     T_SUBMODULE     : '(?i)SUBMODULE'     ;
     T_SUBROUTINE    : '(?i)SUBROUTINE'    ;
-    T_SYNC          : '(?i)SYNC'          ;   /* F2008 token */
     T_TARGET        : '(?i)TARGET'        ;
     T_THEN          : '(?i)THEN'          ;
     T_TO            : '(?i)TO'            ;
     T_TYPE          : '(?i)TYPE'          ;
     T_UNFORMATTED   : '(?i)UNFORMATTED'   ;
-    T_UNLOCK        : '(?i)UNLOCK'        ;   /* F2008 token */
     T_USE           : '(?i)USE'           ;
     T_VALUE         : '(?i)VALUE'         ;
     T_VOLATILE      : '(?i)VOLATILE'      ;
@@ -242,32 +220,9 @@ T_IDENT : '[a-zA-Z][a-zA-Z0-9_]*' (%unless
     T_WHILE         : '(?i)WHILE'         ;
     T_WRITE         : '(?i)WRITE'         ;
 
-    // begin Rice additions --------------------------
-    T_WITHTEAM      : '(?i)WITHTEAM'      ;
-    T_WITH          : '(?i)WITH'          ;
-    T_TEAM          : '(?i)TEAM'          ;
-    T_TOPOLOGY      : '(?i)TOPOLOGY'      ;
-    T_EVENT         : '(?i)EVENT'         ;
-    T_LOCKSET       : '(?i)LOCKSET'       ;
-    T_FINISH        : '(?i)FINISH'        ;
-    T_SPAWN         : '(?i)SPAWN'         ;
-    T_COPOINTER     : '(?i)COPOINTER'     ;
-    T_COTARGET      : '(?i)COTARGET'      ;
-    // end Rice additions ----------------------------
-
-    // begin LOPe additions --------------------------
-    T_HALO          : '(?i)HALO'          ;
-    T_COPY_FN       : '(?i)COPY_FN'       ;
-    T_BOUNDARY      : '(?i)BOUNDARY'      ;
-    T_CYCLIC        : '(?i)CYCLIC'        ;
-    T_EXCHANGE_HALO : '(?i)EXCHANGE_HALO' ;
-    // end LOPe additions ----------------------------
-
     // these tokens (without blank characters) are from 3.3.2.2
     T_ENDASSOCIATE  : '(?i)ENDASSOCIATE'  ;
-    T_ENDBLOCK      : '(?i)ENDBLOCK'      ;
     T_ENDBLOCKDATA  : '(?i)ENDBLOCKDATA'  ;
-    T_ENDCRITICAL   : '(?i)ENDCRITICAL'   ;
     T_ENDDO         : '(?i)ENDDO'         ;
     T_ENDENUM       : '(?i)ENDENUM'       ;
     T_ENDFILE       : '(?i)ENDFILE'       ;
@@ -309,22 +264,10 @@ T_CHAR_STRING_EDIT_DESC : '__T_CHAR_STRING_EDIT_DESC__' ;
 
 T_STMT_FUNCTION : '__T_STMT_FUNCTION__' ;
 
-T_ASSIGNMENT_STMT : '__T_ASSIGNMENT_STMT__' ;
-T_PTR_ASSIGNMENT_STMT : '__T_PTR_ASSIGNMENT_STMT__' ;
 T_ARITHMETIC_IF_STMT : '__T_ARITHMETIC_IF_STMT__' ;
-T_ALLOCATE_STMT_1 : '__T_ALLOCATE_STMT_1__' ;
 T_WHERE_STMT : '__T_WHERE_STMT__' ;
-T_IF_STMT : '__T_IF_STMT__' ;
-T_FORALL_STMT : '__T_FORALL_STMT__' ;
 T_WHERE_CONSTRUCT_STMT : '__T_WHERE_CONSTRUCT_STMT__' ;
-T_FORALL_CONSTRUCT_STMT : '__T_FORALL_CONSTRUCT_STMT__' ;
-T_INQUIRE_STMT_2 : '__T_INQUIRE_STMT_2__' ;
 
-// text for the real constant will be set when a token of this type is 
-// created by the prepass.
-T_REAL_CONSTANT : '__T_REAL_CONSTANT__' ; 
-
-T_INCLUDE_NAME: '__T_INCLUDE_NAME__' ;
 T_EOF: '__T_EOF__' ;
 
 
@@ -382,13 +325,6 @@ main_program
        ( internal_subprogram_part )?
        end_program_stmt
    ;
-
-// added rule so could have one rule for main() to call for attempting
-// to match a function subprogram.  the original rule, 
-// external_subprogram, has (prefix)? for a function_subprogram.
-ext_function_subprogram
-    :   (prefix)? function_subprogram
-    ;
 
 specification_part
     :   ( use_stmt )*
@@ -611,15 +547,6 @@ name
     :   T_IDENT
     ;
 
-constant
-    :   literal_constant
-    |   T_IDENT
-    ;
-
-scalar_constant
-    :    constant
-    ;
-
 literal_constant
    :   int_literal_constant
    |   real_literal_constant
@@ -629,11 +556,6 @@ literal_constant
    |   boz_literal_constant
    |   hollerith_literal_constant  // deleted in F77
    ;
-
-int_constant
-    :   int_literal_constant
-    |   T_IDENT
-    ;
 
 char_constant
     :   char_literal_constant
@@ -769,11 +691,6 @@ char_selector
        ( T_COMMA (T_LEN T_EQUALS)? type_param_value )?
        T_RPAREN
    ;
-
-length_selector
-   :   T_LPAREN ( T_LEN T_EQUALS )? type_param_value T_RPAREN
-   |   T_ASTERISK char_length (T_COMMA)?
-   ; 
 
 char_length
    :   T_LPAREN type_param_value T_RPAREN
@@ -1344,10 +1261,6 @@ data_stmt_value_list
     :   data_stmt_value ( T_COMMA data_stmt_value )*
     ;
 
-scalar_int_constant
-    :   int_constant
-    ;
-
 data_stmt_constant
     :   designator
     |   signed_int_literal_constant
@@ -1600,34 +1513,6 @@ substr_range_or_arg_list_suffix
     |   ( T_COMMA actual_arg_spec )*
     ;
 
-logical_variable
-    :   variable
-    ;
-
-default_logical_variable
-    :   variable
-    ;
-
-scalar_default_logical_variable
-    :   variable
-    ;
-
-char_variable
-    :   variable
-    ;
-
-default_char_variable
-    :   variable
-    ;
-
-scalar_default_char_variable
-    :   variable
-    ;
-
-int_variable
-    :   variable
-    ;
-
 substring
     :   data_ref (T_LPAREN substring_range T_RPAREN)?
     |   char_literal_constant T_LPAREN substring_range T_RPAREN
@@ -1652,16 +1537,6 @@ data_ref_list
 part_ref
    :   T_IDENT
    ;
-
-/**
- * R620-F08 section-subscript
- *    is subscript
- *    or subscript-triplet
- *    or vector-subscript
- */
-vector_subscript
-    :   expr
-    ;
 
 allocate_stmt
     :   (label)? T_ALLOCATE T_LPAREN
@@ -1704,31 +1579,6 @@ allocate_object
 allocate_object_list
     :   allocate_object ( T_COMMA allocate_object )*
     ;
-
-allocate_shape_spec
-    :   expr (T_COLON expr)?
-    ;
-
-allocate_shape_spec_list
-    :   allocate_shape_spec ( T_COMMA allocate_shape_spec )*
-    ;
-
-/*
- * R636-F08 allocate-coarray-spec
- *    is   [ allocate-coshape-spec-list , ] [ lower-bound-expr : ] *
- */
-
-/*
- * R637-F08 allocate-coshape-spec
- *    is   [ lower-bound-expr : ] upper-bound-expr
- */
-allocate_coshape_spec
-   :   expr ( T_COLON expr )?
-   ;
-
-allocate_coshape_spec_list
-   :   allocate_coshape_spec ( T_COMMA allocate_coshape_spec )*
-   ;
 
 nullify_stmt
     :   (label)? T_NULLIFY T_LPAREN pointer_object_list T_RPAREN end_of_stmt
@@ -1890,10 +1740,6 @@ pointer_assignment_stmt
             bounds_remapping_list T_RPAREN T_EQ_GT expr end_of_stmt
     ;
 
-data_pointer_object
-    :   designator
-    ;
-
 bounds_spec
     :   expr T_COLON
     ;
@@ -1908,10 +1754,6 @@ bounds_remapping
 
 bounds_remapping_list
     :   bounds_remapping ( T_COMMA bounds_remapping )*
-    ;
-
-proc_pointer_object
-    :   designator
     ;
 
 where_stmt
@@ -1969,16 +1811,11 @@ forall_construct_stmt
     ;
 
 forall_header
-//    : T_LPAREN forall_triplet_spec_list ( T_COMMA expr )? T_RPAREN
     : T_LPAREN forall_triplet_spec ( T_COMMA expr )? T_RPAREN
     ;
 
 forall_triplet_spec
     : T_IDENT T_EQUALS expr T_COLON expr ( T_COLON expr )?
-    ;
-
-forall_triplet_spec_list
-    :   forall_triplet_spec ( T_COMMA forall_triplet_spec )*
     ;
 
 forall_body_construct
@@ -2040,104 +1877,6 @@ end_if_stmt
 if_stmt
     :   (label)? T_IF T_LPAREN expr T_RPAREN action_stmt
     ;
-
-/*
- * R807-F08 block-construct
- *    is block-stmt
- *       [ specification-part ]
- *       block
- *       end-block-stmt
- *
- * C806-F08 (R807-F08) The specification-part of a BLOCK construct shall not contain a
- * COMMON, EQUIVALENCE, IMPLICIT, INTENT, NAMELIST, OPTIONAL, statement function, or
- * VALUE statement.
- *
- * C806-F08 means that the implicit-part in specification-part can be removed
- */
-block_construct
-   :   block_stmt
-       specification_part_and_block
-       end_block_stmt
-   ;
-
-specification_part_and_block
-   :   ( use_stmt )*
-       ( import_stmt )*
-       declaration_construct_and_block
-   ;
-
-declaration_construct_and_block
-   :   entry_stmt       declaration_construct_and_block
-   |   enum_def         declaration_construct_and_block
-   |   format_stmt      declaration_construct_and_block
-   |   interface_block  declaration_construct_and_block
-   |   parameter_stmt   declaration_construct_and_block
-   |   procedure_declaration_stmt declaration_construct_and_block
-   |   derived_type_def declaration_construct_and_block
-   |   type_declaration_stmt declaration_construct_and_block
-
-   // the following are from other_specification_stmt
-
-   |   access_stmt       declaration_construct_and_block
-   |   allocatable_stmt  declaration_construct_and_block
-   |   asynchronous_stmt declaration_construct_and_block
-   |   bind_stmt         declaration_construct_and_block
-   |   codimension_stmt  declaration_construct_and_block
-   |   data_stmt         declaration_construct_and_block
-   |   dimension_stmt    declaration_construct_and_block
-   |   external_stmt     declaration_construct_and_block
-   |   intrinsic_stmt    declaration_construct_and_block
-   |   pointer_stmt      declaration_construct_and_block
-   |   protected_stmt    declaration_construct_and_block
-   |   save_stmt         declaration_construct_and_block
-   |   target_stmt       declaration_construct_and_block
-   |   volatile_stmt     declaration_construct_and_block
-   |   block
-   ;
-
-/*
- * R808-F08 block-stmt
- *    is [ block-construct-name : ] BLOCK
- */
-block_stmt
-   :   (label)?
-       (T_IDENT T_COLON)?
-       T_BLOCK end_of_stmt
-   ;
-
-/*
- * R809-F08 end-block-stmt
- *    is END BLOCK [ block-construct-name ]
- */
-end_block_stmt
-   :   (label)? T_ENDBLOCK (T_IDENT)? end_of_stmt
-   ;
-
-/*
- * R810-F08 critical-construct
- *    is critical-stmt
- *          block
- *       end-critical-stmt
- */
-critical_construct
-   :   critical_stmt block end_critical_stmt
-   ;
-
-/*
- * R811-F08 critical-stmt
- *    is [ critical-construct-name : ] CRITICAL
- */
-critical_stmt
-   :   (label)? (T_IDENT T_COLON)? T_CRITICAL end_of_stmt
-   ;
-
-/*
- * R812-F08 end-critical-stmt
- *    is END CRITICAL [ critical-construct-name ]
- */
-end_critical_stmt
-   :   (label)? T_ENDCRITICAL (T_IDENT)? end_of_stmt
-   ;
 
 case_construct
     :    select_case_stmt ( case_stmt block )* end_select_stmt
@@ -2263,12 +2002,6 @@ do_stmt
             ( loop_control )? end_of_stmt
     ;
 
-label_do_stmt
-    :   (label)? ( T_IDENT T_COLON )? 
-            T_DO T_DIGIT_STRING ( loop_control )? 
-            end_of_stmt
-    ;
-
 do_variable
     :   T_IDENT
     ;
@@ -2354,100 +2087,6 @@ stop_code
     | T_DIGIT_STRING
     ;
 
-/*
- * R856-F08 errorstop-stmt
- *    is ERROR STOP [ stop-code ]
- */
-errorstop_stmt
-   :   (label)? T_ERROR T_STOP (stop_code)? end_of_stmt
-   ;
-
-/*
- * R858-F08 sync-all-stmt
- *    is SYNC ALL [([ sync-stat-list ])]
- */
-sync_all_stmt
-   :   (label)? T_SYNC T_ALL (T_LPAREN T_RPAREN)? end_of_stmt
-   |   (label)? T_SYNC T_ALL T_LPAREN sync_stat_list T_RPAREN end_of_stmt
-   ;
-
-/*
- * R859-F08 sync-stat
- *    is STAT = stat-variable
- *    or ERRMSG = errmsg-variable
- */
-sync_stat
-    :    T_IDENT T_EQUALS expr    // expr is a stat-variable or an errmsg-variable
-             /* {'STAT','ERRMSG'} exprs are variables */
-    ;
-
-sync_stat_list
-   :   sync_stat ( T_COMMA sync_stat )*
-   ;
-
-/*
- * R860-F08 sync-images-stmt
- *    is SYNC IMAGES ( image-set [, sync-stat-list ] )
- */
-sync_images_stmt
-   :   (label)? T_SYNC T_IMAGES
-       T_LPAREN image_set (T_COMMA sync_stat_list)? T_RPAREN
-       end_of_stmt
-   ;
-
-/*
- * R861-F08 image-set
- *    is int-expr
- *    or *
- */
-image_set
-   :   expr 
-   |   T_ASTERISK
-   ;
-
-/*
- * R862-F08 sync-memory-stmt
- *    is SYNC MEMORY [([ sync-stat-list ])]
- */
-sync_memory_stmt
-   :   (label)? T_SYNC T_MEMORY (T_LPAREN T_RPAREN)? end_of_stmt
-   |   (label)? T_SYNC T_MEMORY T_LPAREN sync_stat_list T_RPAREN end_of_stmt
-   ;
-
-/*
- * R863-F08 lock-stmt
- *    is LOCK ( lock-variable [, lock-stat-list ] )
- */
-lock_stmt
-    :    (label)? T_LOCK T_LPAREN variable
-             (T_COMMA lock_stat_list)? T_RPAREN
-             end_of_stmt
-    ;
-
-/*
- * R864-F08 lock-stat
- *    is ACQUIRED_LOCK = scalar-logical-variable
- *    or sync-stat
- */
-lock_stat 
-   :   T_ACQUIRED_LOCK T_EQUALS expr    // expr is a scalar-logical-variable
-   |   sync_stat
-   ;
-
-lock_stat_list
-    :   lock_stat ( T_COMMA lock_stat )*
-    ;
-
-/*
- * R865-F08 unlock-stmt
- *    is UNLOCK ( lock-variable [, lock-stat-list ] )
- */
-unlock_stmt
-   :   (label)?
-       T_UNLOCK T_LPAREN variable (T_COMMA sync_stat_list)?
-                T_RPAREN end_of_stmt
-   ;
-
 scalar_char_constant
     :    char_constant
     ;
@@ -2456,11 +2095,6 @@ scalar_char_constant
 /*********************************************************************************************************************/
 /* Part IIh: FORTRAN 2008 Grammar / R9xx - Extracted from FortranParser08.g                                          */
 /*********************************************************************************************************************/
-
-io_unit
-    :   expr
-    |   T_ASTERISK
-    ;
 
 file_unit_number
     :   expr
@@ -2571,11 +2205,6 @@ io_implied_do_control
     : do_variable T_EQUALS expr T_COMMA expr ( T_COMMA expr )?
     ;
 
-dtv_type_spec
-    :   T_TYPE T_LPAREN derived_type_spec T_RPAREN
-    |   T_CLASS T_LPAREN derived_type_spec T_RPAREN
-    ;
-
 wait_stmt
     :   (label)? T_WAIT T_LPAREN wait_spec_list T_RPAREN end_of_stmt
     ;
@@ -2673,11 +2302,6 @@ format_item
 
 format_item_list
     :   format_item ( (T_COMMA)? format_item )*
-    ;
-
-v_list
-    :   (T_PLUS|T_MINUS)? T_DIGIT_STRING
-        ( T_COMMA (T_PLUS|T_MINUS)? T_DIGIT_STRING )*
     ;
 
 
@@ -2803,7 +2427,8 @@ parent_identifier
  *     is END [ SUBMODULE [ submodule-name ] ]
  */
 end_submodule_stmt
-   :   (label)? T_END (T_SUBMODULE (name)?)? end_of_stmt
+   :   (label)? T_END end_of_stmt
+   |   (label)? T_ENDSUBMODULE (name)? end_of_stmt
    ;
 
 block_data

@@ -51,8 +51,8 @@ PREPROCESS_RULES = (
 
     # Remove substring range on LHS comparison
     (u'substring/lhs',
-        r'\((\d+|[a-zA-Z][a-zA-Z0-9_]*)(:(\d+|[a-zA-Z][a-zA-Z0-9_]*))?\)(\s*=)',
-        r'\4'),
+        r'([\n\(,]\s*[a-zA-Z][a-zA-Z0-9_]*)\((\d+|[a-zA-Z][a-zA-Z0-9_]*)(:(\d+|[a-zA-Z][a-zA-Z0-9_]*))?\)(\s*=)',
+        r'\1\5'),
     
     # Convert substring range to arguments on RHS
     (u'substring/rhs',
@@ -104,8 +104,8 @@ def init_logger(args):
     # Calculate and set log level: Default is logging.INFO (2*10).
     # Increase for every -q, decrease for every -v. Scale to range logging.DEBUG..logging.FATAL (0..40).
     log_level = min(max((args.quiet - args.verbose) * 10, logging.DEBUG), logging.FATAL)
-    logging.basicConfig(level=logging.DEBUG, format="%(levelname)-5s %(msg)s")
-    # HACK'd, but why?: log = logging.getLogger(__name__)
+    logging.basicConfig(level=log_level, format="%(levelname)-5s %(msg)s")
+    log = logging.getLogger(__name__)
     class log(object):
         info = staticmethod(print)
         debug = staticmethod(print)
@@ -258,7 +258,8 @@ def main():
                 u'ast': source_tree, u'src': access_tree,
                 u'config': config,
                 u'context': { u'filename': source_filename, u'basename': os.path.basename(output_basename), u'args': args } })
-            output_file = open(output_filename, 'wb').write(output.encode(args.encoding))
+            output_file = open(output_filename, 'wb')
+            output_file.write(output.encode(args.encoding))
 
 if __name__ == '__main__':
     main()
