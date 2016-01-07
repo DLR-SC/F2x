@@ -84,25 +84,26 @@ CONTAINS
 {% endif -%}
 {% endfor -%}
 {% endfor %}
-
+{% if config.has_section('export') %}
+{%- set exports = config.options('export') %}
 	!------------------------------------------------------------
 	! Exported functions and subroutines
 	!
-{%- for function in src.functions %}{% if not config.has_option('ignore', function.name) %}
-!	FUNCTION {{ src.module_name }}_{{ function.name }}({% for arg in function.args %}{{ arg.name }}{% if not loop.last %}, {% endif %}{% endfor %}) BIND(C)
+{%- for function in src.functions %}{% if function.name.lower() in exports %}{% set func_name = config.get('export', function.name) %}
+	FUNCTION {{ func_name.upper() }}({% for arg in function.args %}{{ arg.name }}{% if not loop.last %}, {% endif %}{% endfor %}) BIND(C, NAME="{{ func_name }}")
 {% for arg_type in function.arg_types %}
 !{{ arg_type._ast }}
 {% endfor %}
-!	END FUNCTION
+	END FUNCTION
 {% endif %}{% endfor %}
-{%- for subroutine in src.subroutines %}
-!	SUBROUTINE {{ src.module_name }}_{{ subroutine.name }}({% for arg in subroutine.args %}{{ arg.name }}{% if not loop.last %}, {% endif %}{% endfor %}) BIND(C)
+{%- for subroutine in src.subroutines %}{% if subroutine.name.lower() in exports %}{% set sub_name = config.get('export', subroutine.name) %}
+	SUBROUTINE {{ sub_name.upper() }}({% for arg in subroutine.args %}{{ arg.name }}{% if not loop.last %}, {% endif %}{% endfor %}) BIND(C, NAME="{{ sub_name }}")
 {% for arg_type in subroutine.arg_types %}
 !{{ arg_type._ast }}
 {% endfor %}
-!	END SUBROUTINE
-{% endfor %}
-
+	END SUBROUTINE
+{% endif %}{% endfor %}
+{% endif %}
 	!------------------------------------------------------------
 	! Custom extensions
 	!
