@@ -1085,10 +1085,10 @@ attr_spec_extension : T_NO_LANGUAGE_EXTENSION ;
  *    or function-name [ * char-length ]
  */
 entity_decl
-   :   T_IDENT ( T_LPAREN array_spec T_RPAREN )?
-               ( T_LBRACKET coarray_spec T_RBRACKET )?
-               ( T_ASTERISK char_length )?
-               ( initialization )?
+   :   name ( T_LPAREN array_spec T_RPAREN )?
+            ( T_LBRACKET coarray_spec T_RBRACKET )?
+            ( T_ASTERISK char_length )?
+            ( initialization )?
    ;
 
 entity_decl_list

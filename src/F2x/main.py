@@ -122,7 +122,7 @@ def load_templates(log, args):
         
         log.debug(u"* Loading template from {0}...".format(template_filename))
         template_file = open(template_filename, 'r')
-        template = jinja2.Template(template_file.read())
+        template = jinja2.Template(template_file.read(), extensions=['jinja2.ext.do'])
         template_suffix, _ = os.path.splitext(os.path.basename(template_filename))
         templates.append((template, template_suffix))
     
