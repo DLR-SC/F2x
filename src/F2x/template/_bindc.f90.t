@@ -93,20 +93,20 @@ CONTAINS
 {%- set func_name = config.get('export', function.name) %}
 {%- set func_args = [] %}
 	FUNCTION {{ func_name.upper() }}({% for arg in function.args %}{{ arg.name }}{% do func_args.append(arg.name) %}{% if not loop.last %}, {% endif %}{% endfor %}) BIND(C, NAME="{{ func_name }}")
-{% for arg_type in function.arg_types %}
-!{{ func_args }}
-!{{ arg_type._ast }}
-{% endfor %}
+{%- for arg_type in function.arg_types %}{% if arg_type.entity_name in func_args %}
+		INTEGER, INTENT(IN) :: {{ arg_type.entity_name }}
+{% endif %}{% endfor %}
+		{{ func_name.upper() }} = {{ function.name }}({{ ', '.join(func_args) }})
 	END FUNCTION
 {% endif %}{% endfor %}
 {%- for subroutine in src.subroutines %}{% if subroutine.name.lower() in exports %}
 {%- set sub_name = config.get('export', subroutine.name) %}
 {%- set sub_args = [] %}
 	SUBROUTINE {{ sub_name.upper() }}({% for arg in subroutine.args %}{{ arg.name }}{% do sub_args.append(arg.name) %}{% if not loop.last %}, {% endif %}{% endfor %}) BIND(C, NAME="{{ sub_name }}")
-{% for arg_type in subroutine.arg_types %}
-!{{ sub_args }}
-!{{ arg_type._ast }}
-{% endfor %}
+{%- for arg_type in subroutine.arg_types %}{% if arg_type.entity_name in sub_args %}
+		INTEGER, INTENT(IN) :: {{ arg_type.entity_name }}
+{% endif %}{% endfor %}
+		CALL {{ subroutine.name }}({{ ', '.join(sub_args) }})
 	END SUBROUTINE
 {% endif %}{% endfor %}
 {% endif %}

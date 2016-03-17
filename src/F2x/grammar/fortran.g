@@ -17,7 +17,7 @@ T_EOL
     ;
 
 CONTINUE_CHAR
-    : '&\r?\n' (%newline) (%ignore)
+    : '&[ \r\t\u000C]*(![^\n\r]*)?\r?\n' (%newline) (%ignore)
     ;
 
 T_CHAR_CONSTANT
@@ -660,7 +660,8 @@ real_constant_number
 
 real_literal_constant
 //    :   T_REAL_CONSTANT (T_UNDERSCORE kind_param)? 
-    :   real_constant_number (T_UNDERSCORE kind_param)? 
+//    :   real_constant_number (T_UNDERSCORE kind_param)? 
+    :   real_constant_number 
     ;
 
 complex_literal_constant
@@ -750,8 +751,8 @@ type_attr_spec_list
     ;
 
 generic_name_list
-    :   T_IDENT
-        ( T_COMMA T_IDENT )*
+    :   name
+        ( T_COMMA name )*
     ;
 
 type_attr_spec
@@ -981,8 +982,7 @@ end_enum_stmt
     ;
 
 array_constructor
-    :   T_LPAREN T_SLASH ac_spec T_SLASH T_RPAREN
-    |   T_LBRACKET ac_spec T_RBRACKET
+    :   T_LBRACKET ac_spec T_RBRACKET
     ;
 
 ac_spec
@@ -2575,7 +2575,7 @@ function_subprogram
 
 function_stmt
     :   (label)? T_FUNCTION name
-            T_LPAREN ( generic_name_list)? T_RPAREN 
+            T_LPAREN ( dummy_arg_list )? T_RPAREN 
             ( suffix )? end_of_stmt
     ;
 

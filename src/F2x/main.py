@@ -6,62 +6,18 @@ from __future__ import print_function
 import argparse
 import logging
 import os
-import re
-import sys
 import time
-import ConfigParser
 
 import jinja2
 import plyplus
+
+from F2x import source
 
 
 VERSION = u"0.1"
 DESCRIPTION = u"F2x - A versatile FORTRAN wrapper."
 
-PREPROCESS_RULES = (
-    # Disambiguate END statements by joining them into single keyword
-    (u'end/associate',  r'(?i)END\s+ASSOCIATE',    r'ENDASSOCIATE'),
-    (u'end/block',      r'(?i)END\s+BLOCK',        r'ENDBLOCK'),
-    (u'end/block data', r'(?i)END\s+BLOCK\s*DATA', r'ENDBLOCKDATA'),
-    (u'end/critical',   r'(?i)END\s+CRITICAL',     r'ENDCRITICAL'),
-    (u'end/do',         r'(?i)END\s+DO',           r'ENDDO'),
-    (u'end/enum',       r'(?i)END\s+ENUM',         r'ENDENUM'),
-    (u'end/file',       r'(?i)END\s+FILE',         r'ENDFILE'),
-    (u'end/for',        r'(?i)END\s+FOR\s*ALL',    r'ENDFORALL'),
-    (u'end/function',   r'(?i)END\s+FUNCTION',     r'ENDFUNCTION'),
-    (u'end/if',         r'(?i)END\s+IF',           r'ENDIF'),
-    (u'end/interface',  r'(?i)END\s+INTERFACE',    r'ENDINTERFACE'),
-    (u'end/module',     r'(?i)END\s+MODULE',       r'ENDMODULE'),
-    (u'end/procedure',  r'(?i)END\s+PROCEDURE',    r'ENDPROCEDURE'),
-    (u'end/program',    r'(?i)END\s+PROGRAM',      r'ENDPROGRAM'),
-    (u'end/select',     r'(?i)END\s+SELECT',       r'ENDSELECT'),
-    (u'end/submodule',  r'(?i)END\s+SUBMODULE',    r'ENDSUBMODULE'),
-    (u'end/subroutine', r'(?i)END\s+SUBROUTINE',   r'ENDSUBROUTINE'),
-    (u'end/type',       r'(?i)END\s+TYPE',         r'ENDTYPE'),
-    (u'end/where',      r'(?i)END\s+WHERE',        r'ENDWHERE'),
-    
-    # Remove spaces from data types
-    (u'type/double precision', r'(?i)DOUBLE\s+PRECISION', r'DOUBLEPRECISION'),
-    (u'type/double complex',   r'(?i)DOUBLE\s+COMPLEX',   r'DOUBLECOMPLEX'),
-    
-    # Remove empty function arguments
-    (u'empty args',
-        r'([(.=]\s*([a-zA-Z][a-zA-Z0-9_]*)(%[a-zA-Z][a-zA-Z0-9_]*)*)\(\s*\)',
-        r'\1'),
-
-    # Remove substring range on LHS comparison
-    (u'substring/lhs',
-        r'([\n\(,]\s*[a-zA-Z][a-zA-Z0-9_]*)\((\d+|[a-zA-Z][a-zA-Z0-9_]*)(:(\d+|[a-zA-Z][a-zA-Z0-9_]*))?\)(\s*=)',
-        r'\1\5'),
-    
-    # Convert substring range to arguments on RHS
-    (u'substring/rhs',
-        r'\((\d+|[a-zA-Z][a-zA-Z0-9_]*):(\d+|[a-zA-Z][a-zA-Z0-9_]*)\)(?!\s*=)',
-        r'(\1,\2)'),
-    
-    # Prefix Type-Casts
-    (u'cast', r'(?i)([(.=]\s*REAL)\s*\(', r'\1_CAST('),
-)
+IGNORE_DELTA = 3
 
 package_path, _ = os.path.split(__file__)
 
@@ -78,15 +34,18 @@ def parse_args(argv=None):
     argp_parser.add_argument(u'-P', u'--output-pre', action=u"store_true",
                              help=u"Write pre-processed source.",
                              default=False)
+    argp_parser.add_argument(u'-F', u'--configure', action=u"store_true",
+                             help=u"Create/update configuration file.",
+                             default=False)
+    argp_parser.add_argument(u'-e', u'--encoding',
+                             help=u"Use the specified encoding for reading/writing source files.",
+                             default='utf8')
                          
     argp_generator = argp.add_argument_group(u"Code generation")
     argp_generator.add_argument(u'-t', u'--template', action=u'append',
                                 help=u"Generate wrapping code for each template given. Uset '@'-prefix for bundled templates.",
                                 required=True)
 
-    argp.add_argument(u'-e', u'--encoding',
-                      help=u"Use the specified encoding for reading/writing source files.",
-                      default='utf8')
     argp.add_argument(u'-l', u'--logfile',
                       help=u"Write detailed log to LOGFILE.")
     argp.add_argument(u'-v', u'--verbose', action=u'count',
@@ -106,9 +65,9 @@ def init_logger(args):
     log_level = min(max((args.quiet - args.verbose) * 10, logging.DEBUG), logging.FATAL)
     logging.basicConfig(level=log_level, format="%(levelname)-5s %(msg)s")
     log = logging.getLogger(__name__)
-    class log(object):
-        info = staticmethod(print)
-        debug = staticmethod(print)
+#    class log(object):
+#        info = staticmethod(print)
+#        debug = staticmethod(print)
     return log
 
 def load_templates(log, args):
@@ -130,48 +89,6 @@ def load_templates(log, args):
     log.debug(u"* Loaded {0} templates in {1}.".format(len(templates), timer))
     
     return templates
-
-def load_grammar(log, args):
-    grammar_filename = args.grammar
-    if grammar_filename[0] == u'@':
-        # Replace '@'-prefix with path to F2x.grammar.
-        grammar_filename = os.path.join(package_path, u'grammar', grammar_filename[1:])
-
-    # Need to adjust recursion limit as plyplus is very recusive and FORTRAN grammars are complex.
-    old_recursionlimit = sys.getrecursionlimit()
-    sys.setrecursionlimit(3000)
-
-    log.info(u"Loading grammar from {0}. This may take some time...".format(grammar_filename))
-
-    start = time.time()
-    grammar_file = open(grammar_filename, 'r')
-    grammar = plyplus.Grammar(grammar_file)
-    timer = time.time() - start
-    log.debug(u"* Loaded grammar in {0}.".format(timer))
-    
-    sys.setrecursionlimit(old_recursionlimit)
-    return grammar
-
-def preprocess(log, config, source):
-    if config.has_option(u'parser', u'ignore'):
-        source_lines = source.splitlines()
-        line_nos = map(int, config.get(u'parser', u'ignore').split(','))
-        for line_no in line_nos:
-            source_lines[line_no - 1] = u'!F2x/ignore ' + source_lines[line_no - 1]
-        
-        # u'\n'.join(...) won't work on Python 2.7 :(
-        source = u''
-        for source_line in source_lines:
-            source += source_line + u'\n'
-
-        log.debug(u"  * Ignoring {0} lines.".format(len(line_nos)))
-
-    for rule_name, pattern, replace in PREPROCESS_RULES:
-        source, count = re.subn(pattern, replace, source)
-        if count:
-            log.debug(u"  * Applied '{0}' {1} times.".format(rule_name, count))
-    
-    return source
 
 class TreeAccess(object):
     DEFAULT_MAPPING = {
@@ -195,14 +112,18 @@ class TreeAccess(object):
             u'args': (u'dummy_arg', True, {
                 u'name': (u'name', False, None),
             }),
-            u'arg_types': (u'type_declaration_stmt', True, None),
+            u'arg_types': (u'type_declaration_stmt', True, {
+                u'entity_name': (u'entity_decl name', False, None),
+            }),
         }),
         u'subroutines': (u'subroutine_subprogram', True, {
             u'name': (u'subroutine_stmt name', False, None),
             u'args': (u'dummy_arg', True, {
                 u'name': (u'name', False, None),
             }),
-            u'arg_types': (u'type_declaration_stmt', True, None),
+            u'arg_types': (u'type_declaration_stmt', True, {
+                u'entity_name': (u'entity_decl name', False, None),
+            }),
         }),
     }
     
@@ -225,38 +146,74 @@ def main():
     
     log.info(DESCRIPTION + u" Version " + VERSION)
     templates = load_templates(log, args)
-    grammar = load_grammar(log, args)
     
     for source_filename in args.source:
         log.info(u"Processing {0}...".format(source_filename))
-        
-        config_filename = source_filename + args.config_suffix
-        config = ConfigParser.ConfigParser()
-        if os.path.isfile(config_filename):
-            log.debug(u"* Found source config at {0}.".format(config_filename))
-            config.read(config_filename)
-        
-        source_file = open(source_filename, 'rb')
-        source = source_file.read().decode(args.encoding)
-        log.debug(u"* Source loaded, preprocessing...")
 
-        source = preprocess(log, config, source)
-        if args.output_pre:
-            pre_filename = source_filename + u'.pre'
-            open(pre_filename, 'wb').write(source.encode(args.encoding))
-            log.debug(u"* Pre-processed source written to {0}.".format(pre_filename))
+        src = source.SourceFile(source_filename, args)
+        src.read()
+        src.preprocess()
         
         log.debug(u"* Parsing FORTRAN source...")
-        source_tree = grammar.parse(source)
-        access_tree = TreeAccess(source_tree)
+        try:
+            src.parse()
+        except plyplus.ParseError as e:
+            if args.configure:
+                ignore_lines = set((err.args['line'] for err in e.errors if 'line' in err.args))
+                if src.config.has_option('parser', 'ignore'):
+                    ignore = src.config.get('parser', 'ignore')
+                    if '\n' in ignore:
+                        config_ignore_lines = set(map(int, [line.split(';')[0].rstrip() for line in ignore.splitlines() if line]))
+                    else:
+                        config_ignore_lines = set(map(int, map(str.strip, ignore.split(','))))
+                    ignore_lines = ignore_lines.union(config_ignore_lines)
+                
+                index = 0
+                ignore_lines = sorted(ignore_lines)
+                
+                while index < len(ignore_lines) - 2:
+                    while index < len(ignore_lines) - 2 \
+                    and 'END' in src.pre_source_lines[ignore_lines[index] - 1]:
+                        ignore_lines.pop(index)
+ 
+                    curr = ignore_lines[index]
+                    succ = ignore_lines[index + 1]
+                    delta = succ - curr
+
+                    if delta < IGNORE_DELTA \
+                    and 'END' not in src.pre_source_lines[succ - 1]:
+                        ignore_lines[index + 1:index + 1] = range(curr + 1, succ)
+                        index += delta
+                    
+                    index += 1
+                
+                print('ignore =')
+                for line in ignore_lines:
+                    print('\t{0}\t;{1}'.format(line, src.pre_source_lines[line - 1]))
+                    
+            else:
+                for err in e.errors:
+                    if isinstance(err, (plyplus.LineError, plyplus.LocatedError)):
+                        val = err.args.get('value', '<Not defined>')
+                        line = err.args.get('line', -1)
+                        col = err.args.get('col', -1)
+                        
+                        prefix = "{0}:{1}{2}:".format(source_filename, line, (':' + str(col)) if col >= 0 else '')
+                        
+                        print(prefix + "Syntax error near '{0}'".format(err.args['value']))
+                        if col >= 0:
+                            space = ''.join([(c if c == '\t' else ' ') for c in src.pre_source_lines[line - 1][:col - 1]])
+                            print(prefix + src.pre_source_lines[line - 1])
+                            print(prefix + space + ('^' * len(val)))
         
+        access_tree = TreeAccess(src.tree)
         output_basename, _ = os.path.splitext(source_filename)
         for template, suffix in templates:
             output_filename = output_basename + suffix
             log.debug(u"* Generating {0}...".format(output_filename))
             output = template.render({
-                u'ast': source_tree, u'src': access_tree,
-                u'config': config,
+                u'ast': src.tree, u'src': access_tree,
+                u'config': src.config,
                 u'context': { u'filename': source_filename, u'basename': os.path.basename(output_basename), u'args': args } })
             output_file = open(output_filename, 'wb')
             output_file.write(output.encode(args.encoding))
