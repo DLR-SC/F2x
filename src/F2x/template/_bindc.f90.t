@@ -129,6 +129,10 @@ CONTAINS
 
 	SUBROUTINE {{ export_name.upper() }}({% for arg in function.args %}{{ arg.name }}, {% endfor %}{{ export_name.upper() }}_VALUE) BIND(C, NAME="{{ export_name }}")
 	{%- for arg in function.args %}
+	{%- if arg.dims %}
+		{{ arg.type }}, INTENT(IN) :: {{ arg.name }}({{ ', '.join(arg.dims) }})
+		{%- do call_args.append(arg.name) %}
+	{%- else %}
 		{{ arg.type }}, VALUE, INTENT(IN) :: {{ arg.name }}
 		{%- if arg.strlen %}
 		CHARACTER(LEN={{ arg.strlen }}) :: {{ arg.name }}_INTERN
@@ -139,8 +143,9 @@ CONTAINS
 		{%- else %}
 		{%- do call_args.append(arg.name) %}
 		{%- endif %}
+	{%- endif %}
 	{%- endfor %}
-		{{ function.ret.type }}, INTENT(INOUT) :: {{ export_name.upper() }}_VALUE
+		{{ function.ret.type }}, INTENT(INOUT) :: {{ export_name.upper() }}_VALUE{% if function.ret.dims %}({{ ', '.join(function.ret.dims) }}){% endif %}
 		{%- if function.ret.strlen %}
 		CHARACTER(LEN={{ function.ret.strlen }}) :: {{ export_name.upper() }}_INTERN
 		{%- endif %}
@@ -155,7 +160,7 @@ CONTAINS
 		{{ export_name.upper() }}_INTERN = {{ function.name }}({{ ', '.join(call_args) }})
 		CALL F_C_STRING({{ export_name.upper() }}_INTERN, {{ function.ret.strlen }}, {{ export_name.upper() }}_VALUE)
 	{%- else %}
-		{{ export_name.upper() }}_VALUE = {{ function.name }}({{ ', '.join(call_args) }})
+		{{ export_name.upper() }}_VALUE{% if function.ret.dims %}({{ ', '.join([':'] * function.ret.dims|length) }}){% endif %} = {{ function.name }}({{ ', '.join(call_args) }})
 	{%- endif %}
 	END SUBROUTINE
 {%- endif %}
