@@ -26,6 +26,6 @@ F2x reuses a lot of stuff from other Open Source projects. Namely the following 
 * Templates are based on Jinja2.
 
 ## Legal stuff
-Copyright &copy; 2015, led-inc.eu
+Copyright &copy; 2015-2016, led-inc.eu
 
 This software is licensed under the Apache Public License 2.0. See `LICENSE` for details.

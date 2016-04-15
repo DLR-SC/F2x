@@ -57,15 +57,18 @@ PREPROCESS_RULES = (
         r'\1\5'),
     
     # Convert substring range to arguments on RHS
+    #(u'substring/rhs',
+    #    r'\(\s*(\d+|[a-zA-Z][a-zA-Z0-9_]*)(\s*[:,]\s*(\d+|[a-zA-Z][a-zA-Z0-9_]*))+\s*\)(?!\s*=)',
+    #    r'(\1,\3)'),
     (u'substring/rhs',
-        r'\(\s*(\d+|[a-zA-Z][a-zA-Z0-9_]*)(\s*[:,]\s*(\d+|[a-zA-Z][a-zA-Z0-9_]*))+\s*\)(?!\s*=)',
+        r'\(\s*(\d+|[a-zA-Z][a-zA-Z0-9_]*)(\s*[:]\s*(\d+|[a-zA-Z][a-zA-Z0-9_]*)(,(\d+|[a-zA-Z][a-zA-Z0-9_]*))?)+\s*\)(?!\s*=)',
         r'(\1,\3)'),
     
     # Prefix Type-Casts
     (u'cast', r'(?i)([-+*/(.=][ \t\u000C]*REAL)\s*\(', r'\1_CAST('),
     
     # Kind of numeric constant
-    (u'kind', r'(\d+)_(\d+|[a-zA-Z][a-zA-Z0-9_]*)', r'\1'),
+    (u'kind', r'(\d+)_(\d+|LF)', r'\1'),
 )
 
 
@@ -148,6 +151,9 @@ class SourceFile(object):
             self.source, count = re.subn(pattern, repl, self.source)
             if count:
                 log.debug("* {0} applied {1} times.".format(name, count))
+        
+        if not self.source.endswith('\n'):
+            self.source += '\n'
         
         if self.config.getboolean('parser', 'output_pre'):
             pre_source_filename = self.filename + '.pre'

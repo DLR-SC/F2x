@@ -11,7 +11,7 @@ import time
 import jinja2
 import plyplus
 
-from F2x import source
+from F2x import source, tree
 
 
 VERSION = u"0.1"
@@ -114,6 +114,9 @@ class TreeAccess(object):
             }),
             u'arg_types': (u'type_declaration_stmt', True, {
                 u'entity_name': (u'entity_decl name', False, None),
+                u'type': (u'intrinsic_type_kind', False, None),
+                u'kind': (u'kind_selector part_ref', False, None),
+                u'double_type': (u'intrinsic_type_spec', False, None),
             }),
         }),
         u'subroutines': (u'subroutine_subprogram', True, {
@@ -123,6 +126,9 @@ class TreeAccess(object):
             }),
             u'arg_types': (u'type_declaration_stmt', True, {
                 u'entity_name': (u'entity_decl name', False, None),
+                u'type': (u'intrinsic_type_kind', False, None),
+                u'kind': (u'kind_selector part_ref', False, None),
+                u'double_type': (u'intrinsic_type_spec', False, None),
             }),
         }),
     }
@@ -206,13 +212,20 @@ def main():
                             print(prefix + src.pre_source_lines[line - 1])
                             print(prefix + space + ('^' * len(val)))
         
-        access_tree = TreeAccess(src.tree)
+        access_tree = tree.Module(src.tree)
+        
+        if not src.config.has_section('generate'):
+            src.config.add_section('generate')
+        
+        if not src.config.has_option('generate', 'dll'):
+            src.config.set('generate', 'dll', 'lib ' + access_tree['name'] + '.so')
+        
         output_basename, _ = os.path.splitext(source_filename)
         for template, suffix in templates:
             output_filename = output_basename + suffix
             log.debug(u"* Generating {0}...".format(output_filename))
             output = template.render({
-                u'ast': src.tree, u'src': access_tree,
+                u'ast': src.tree, u'module': access_tree,
                 u'config': src.config,
                 u'context': { u'filename': source_filename, u'basename': os.path.basename(output_basename), u'args': args } })
             output_file = open(output_filename, 'wb')
