@@ -97,6 +97,10 @@ CONTAINS
 	FUNCTION {{ export_name.upper() }}({% for arg in function.args %}{{ arg.name }}{% if not loop.last %}, {% endif %}{% endfor %}) BIND(C, NAME="{{ export_name }}")
 		{{ function.ret.type }} :: {{ export_name.upper() }}
 	{%- for arg in function.args %}
+	{%- if arg.dims %}
+		{{ arg.type }}, INTENT(IN) :: {{ arg.name }}({{ ', '.join(arg.dims) }})
+		{%- do call_args.append(arg.name) %}
+	{%- else %}
 		{{ arg.type }}, VALUE, INTENT(IN) :: {{ arg.name }}
 		{%- if arg.strlen %}
 		CHARACTER(LEN={{ arg.strlen }}) :: {{ arg.name }}_INTERN
@@ -104,8 +108,10 @@ CONTAINS
 		{%- elif arg.ftype %}
 		TYPE({{ arg.ftype }}), POINTER :: {{ arg.name }}_INTERN
 		{%- do call_args.append(arg.name + '_INTERN') %}
-		{%- else %}{% do call_args.append(arg.name) %}
+		{%- else %}
+		{%- do call_args.append(arg.name) %}
 		{%- endif %}
+	{%- endif %}
 	{%- endfor %}
 	{%- if function.ret.ftype %}
 		TYPE({{ function.ret.ftype }}), POINTER :: {{ function.name.upper() }}_INTERN
@@ -125,7 +131,7 @@ CONTAINS
 		{{ export_name.upper() }} = {{ function.name }}({{ ', '.join(call_args) }})
 	{%- endif %}
 	END FUNCTION
-{%- else %}
+{%- elif function.ret.getter == 'subroutine' %}
 
 	SUBROUTINE {{ export_name.upper() }}({% for arg in function.args %}{{ arg.name }}, {% endfor %}{{ export_name.upper() }}_VALUE) BIND(C, NAME="{{ export_name }}")
 	{%- for arg in function.args %}

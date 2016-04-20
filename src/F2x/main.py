@@ -218,7 +218,7 @@ def main():
             src.config.add_section('generate')
         
         if not src.config.has_option('generate', 'dll'):
-            src.config.set('generate', 'dll', 'lib ' + access_tree['name'] + '.so')
+            src.config.set('generate', 'dll', 'lib' + access_tree['name'] + '.so')
         
         output_basename, _ = os.path.splitext(source_filename)
         for template, suffix in templates:
