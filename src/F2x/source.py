@@ -147,6 +147,13 @@ class SourceFile(object):
             
             self.source = '\n'.join(lines)
         
+        if self.config.has_section('replace'):
+            lines = map(unicode.rstrip, self.source.split('\n'))
+            for index in self.config.options('replace'):
+                lines[int(index) - 1] = self.config.get('replace', index)
+            
+            self.source = '\n'.join(lines)
+        
         for name, pattern, repl in rules:
             self.source, count = re.subn(pattern, repl, self.source)
             if count:
