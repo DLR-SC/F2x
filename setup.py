@@ -12,6 +12,10 @@ core.setup(
     
     packages=setuptools.find_packages('src'),
     package_dir={ '': 'src' },
+    package_data={
+        'F2x.grammar': ["*.g", ],
+        'F2x.template': ["*.t", ],
+    },
     
     install_requires = [
         'plyplus',
