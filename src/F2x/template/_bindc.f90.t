@@ -101,7 +101,7 @@ CONTAINS
 		{{ arg.type }}, INTENT({{ arg.intent }}) :: {{ arg.name }}({{ ', '.join(arg.dims) }})
 		{%- do call_args.append(arg.name) %}
 	{%- else %}
-		{{ arg.type }}, VALUE, INTENT({{ arg.intent }}) :: {{ arg.name }}
+		{{ arg.type }}, {% if arg.intent == 'IN' %}VALUE, {% endif %}INTENT({{ arg.intent }}) :: {{ arg.name }}
 		{%- if arg.strlen %}
 		CHARACTER(LEN={{ arg.strlen }}) :: {{ arg.name }}_INTERN
 		{%- do call_args.append(arg.name + '_INTERN') %}
@@ -139,7 +139,7 @@ CONTAINS
 		{{ arg.type }}, INTENT({{ arg.intent }}) :: {{ arg.name }}({{ ', '.join(arg.dims) }})
 		{%- do call_args.append(arg.name) %}
 	{%- else %}
-		{{ arg.type }}, VALUE, INTENT({{ arg.intent }}) :: {{ arg.name }}
+		{{ arg.type }}, {% if arg.intent == 'IN' %}VALUE, {% endif %}INTENT({{ arg.intent }}) :: {{ arg.name }}
 		{%- if arg.strlen %}
 		CHARACTER(LEN={{ arg.strlen }}) :: {{ arg.name }}_INTERN
 		{%- do call_args.append(arg.name + '_INTERN') %}
@@ -185,7 +185,7 @@ CONTAINS
 		{{ arg.type }}, INTENT({{ arg.intent }}) :: {{ arg.name }}({{ ', '.join(arg.dims) }})
 		{%- do call_args.append(arg.name) %}
 	{%- else %}
-		{{ arg.type }}, VALUE, INTENT({{ arg.intent }}) :: {{ arg.name }}
+		{{ arg.type }}, {% if arg.intent == 'IN' %}VALUE, {% endif %}INTENT({{ arg.intent }}) :: {{ arg.name }}
 		{%- if arg.strlen %}
 		CHARACTER(LEN={{ arg.strlen }}) :: {{ arg.name }}_INTERN
 		{%- do call_args.append(arg.name + '_INTERN') %}

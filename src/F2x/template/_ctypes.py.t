@@ -121,7 +121,7 @@ def {{ function.name }}({% for arg in function.args %}{{ arg.name }}{% if not lo
 	{%- endif %}
 		{{ module.name }}.{{ export_name}}({{ ', '.join(call_args) }})
 		{%- if function.ret.strlen %}
-		return bytes({{ export_name }}_value).decode('ascii')
+		return bytes({{ export_name }}_value[:]).decode('ascii')
 		{%- else %}
 		return {{ export_name }}_value
 		{%- endif %}
