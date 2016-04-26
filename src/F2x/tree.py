@@ -41,13 +41,19 @@ class VarDef(Node):
         if dims:
             self[u'dims'] = map(tail, dims)
     
+        intent = self._node.select(u'intent_spec')
+        if intent:
+            self[u'intent'] = tail(intent[0])
+        else:
+            self[u'intent'] = u'IN'
+
         if self._node.select(u'intrinsic_type_char'):
             self[u'type'] = u'TYPE(C_PTR)'
             self[u'pytype'] = u'ctypes.c_char_p'
             self[u'getter'] = u'subroutine'
             self[u'setter'] = True
             try:
-                self[u'strlen'] = tail(self._node.select(u'char_selector int_literal_constant')[0])
+                self[u'strlen'] = int(tail(self._node.select(u'char_selector int_literal_constant')[0]))
             except IndexError:
                 self[u'strlen'] = u'*'
         else:

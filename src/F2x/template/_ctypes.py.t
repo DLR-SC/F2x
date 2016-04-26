@@ -57,11 +57,16 @@ class {{ typ.name }}(object):
 		{{ field.name }}_value = {{ field.pytype }}()
 		{%- endif %}
 		{{ module.name }}.{{ typ.name }}_get_{{ field.name }}(self.c_ptr, {{ field.name }}_value)
+		{%- if field.strlen %}
+		return bytes({{ field.name }}_value).decode('ascii')
+		{%- else %}
 		return {{ field.name }}_value
+		{%- endif %}
 	{%- endif %}
 	{%- if field.setter %}
 	
 	def set_{{ field.name }}(self, value):
+		# TODO strings... 
 		{{ module.name }}.{{ typ.name }}_set_{{ field.name }}(self.c_ptr, value)
 	{%- endif %}
 {%- endfor %}
@@ -91,7 +96,7 @@ def {{ function.name }}({% for arg in function.args %}{{ arg.name }}{% if not lo
 		{%- do call_args.append(arg.name + '_intern') %}
 	{%- else %}
 		{%- if arg.strlen %}
-		{{ arg.name }}_intern = ctypes.c_char_p({{ arg.name }})
+		{{ arg.name }}_intern = ctypes.c_char_p({{ arg.name }}.encode('ascii'))
 		{%- do call_args.append(arg.name + '_intern') %}
 		{%- elif arg.ftype %}
 		{%- do call_args.append(arg.name + '.c_ptr') %}
@@ -115,7 +120,11 @@ def {{ function.name }}({% for arg in function.args %}{{ arg.name }}{% if not lo
 		{%- do call_args.append(export_name + '_value') %}
 	{%- endif %}
 		{{ module.name }}.{{ export_name}}({{ ', '.join(call_args) }})
+		{%- if function.ret.strlen %}
+		return bytes({{ export_name }}_value).decode('ascii')
+		{%- else %}
 		return {{ export_name }}_value
+		{%- endif %}
 {%- endif %}
 {%- endif %}
 {%- endfor %}

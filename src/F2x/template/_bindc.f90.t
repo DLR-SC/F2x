@@ -98,10 +98,10 @@ CONTAINS
 		{{ function.ret.type }} :: {{ export_name.upper() }}
 	{%- for arg in function.args %}
 	{%- if arg.dims %}
-		{{ arg.type }}, INTENT(IN) :: {{ arg.name }}({{ ', '.join(arg.dims) }})
+		{{ arg.type }}, INTENT({{ arg.intent }}) :: {{ arg.name }}({{ ', '.join(arg.dims) }})
 		{%- do call_args.append(arg.name) %}
 	{%- else %}
-		{{ arg.type }}, VALUE, INTENT(IN) :: {{ arg.name }}
+		{{ arg.type }}, VALUE, INTENT({{ arg.intent }}) :: {{ arg.name }}
 		{%- if arg.strlen %}
 		CHARACTER(LEN={{ arg.strlen }}) :: {{ arg.name }}_INTERN
 		{%- do call_args.append(arg.name + '_INTERN') %}
@@ -136,10 +136,10 @@ CONTAINS
 	SUBROUTINE {{ export_name.upper() }}({% for arg in function.args %}{{ arg.name }}, {% endfor %}{{ export_name.upper() }}_VALUE) BIND(C, NAME="{{ export_name }}")
 	{%- for arg in function.args %}
 	{%- if arg.dims %}
-		{{ arg.type }}, INTENT(IN) :: {{ arg.name }}({{ ', '.join(arg.dims) }})
+		{{ arg.type }}, INTENT({{ arg.intent }}) :: {{ arg.name }}({{ ', '.join(arg.dims) }})
 		{%- do call_args.append(arg.name) %}
 	{%- else %}
-		{{ arg.type }}, VALUE, INTENT(IN) :: {{ arg.name }}
+		{{ arg.type }}, VALUE, INTENT({{ arg.intent }}) :: {{ arg.name }}
 		{%- if arg.strlen %}
 		CHARACTER(LEN={{ arg.strlen }}) :: {{ arg.name }}_INTERN
 		{%- do call_args.append(arg.name + '_INTERN') %}
@@ -151,9 +151,11 @@ CONTAINS
 		{%- endif %}
 	{%- endif %}
 	{%- endfor %}
-		{{ function.ret.type }}, INTENT(INOUT) :: {{ export_name.upper() }}_VALUE{% if function.ret.dims %}({{ ', '.join(function.ret.dims) }}){% endif %}
 		{%- if function.ret.strlen %}
+		{{ function.ret.type }}, VALUE, INTENT(IN) :: {{ export_name.upper() }}_VALUE{% if function.ret.dims %}({{ ', '.join(function.ret.dims) }}){% endif %}
 		CHARACTER(LEN={{ function.ret.strlen }}) :: {{ export_name.upper() }}_INTERN
+		{%- else %}
+		{{ function.ret.type }}, INTENT(INOUT) :: {{ export_name.upper() }}_VALUE{% if function.ret.dims %}({{ ', '.join(function.ret.dims) }}){% endif %}
 		{%- endif %}
 	{% for arg in function.args %}
 	{%- if arg.strlen %}
@@ -172,6 +174,39 @@ CONTAINS
 {%- endif %}
 {%- endif %}
 {%- endfor %}
-{%- endif %}
+{%- for subroutine in module.subroutines %}
+{%- if subroutine.name.lower() in exports %}
+{%- set export_name = config.get('export', subroutine.name.lower()) %}
+{%- set call_args = [] %}
 
+	SUBROUTINE {{ export_name.upper() }}({% for arg in subroutine.args %}{{ arg.name }}{% if not loop.last %}, {% endif %}{% endfor %}) BIND(C, NAME="{{ export_name }}")
+	{%- for arg in subroutine.args %}
+	{%- if arg.dims %}
+		{{ arg.type }}, INTENT({{ arg.intent }}) :: {{ arg.name }}({{ ', '.join(arg.dims) }})
+		{%- do call_args.append(arg.name) %}
+	{%- else %}
+		{{ arg.type }}, VALUE, INTENT({{ arg.intent }}) :: {{ arg.name }}
+		{%- if arg.strlen %}
+		CHARACTER(LEN={{ arg.strlen }}) :: {{ arg.name }}_INTERN
+		{%- do call_args.append(arg.name + '_INTERN') %}
+		{%- elif arg.ftype %}
+		TYPE({{ arg.ftype }}), POINTER :: {{ arg.name }}_INTERN
+		{%- do call_args.append(arg.name + '_INTERN') %}
+		{%- else %}
+		{%- do call_args.append(arg.name) %}
+		{%- endif %}
+	{%- endif %}
+	{%- endfor %}
+	{% for arg in subroutine.args %}
+	{%- if arg.strlen %}
+		CALL C_F_STRING({{ arg.name }}, {{ arg.strlen }}, {{ arg.name }}_INTERN)
+	{%- elif arg.ftype %}
+		CALL C_F_POINTER({{ arg.name }}, {{ arg.name }}_INTERN)
+	{%- endif %}
+	{%- endfor %}
+		CALL {{ subroutine.name }}({{ ', '.join(call_args) }})
+	END SUBROUTINE
+{%- endif %}
+{%- endfor %}
+{%- endif %}
 END
