@@ -11,6 +11,7 @@ import sys
 import time
 
 import plyplus
+import marshal
 
 
 PREPROCESS_RULES = (
@@ -75,6 +76,7 @@ PREPROCESS_RULES = (
 log = logging.getLogger(__name__)
 grammar_cache = {}
 package_path, _ = os.path.split(__file__)
+
 
 def load_grammar(grammar_filename):
     if grammar_filename[0] == u'@':
