@@ -199,18 +199,17 @@ def main():
                     
             else:
                 for err in e.errors:
-                    if isinstance(err, (plyplus.LineError, plyplus.LocatedError)):
-                        val = err.args.get('value', '<Not defined>')
-                        line = err.args.get('line', -1)
-                        col = err.args.get('col', -1)
+                    val = err.args.get('value', '<Not defined>')
+                    line = err.args.get('line', -1)
+                    col = err.args.get('col', -1)
+                    
+                    prefix = "{0}:{1}{2}:".format(source_filename, line, (':' + str(col)) if col >= 0 else '')
                         
-                        prefix = "{0}:{1}{2}:".format(source_filename, line, (':' + str(col)) if col >= 0 else '')
-                        
-                        print(prefix + "Syntax error near '{0}'".format(err.args['value']))
-                        if col >= 0:
-                            space = ''.join([(c if c == '\t' else ' ') for c in src.pre_source_lines[line - 1][:col - 1]])
-                            print(prefix + src.pre_source_lines[line - 1])
-                            print(prefix + space + ('^' * len(val)))
+                    print(prefix + "Syntax error near '{0}'".format(val))
+                    if col >= 0:
+                        space = ''.join([(c if c == '\t' else ' ') for c in src.pre_source_lines[line - 1][:col - 1]])
+                        print(prefix + src.pre_source_lines[line - 1])
+                        print(prefix + space + ('^' * len(val)))
         
         access_tree = tree.Module(src.tree)
         
