@@ -655,7 +655,7 @@ signed_real_literal_constant
     ;
 
 real_constant_number
-    : T_DIGIT_STRING T_PERIOD_EXPONENT
+    : T_DIGIT_STRING T_PERIOD_EXPONENT (T_UNDERSCORE kind_param)?
     ;
 
 real_literal_constant
