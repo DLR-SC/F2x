@@ -35,7 +35,7 @@ class VarDef(Node):
     }
 
     CSTYPE = {
-        u'INTEGER': u'Integer',
+        u'INTEGER': u'Int32',
         u'REAL': u'Double',
         u'LOGICAL': u'Boolean',
     }
@@ -80,7 +80,7 @@ class VarDef(Node):
                     self[u'type'] = u'TYPE(C_PTR)'
                     self[u'getter'] = u'function'
                     self[u'setter'] = False
-                    self[u'ftype'] = tail(items[0])
+                    self[u'ftype'] = self[u'cstype'] = tail(items[0])
         
 class TypeDefField(VarDef):
     MAPPING = {
