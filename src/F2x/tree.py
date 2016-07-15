@@ -34,6 +34,12 @@ class VarDef(Node):
         u'LOGICAL': u'ctypes.c_bool',
     }
 
+    CSTYPE = {
+        u'INTEGER': u'Int32',
+        u'REAL': u'Double',
+        u'LOGICAL': u'Boolean',
+    }
+
     def _init_children(self):
         super(VarDef, self)._init_children()
         
@@ -50,6 +56,7 @@ class VarDef(Node):
         if self._node.select(u'intrinsic_type_char'):
             self[u'type'] = u'TYPE(C_PTR)'
             self[u'pytype'] = u'ctypes.c_char_p'
+            self[u'cstype'] = u'String'
             self[u'getter'] = u'subroutine'
             self[u'setter'] = True
             try:
@@ -61,6 +68,7 @@ class VarDef(Node):
             if items:
                 self[u'type'] = tail(items[0])
                 self[u'pytype'] = VarDef.PYTYPE[self[u'type']]
+                self[u'cstype'] = VarDef.CSTYPE[self[u'type']]
                 self[u'getter'] = u'subroutine' if dims else u'function'
                 self[u'setter'] = True
                 items = self._node.select(u'kind_selector part_ref')
@@ -72,7 +80,7 @@ class VarDef(Node):
                     self[u'type'] = u'TYPE(C_PTR)'
                     self[u'getter'] = u'function'
                     self[u'setter'] = False
-                    self[u'ftype'] = tail(items[0])
+                    self[u'ftype'] = self[u'cstype'] = tail(items[0])
         
 class TypeDefField(VarDef):
     MAPPING = {

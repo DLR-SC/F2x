@@ -17,7 +17,7 @@ T_EOL
     ;
 
 CONTINUE_CHAR
-    : '&[ \r\t\u000C]*(![^\n\r]*)?\r?\n' (%newline) (%ignore)
+    : '&[ \r\t\u000C]*(![^\n\r]*)?\r?\n([ \t\u000C]*&)?' (%newline) (%ignore)
     ;
 
 T_CHAR_CONSTANT

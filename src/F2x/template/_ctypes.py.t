@@ -3,6 +3,12 @@
 import ctypes
 import os
 
+{%- if config.has_section('pyimport') %}
+{% for import_module in config.options('pyimport') %}
+from {{ import_module }} import {{ config.get('pyimport', import_module) }}
+{%- endfor %}
+{%- endif %}
+
 {{ module.name }} = ctypes.cdll.LoadLibrary(os.path.join(os.path.dirname(__file__), '{{ config.get('generate', 'dll') }}'))
 {%- for typ in module.types %}
 {{ module.name }}.{{ typ.name }}_new.restype = ctypes.c_void_p
