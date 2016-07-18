@@ -67,7 +67,6 @@ public static class {{ module.name }} {
 {%- for function in module.functions %}
 {%- if function.name.lower() in exports %}
 {%- set export_name = config.get('export', function.name.lower()) %}
-{%- set call_args = [] %}
 {%- if function.ret.getter == 'function' %}
 	[DllImport("{{ config.get('generate', 'dll') }}", EntryPoint="{{ export_name }}")]
 	public static {{ function.ret.cstype }} {{ export_name }}({% for arg in function.args %}{{ arg.cstype }} {{ arg.name }}{% if not loop.last %}, {% endif %}{% endfor %});
@@ -75,6 +74,13 @@ public static class {{ module.name }} {
 	[DllImport("{{ config.get('generate', 'dll') }}", EntryPoint="{{ export_name }}")]
 	public static void {{ export_name }}({% for arg in function.args %}{{ arg.cstype }} {{ arg.name }}, {% endfor %}ref {{ function.ret.cstype }} value);
 {%- endif %}
+{%- endif %}
+{%- endfor %}
+{%- for subroutine in module.subroutines %}
+{%- if subroutine.name.lower() in exports %}
+{%- set export_name = config.get('export', subroutine.name.lower()) %}
+	[DllImport("{{ config.get('generate', 'dll') }}", EntryPoint="{{ export_name }}")]
+	public static void {{ export_name }}({% for arg in subroutine.args %}{{ arg.cstype }} {{ arg.name }}{% if not loop.last %}, {% endif %}{% endfor %});
 {%- endif %}
 {%- endfor %}
 }
