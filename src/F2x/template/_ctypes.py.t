@@ -134,5 +134,30 @@ def {{ function.name }}({% for arg in function.args %}{{ arg.name }}{% if not lo
 {%- endif %}
 {%- endif %}
 {%- endfor %}
+{%- for subroutine in module.subroutine %}
+{%- if subroutine.name.lower() in exports %}
+{%- set export_name = config.get('export', subroutine.name.lower()) %}
+{%- set call_args = [] %}
+{{ module.name }}.{{ export_name }}.restype = None
+{{ module.name }}.{{ export_name }}.argtypes = [{% for arg in subroutine.args %}{% if arg.dims %}{{ arg.pytype }} * {{ '*'.join(arg.dims) }}{% elif arg.ftype %}ctypes.c_void_p{% else %}{{ arg.pytype }}{% endif %}{% if not loop.last %}, {% endif %}{% endfor %}]
+def {{ subroutine.name }}({% for arg in subroutine.args %}{{ arg.name }}{% if not loop.last %}, {% endif %}{% endfor %}):
+{%- for arg in subroutine.args %}
+	{%- if arg.dims %}
+		{{ arg.name }}_intern = ({{ arg.pytype }} * {{ '*'.join(arg.dims) }})(*{{ arg.name }})
+		{%- do call_args.append(arg.name + '_intern') %}
+	{%- else %}
+		{%- if arg.strlen %}
+		{{ arg.name }}_intern = ctypes.c_char_p({{ arg.name }}.encode('ascii'))
+		{%- do call_args.append(arg.name + '_intern') %}
+		{%- elif arg.ftype %}
+		{%- do call_args.append(arg.name + '.c_ptr') %}
+		{%- else %}
+		{%- do call_args.append(arg.name) %}
+		{%- endif %}
+	{%- endif %}
+{%- endfor %}
+		{{ module.name }}.{{ export_name}}({{ ', '.join(call_args) }})
+{%- endif %}
+{%- endfor %}
 {%- endif %}
 
