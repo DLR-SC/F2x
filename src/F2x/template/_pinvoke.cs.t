@@ -85,18 +85,26 @@ class {{ module.name }} {
 {%- if function.ret.getter == 'function' %}
 
 	[DllImport("{{ config.get('generate', 'dll') }}", EntryPoint="{{ export_name }}")]
-	private static extern {% if function.ret.ftype %}IntPtr{% else %}{{ function.ret.cstype }}{% endif %} {{ export_name }}({% for arg in function.args %}{% if arg.dims %}{{ arg.cstype }}[{{ ', '.join(arg.dims) }}]{% elif arg.ftype %}IntPtr{% else %}{{ arg.cstype }}{% endif %} {{ arg.name }}{% if not loop.last %}, {% endif %}{% endfor %});
+	private static extern {% if function.ret.ftype %}IntPtr{% else %}{{ function.ret.cstype }}{% endif %} {{ export_name }}({% for arg in function.args %}{% if arg.intent == 'OUT' %}ref {% endif %}{% if arg.dims %}{{ arg.cstype }}[]{% elif arg.ftype %}IntPtr{% else %}{{ arg.cstype }}{% endif %} {{ arg.name }}{% if not loop.last %}, {% endif %}{% endfor %});
 {%- else %}
 
 	[DllImport("{{ config.get('generate', 'dll') }}", EntryPoint="{{ export_name }}")]
-	private static extern void {{ export_name }}({% for arg in function.args %}{% if arg.dims %}{{ arg.cstype }}[{{ ', '.join(arg.dims) }}]{% elif arg.ftype %}IntPtr{% else %}{{ arg.cstype }}{% endif %} {{ arg.name }}, {% endfor %}ref {% if function.ret.ftype %}IntPtr{% elif function.ret.strlen %}StringBuilder{% elif function.ret.dims %}{{ function.ret.cstype }}[{{ ', '.join(function.ret.dims) }}]{% endif %} {{ field.name }}_value);
+	private static extern void {{ export_name }}({% for arg in function.args %}{% if arg.intent == 'OUT' %}ref {% endif %}{% if arg.dims %}{{ arg.cstype }}[]{% elif arg.ftype %}IntPtr{% else %}{{ arg.cstype }}{% endif %} {{ arg.name }}, {% endfor %}ref {% if function.ret.ftype %}IntPtr{% elif function.ret.strlen %}StringBuilder{% elif function.ret.dims %}{{ function.ret.cstype }}[]{% endif %} value);
 {%- endif %}
-	public static {{ function.ret.cstype }} {{ function.name }}({% for arg in function.args %}{% if arg.dims %}{{ arg.cstype }}[{{ ', '.join(arg.dims) }}]{% else %}{{ arg.cstype }}{% endif %} {{ arg.name }}{% if not loop.last %}, {% endif %}{% endfor %}) {
+	public static {{ function.ret.cstype }}{% if function.ret.dims %}[]{% endif %} {{ function.name }}({% for arg in function.args %}{% if arg.dims %}{{ arg.cstype }}[]{% else %}{{ arg.cstype }}{% endif %} {{ arg.name }}{% if not loop.last %}, {% endif %}{% endfor %}) {
 {%- for arg in function.args %}
+	{%- if arg.intent == 'OUT' %}
+	{%- if arg.ftype %}
+		{%- do call_args.append('ref ' + arg.name + '.c_ptr') %}
+	{%- else %}
+		{%- do call_args.append('ref ' + arg.name) %}
+	{%- endif %}
+	{%- else %}
 	{%- if arg.ftype %}
 		{%- do call_args.append(arg.name + '.c_ptr') %}
 	{%- else %}
 		{%- do call_args.append(arg.name) %}
+	{%- endif %}
 	{%- endif %}
 {%- endfor %}
 {%- if function.ret.getter == 'function' %}
@@ -107,10 +115,15 @@ class {{ module.name }} {
 	{%- endif %}
 {%- elif function.ret.getter == 'subroutine' %}
 	{%- if function.ret.strlen %}
-		{{ export_name }}_value = new StringBuilder({{ function.ret.strlen }});
+		StringBuild {{ export_name }}_value = new StringBuilder({{ function.ret.strlen }});
 		{%- do call_args.append(export_name + '_value') %}
+	{%- elif function.ret.dims %}
+		{{ function.ret.cstype }}[] {{ export_name }}_value = new {{ function.ret.cstype }}[{{ ' * '.join(function.ret.dims) }}]; 
+		{%- do call_args.append('ref ' + export_name + '_value') %}
+	{%- else %}
+		{%- do call_args.append('ref ' + export_name) %}
 	{%- endif %}
-		{{ export_name}}({{ ', '.join(call_args) }});
+		{{ export_name }}({{ ', '.join(call_args) }});
 		return {{ export_name }}_value;
 {%- endif %}
 	}
@@ -122,13 +135,21 @@ class {{ module.name }} {
 {%- set call_args = [] %}
 
 	[DllImport("{{ config.get('generate', 'dll') }}", EntryPoint="{{ export_name }}")]
-	private static extern void {{ export_name }}({% for arg in function.args %}{% if arg.dims %}{{ arg.cstype }}[{{ ', '.join(arg.dims) }}]{% elif arg.ftype %}IntPtr{% else %}{{ arg.cstype }}{% endif %} {{ arg.name }}{% if not loop.last %}, {% endif %}{% endfor %});
-	public static void {{ subroutine.name }}({% for arg in function.args %}{% if arg.dims %}{{ arg.cstype }}[{{ ', '.join(arg.dims) }}]{% else %}{{ arg.cstype }}{% endif %} {{ arg.name }}{% if not loop.last %}, {% endif %}{% endfor %}) {
+	private static extern void {{ export_name }}({% for arg in function.args %}{% if arg.intent == 'OUT' %}ref {% endif %}{% if arg.dims %}{{ arg.cstype }}[]{% elif arg.ftype %}IntPtr{% else %}{{ arg.cstype }}{% endif %} {{ arg.name }}{% if not loop.last %}, {% endif %}{% endfor %});
+	public static void {{ subroutine.name }}({% for arg in function.args %}{% if arg.dims %}{{ arg.cstype }}[]{% else %}{{ arg.cstype }}{% endif %} {{ arg.name }}{% if not loop.last %}, {% endif %}{% endfor %}) {
 {%- for arg in subroutine.args %}
+	{%- if arg.intent == 'OUT' %}
+	{%- if arg.ftype %}
+		{%- do call_args.append('ref ' + arg.name + '.c_ptr') %}
+	{%- else %}
+		{%- do call_args.append('ref ' + arg.name) %}
+	{%- endif %}
+	{%- else %}
 	{%- if arg.ftype %}
 		{%- do call_args.append(arg.name + '.c_ptr') %}
 	{%- else %}
 		{%- do call_args.append(arg.name) %}
+	{%- endif %}
 	{%- endif %}
 {%- endfor %}
 		{{ export_name}}({{ ', '.join(call_args) }})
