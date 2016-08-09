@@ -134,7 +134,7 @@ def {{ function.name }}({% for arg in function.args %}{{ arg.name }}{% if not lo
 {%- endif %}
 {%- endif %}
 {%- endfor %}
-{%- for subroutine in module.subroutine %}
+{%- for subroutine in module.subroutines %}
 {%- if subroutine.name.lower() in exports %}
 {%- set export_name = config.get('export', subroutine.name.lower()) %}
 {%- set call_args = [] %}

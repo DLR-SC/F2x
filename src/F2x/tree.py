@@ -101,7 +101,7 @@ class Subroutine(Node):
     def _init_children(self):
         super(Subroutine, self)._init_children()
         
-        arg_names = map(tail, self._node.select(u'dummy_arg name'))
+        arg_names = [arg.upper() for arg in map(tail, self._node.select(u'dummy_arg name'))]
         self[u'args'] = [
             arg
             for arg in map(VarDef, self._node.select(u'type_declaration_stmt'))
