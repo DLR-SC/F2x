@@ -1,0 +1,6 @@
+[export]
+POWER = M_POW
+DIVIDE = M_DIV
+
+[generate]
+dll = libmath.so

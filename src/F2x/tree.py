@@ -5,128 +5,142 @@ Created on 08.04.2016
 '''
 
 class Node(dict):
-    MAPPING = dict()
+    """ This is the base class for the simplified AST that can easily be used
+        in templates. It is simply a dict which stores child nodes as values.
+        This allows to simply use node.child to access the values from a
+        template. E.g. to get the modules name, you can simply use
+        
+        {{ module.name }}
+    """
     
-    def __init__(self, node):
-        super(Node, self).__init__()
-        self._node = node
+    def __init__(self, ast):
+        """ Node constructor stores local AST node in self._ast and calls
+            self._init_children() which should be overwritten by child classes.
+        """
+        self._ast = ast
         self._init_children()
     
     def _init_children(self):
-        for key, (sel, coll, cls) in self.MAPPING.iteritems():
-            items = self._node.select(sel)
-            if coll:
-                self[key] = map(cls, items)
-            else:
-                self[key] = cls(items[0])
+        """ Implement this to store useful values (i.e. lists or dicts) in the properties. """
+        raise NotImplementedError()
 
-def tail(item):
-    return item.tail[0]
-
-class VarDef(Node):
-    MAPPING = {
-        u'name': (u'entity_decl name', False, tail),
+class VarDecl(Node):
+    _PYTYPES = {
+        "REAL": "ctypes.c_double",
+        "INTEGER": "ctypes.c_int",
+        "LOGICAL": "ctypes.c_bool",
     }
-    
-    PYTYPE = {
-        u'INTEGER': u'ctypes.c_int',
-        u'REAL': u'ctypes.c_double',
-        u'LOGICAL': u'ctypes.c_bool',
-    }
-
-    CSTYPE = {
-        u'INTEGER': u'Int32',
-        u'REAL': u'Double',
-        u'LOGICAL': u'Boolean',
-    }
+     
+    def __init__(self, ast, prefix=""):
+        """ Slightly modified constructor to allow for re-use for type-specs and var-specs.
+        
+        For the grammar to work, component arrays have their own rule which divers from the
+        variable array only in the prefix "component_" which can be passed in.
+        """
+        self._prefix = prefix
+        super(VarDecl, self).__init__(ast)
 
     def _init_children(self):
-        super(VarDef, self)._init_children()
-        
-        dims = self._node.select(u"array_spec int_literal_constant") 
-        if dims:
-            self[u'dims'] = map(tail, dims)
-    
-        intent = self._node.select(u'intent_spec')
-        if intent:
-            self[u'intent'] = tail(intent[0])
-        else:
-            self[u'intent'] = u'IN'
+        self["name"] = self._ast.select1("name").tail[0]
 
-        if self._node.select(u'intrinsic_type_char'):
-            self[u'type'] = u'TYPE(C_PTR)'
-            self[u'pytype'] = u'ctypes.c_char_p'
-            self[u'cstype'] = u'String'
-            self[u'getter'] = u'subroutine'
-            self[u'setter'] = True
+        # Identify FORTRAN type and store properties accordingly
+        type_spec = self._ast.parent().parent().select1("declaration_type_spec")
+        try:
+            self["type"] = "TYPE(C_PTR)"
+            self["ftype"] = type_spec.select1("derived_type_spec name").tail[0]
+            self["getter"] = "function"
+        except ValueError:
             try:
-                self[u'strlen'] = int(tail(self._node.select(u'char_selector int_literal_constant')[0]))
-            except IndexError:
-                self[u'strlen'] = u'*'
-        else:
-            items = self._node.select(u'intrinsic_type_kind') or self._node.select(u'intrinsic_type_spec') 
-            if items:
-                self[u'type'] = tail(items[0])
-                self[u'pytype'] = VarDef.PYTYPE[self[u'type']]
-                self[u'cstype'] = VarDef.CSTYPE[self[u'type']]
-                self[u'getter'] = u'subroutine' if dims else u'function'
-                self[u'setter'] = True
-                items = self._node.select(u'kind_selector part_ref')
-                if items:
-                    self[u'type'] += u'(KIND={0})'.format(tail(items[0]))
-            else:
-                items = self._node.select(u'derived_type_spec name')
-                if items:
-                    self[u'type'] = u'TYPE(C_PTR)'
-                    self[u'getter'] = u'function'
-                    self[u'setter'] = False
-                    self[u'ftype'] = self[u'cstype'] = tail(items[0])
+                self["strlen"] = int(type_spec.select1("char_selector int_literal_constant").tail[0])
+                self["type"] = "TYPE(C_PTR)"
+                self["getter"] = "subroutine"
+                self["setter"] = "subroutine"
+            except ValueError:
+                self["type"] = type_spec.select1("intrinsic_type_kind").tail[0]
+                self["getter"] = "function"
+                self["setter"] = "subroutine"
+                
+        # Identify additional modifiers (i.e. arrays etc.)
+        dims = self._ast.select(self._prefix + "array_spec int_literal_constant")
+        if dims:
+            self["dims"] = [int(dim.tail[0]) for dim in dims]
+            self["getter"] = "subroutine"
         
-class TypeDefField(VarDef):
-    MAPPING = {
-        u'name': (u'component_decl name', False, tail),
-    }
+        if self["type"] in self._PYTYPES:
+            self["pytype"] = self._PYTYPES[self["type"]]
+        
+        try:
+            kind_selector = type_spec.select1("kind_selector int_literal_constant")
+            self["kind"] = int(kind_selector.tail[0])
+        except ValueError:
+            try:
+                kind_selector = type_spec.select1("kind_selector part_ref")
+                self["kind"] = kind_selector.tail[0]
+            except ValueError:
+                pass
+        
+        try:
+            intent_spec = type_spec.parent().select1("intent_spec")
+            self["intent"] = intent_spec.tail[0]
+        except ValueError:
+            pass
 
 class TypeDef(Node):
-    MAPPING = {
-        u'name': (u'derived_type_stmt name', False, tail),
-        u'fields': (u'component_def_stmt', True, TypeDefField),
-    }
-
-class Subroutine(Node):
-    MAPPING = {
-        u'name': (u'subroutine_stmt name', False, tail),
-    }
-    
     def _init_children(self):
-        super(Subroutine, self)._init_children()
-        
-        arg_names = [arg.upper() for arg in map(tail, self._node.select(u'dummy_arg name'))]
-        self[u'args'] = [
-            arg
-            for arg in map(VarDef, self._node.select(u'type_declaration_stmt'))
-            if arg[u'name'].upper() in arg_names
+        self["name"] = self._ast.select1("derived_type_stmt name").tail[0]
+        self["fields"] = [
+            VarDecl(decl, 'component_') # See documentation of VarDecl.__init__
+            for decl in self._ast.select("component_decl")
         ]
 
-class Function(Subroutine):
-    MAPPING = {
-        u'name': (u'function_stmt name', False, tail),
-    }
+class SubDef(Node):
+    _PREFIX = "subroutine"
     
     def _init_children(self):
-        super(Function, self)._init_children()
+        self["name"] = self._ast.select(self._PREFIX + "_stmt name")[0].tail[0]
         
-        args = map(VarDef, self._node.select(u'type_declaration_stmt'))
-        for var in args:
-            if var[u'name'] in (self[u'name'], self[u'name'] + u'_VALUE'):
-                self[u'ret'] = var
-                break
+        # Two-stage argument extraction:
+        # First, identify all variables declared and the dummy argument list.
+        dummy_args = [arg.tail[0] for arg in self._ast.select("dummy_arg name")]
+        var_specs = dict(
+            (argdecl.select1("name").tail[0], VarDecl(argdecl))
+            for argdecl in self._ast.select("entity_decl")
+        )
+        
+        # Fill up self["args"] based on dummy argument list order.
+        self["args"] = [var_specs[argname] for argname in dummy_args]
+
+        return var_specs # to be re-used in child classes.
+    
+class FuncDef(SubDef):
+    _PREFIX = "function"
+    
+    def _init_children(self):
+        var_specs = super(FuncDef, self)._init_children()
+
+        # Capture return type of function for return value.
+        try:
+            self["ret"] = var_specs[self["name"] + "_VALUE"]
+        except KeyError:
+            self["ret"] = var_specs[self["name"]]
 
 class Module(Node):
-    MAPPING = {
-        u'name': (u'module_stmt name', False, tail),
-        u'uses': (u'use_stmt name', True, tail),
-        u'types': (u'derived_type_def', True, TypeDef),
-        u'functions': (u'function_subprogram', True, Function),
-        u'subroutines': (u'subroutine_subprogram', True, Subroutine),
-    }
+    def _init_children(self):
+        self["name"] = self._ast.select1("module_stmt name").tail[0]
+        self["uses"] = [use.tail[0] for use in self._ast.select("use_stmt name")]
+        self["types"] = [
+            TypeDef(typedef)
+            for typedef in self._ast.select("derived_type_def")
+        ]
+        self["subroutines"] = [
+            SubDef(subdef)
+            for subdef in self._ast.select("subroutine_subprogram")
+        ]
+        self["functions"] = [
+            FuncDef(funcdef)
+            for funcdef in self._ast.select("function_subprogram")
+        ]
+        
+        import pprint
+        pp = pprint.PrettyPrinter(indent=4)
+        pp.pprint(self)
