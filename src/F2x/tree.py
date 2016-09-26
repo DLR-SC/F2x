@@ -46,12 +46,13 @@ class VarDecl(Node):
         # Identify FORTRAN type and store properties accordingly
         type_spec = self._ast.parent().parent().select1("declaration_type_spec")
         try:
-            self["type"] = "TYPE(C_PTR)"
             self["ftype"] = type_spec.select1("derived_type_spec name").tail[0]
+            self["type"] = "TYPE(C_PTR)"
             self["getter"] = "function"
         except ValueError:
             try:
                 self["strlen"] = int(type_spec.select1("char_selector int_literal_constant").tail[0])
+                self["intent"] = "IN"
                 self["type"] = "TYPE(C_PTR)"
                 self["getter"] = "subroutine"
                 self["setter"] = "subroutine"

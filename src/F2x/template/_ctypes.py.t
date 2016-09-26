@@ -8,7 +8,8 @@
 {##### Macros #####}
 {%- macro arg_types(args) -%}
 {%- for arg in args -%}
-	{%- if arg.intent == 'IN' %}{{ arg.pytype }}
+	{%- if arg.strlen %}ctypes.c_char_p
+	{%- elif arg.intent == 'IN' %}{{ arg.pytype }}
 	{%- else %}ctypes.POINTER({{ arg.pytype }})
 	{%- endif %}
 	{%- if not loop.last %}, {% endif %}
@@ -27,16 +28,20 @@
 {%- endmacro -%}
 
 {%- macro arg_specs(args) %}
-{%- for arg in args %}{% if arg.intent != 'IN' %}
+{%- for arg in args %}
+{%- if arg.strlen %}
+    {{ arg.name }}_intern = ctypes.create_string_buffer({% if arg.intent == 'OUT' %}{{ arg.strlen }}{% else %}{{ arg.name }}{% endif %})
+{%- elif arg.intent != 'IN' %}
     {{ arg.name }}_intern = {{ arg.pytype }}({% if arg.intent == 'INOUT' %}{{ arg.name }}{% endif %})
 {%- endif %}{% endfor %} 
 {%- endmacro -%}
 
-{%- macro call_args(args) -%}
-{%- set names = [] %}
+{%- macro call_args(args, outargs) -%}
 {%- for arg in args -%}
-	{%- if arg.intent == 'IN' -%}{{ arg.name }}
+	{%- if arg.strlen %}{{ arg.name }}_intern{%- if arg.intent != 'IN' %}{%- do outargs.append(arg.name + "_intern") -%}{% endif %}
+	{%- elif arg.intent == 'IN' -%}{{ arg.name }}
 	{%- else -%}ctypes.byref({{ arg.name }}_intern)
+	{%- do outargs.append(arg.name + "_intern") -%}
 	{%- endif %}
 	{%- if not loop.last %}, {% endif %}
 {%- endfor %}
@@ -67,36 +72,51 @@ from {{ import_module }} import {{ config.get('pyimport', import_module) }}
 {%- for subroutine in module.subroutines %}
 {%- if subroutine.name.lower() in exports %}
 {%- set export_name = config.get('export', subroutine.name.lower()) %}
+{%- set outargs = [] %}
 
 {{ module.name }}.{{ export_name }}.restype = None
 {{ module.name }}.{{ export_name }}.argtypes = [{{ arg_types(subroutine.args) }}]
 def {{ subroutine.name }}({{ arg_names(subroutine.args) }}):
 	{{- arg_specs(subroutine.args) }}
-    {{ module.name }}.{{ export_name }}({{ call_args(subroutine.args) }})
+    {{ module.name }}.{{ export_name }}({{ call_args(subroutine.args, outargs) }})
+    {%- if outargs %}
+    return {% for outarg in outargs %}{{ outarg }}.value{% if not loop.last %}, {% endif %}{% endfor %}
+    {%- endif %}
 
 {%- endif %}
 {%- endfor %}
 {%- for function in module.functions %}
 {%- if function.name.lower() in exports %}
 {%- set export_name = config.get('export', function.name.lower()) %}
+{%- set outargs = [] %}
 {%- if function.ret.getter == 'function' %}
 
 {{ module.name }}.{{ export_name }}.restype = {{ function.ret.pytype }}
 {{ module.name }}.{{ export_name }}.argtypes = [{{ arg_types(function.args) }}]
 def {{ function.name }}({{ arg_names(function.args) }}):
 	{{- arg_specs(function.args) }}
-    {{ function.name }}_intern = {{ module.name }}.{{ export_name }}({{ call_args(function.args) }})
-    return {{ function.name }}_intern
+    {{ function.name }}_intern = {{ module.name }}.{{ export_name }}({{ call_args(function.args, outargs) }})
+    return {{ function.name }}_intern{% if outargs %}{% for outarg in outargs %}, {{ outarg }}.value{% endfor %}{% endif %}
+    
 
 {%- elif function.ret.getter == 'subroutine' %}
 
 {{ module.name }}.{{ export_name }}.restype = None
-{{ module.name }}.{{ export_name }}.argtypes = [{{ arg_types(function.args) }}, {{ arg_types([function.ret]) }}]
+{{ module.name }}.{{ export_name }}.argtypes = [{{ arg_types(function.args) }}{% if function.args %}, {% endif %}{{ arg_types([function.ret]) }}]
 def {{ function.name }}({{ arg_names(function.args) }}):
-	{{- arg_specs(function.args) }}
-	{{ function.name }}_value = {{ function.ret.pytype }}()
-    {{ module.name }}.{{ export_name }}({{ call_args(function.args) }}, ctypes.byref({{ function.name }}_value))
-    return {{ function.name }}_value.value
+    {{- arg_specs(function.args) }}
+    {%- if function.ret.strlen %}
+    {{ function.name }}_value = ctypes.create_string_buffer({{ function.ret.strlen }})
+    {%- else %}
+    {{ function.name }}_value = {{ function.ret.pytype }}()
+    {%- endif %}
+    {{ module.name }}.{{ export_name }}({{ call_args(function.args, outargs) }}{% if function.args %}, {% endif %}
+    {%- if function.ret.strlen -%}
+    {{ function.name }}_value
+    {%- else -%}
+    ctypes.byref({{ function.name }}_value)
+    {%- endif -%})
+    return {{ function.name }}_value.value{% if outargs %}{% for outarg in outargs %}, {{ outarg }}.value{% endfor %}{% endif %}
 
 {%- endif%}
 {%- endif %}

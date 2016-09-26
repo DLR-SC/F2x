@@ -1,6 +1,10 @@
 [export]
 POWER = M_POW
-DIVIDE = M_DIV
+GCDIV = M_DIV
+SWAP = M_SWP
+INFO = I_NFO
+ABOUT = I_ABU
+BUFFER = I_BUF
 
 [generate]
 dll = libmath.so
