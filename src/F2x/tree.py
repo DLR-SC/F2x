@@ -66,6 +66,8 @@ class VarDecl(Node):
         if dims:
             self["dims"] = [int(dim.tail[0]) for dim in dims]
             self["getter"] = "subroutine"
+            if "setter" in self:
+                del self["setter"]
         
         if self["type"] in self._PYTYPES:
             self["pytype"] = self._PYTYPES[self["type"]]

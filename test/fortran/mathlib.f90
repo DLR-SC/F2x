@@ -1,8 +1,19 @@
 ! This is a simple math module. It is mainly here for testing F2x.
 MODULE F2MATH
 
+    TYPE :: CURVE
+        INTEGER :: NBITS
+        REAL(8) :: COEFF(4)
+    END TYPE
+
 CONTAINS
 
+    SUBROUTINE CURVEOUT(C)
+        TYPE(CURVE), INTENT(IN) :: C
+        
+        WRITE (*, *) C%COEFF
+    END SUBROUTINE
+    
     FUNCTION POWER(B, E)
         REAL(8) :: POWER
         REAL(8), INTENT(IN) :: B, E

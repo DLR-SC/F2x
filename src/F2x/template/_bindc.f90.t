@@ -19,7 +19,8 @@
 
 {%- macro var_decl(var, name, value=False, arg_names={}, intent=None) -%}
 		{{ var.type }}{% if var.kind %}({{ var.kind }}){% endif %}
-		{%- if (value and var.intent == 'IN') or var.strlen %}, VALUE{% endif -%}
+		{%- if (value and (var.intent == 'IN' or intent == 'IN')) or var.strlen %}, VALUE{% endif -%}
+		{%- if var.dims %}, POINTER{% endif %}
 		{%- if (var.intent or intent) and not var.strlen %}, INTENT({{ var.intent or intent }})
 		{%- endif %} :: {{ name }}
 		{%- if var.strlen %}
@@ -30,12 +31,12 @@
 		TYPE({{ var.ftype }}), POINTER :: {{ name }}_INTERN
 		{%- do arg_names.__setitem__(name, name + '_INTERN') %}
 		{%- endif %}
-		{%- if var.dims %}({% for dim in var.dims %}{{ dim }}{% if not loop.last %}, {% endif %}{% endfor %}){% endif %}
+		{%- if var.dims %}({% for dim in var.dims %}:{% if not loop.last %}, {% endif %}{% endfor %}){% endif %}
 {%- endmacro -%}
 
 {%- macro var_assign(var, name, value) -%}
 		{%- if var.dims -%}
-		{{ name }}({{ ', '.join([':'] * var.dims|length) }}) = {{ value }}
+		{{ name }} => {{ value }}
 		{%- elif var.strlen -%}
 		CALL F_C_STRING_PTR({{ value }}, {{ name }})
 		{%- elif var.ftype -%}
@@ -110,12 +111,12 @@ CONTAINS
 		{{ var_assign(field, field.name + '_VALUE', type.name + '_INTERN%' + field.name) }}
 	END SUBROUTINE
 {%- endif %}
-{%- if field.setter %}
+{%- if field.setter == 'subroutine' %}
 {%- set setter_name = type.name + '_set_' + field.name %}
 
 	SUBROUTINE {{ setter_name.upper() }}({{ type.name }}_INST, {{ field.name }}_VALUE) BIND(C, NAME="{{ setter_name }}")
 		{{ type_var_decl(type) }}
-		{{ var_decl(field, field.name + '_VALUE', value=True) }}
+		{{ var_decl(field, field.name + '_VALUE', value=True, intent='IN') }}
 
 		{{ type_var_cast(type) }}
 		{%- if field.strlen %}
