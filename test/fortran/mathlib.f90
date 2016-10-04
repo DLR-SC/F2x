@@ -16,7 +16,7 @@ CONTAINS
     SUBROUTINE CURVEOUT(C)
         TYPE(CURVE), INTENT(IN) :: C
         
-        WRITE (*, *) C%COEFF
+        WRITE (*, *) C%NBITS, C%COEFF
     END SUBROUTINE
     
     FUNCTION POWER(B, E)

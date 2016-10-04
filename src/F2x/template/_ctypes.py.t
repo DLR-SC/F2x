@@ -10,8 +10,8 @@
 {%- for arg in args -%}
 	{%- if arg.strlen %}ctypes.c_char_p
 	{%- elif arg.ftype %}ctypes.c_void_p
-	{%- elif arg.intent == 'IN' %}{{ arg.pytype }}
 	{%- elif arg.dims %}ctypes.POINTER(ctypes.POINTER({{ arg.pytype }}))
+	{%- elif arg.intent == 'IN' %}{{ arg.pytype }}
 	{%- else %}ctypes.POINTER({{ arg.pytype }})
 	{%- endif %}
 	{%- if not loop.last %}, {% endif %}
@@ -33,6 +33,8 @@
 {%- for arg in args %}
 {%- if arg.strlen %}
     {{ arg.name }}_intern = ctypes.create_string_buffer({% if arg.intent == 'OUT' %}{{ arg.strlen }}{% else %}{{ arg.name }}{% endif %})
+{%- elif arg.dims %}
+    {{ arg.name }}_intern = ({{ arg.pytype }}{% for dim in arg.dims %} * {{ dim }}{% endfor %})(*{{ arg.name }})
 {%- elif arg.intent != 'IN' %}
     {{ arg.name }}_intern = {{ arg.pytype }}({% if arg.intent == 'INOUT' %}{{ arg.name }}{% endif %})
 {%- endif %}{% endfor %} 
@@ -40,13 +42,14 @@
 
 {%- macro call_args(args, outargs) -%}
 {%- for arg in args -%}
-	{%- if arg.strlen %}{{ arg.name }}_intern{%- if arg.intent != 'IN' %}{%- do outargs.append(arg.name + "_intern") -%}{% endif %}
-	{%- elif arg.ftype %}{{ arg.name }}._ptr
-	{%- elif arg.intent == 'IN' -%}{{ arg.name }}
-	{%- else -%}ctypes.byref({{ arg.name }}_intern)
-	{%- do outargs.append(arg.name + "_intern") -%}
-	{%- endif %}
-	{%- if not loop.last %}, {% endif %}
+    {%- if arg.strlen %}{{ arg.name }}_intern{%- if arg.intent != 'IN' %}{%- do outargs.append(arg.name + "_intern") -%}{% endif %}
+    {%- elif arg.ftype %}{{ arg.name }}._ptr
+    {%- elif arg.dims %}ctypes.byref(ctypes.cast({{ arg.name }}_intern, ctypes.POINTER({{ arg.pytype }})))
+    {%- elif arg.intent == 'IN' -%}{{ arg.name }}
+    {%- else -%}ctypes.byref({{ arg.name }}_intern)
+    {%- do outargs.append(arg.name + "_intern") -%}
+    {%- endif %}
+    {%- if not loop.last %}, {% endif %}
 {%- endfor %}
 {%- endmacro -%}
 
@@ -104,20 +107,18 @@ class {{ type.name }}(object):
     
     def get_{{ field.name }}(self):
     	{%- if field.ftype %}
-        return {{ field.ftype }}({{ module.name }}.{{ type.name }}_get_{{ field.name }}(self._ptr), True)
+        if not hasattr(self, "_{{ field.name }}"):
+            self._{{ field.name }}_intern = {{ module.name }}.{{ type.name }}_get_{{ field.name }}(self._ptr)
+            self._{{ field.name }} = {{ field.ftype }}(self._{{ field.name }}_intern)
+        return self._{{ field.name }}
     	{%- elif field.getter == 'function' %}
         return {{ module.name }}.{{ type.name }}_get_{{ field.name }}(self._ptr)
     	{%- elif field.dims %}
-        {{ field.name }}_intern = ctypes.POINTER({{ field.pytype }})()
-        {{ module.name }}.{{ type.name }}_get_{{ field.name }}(self._ptr, ctypes.byref({{ field.name }}_intern))
-        return ({{ field.pytype }}{% for dim in field.dims %} * {{ dim }}{% endfor %}).from_address(ctypes.addressof({{ field.name }}_intern.contents))
-#        try:
-#            return self._{{ field.name }}_array
-#        except AttributeError:
-#            self._{{ field.name }}_intern = ctypes.POINTER({{ field.pytype }})()
-#            {{ module.name }}.{{ type.name }}_get_{{ field.name }}(self._ptr, ctypes.byref(self._{{ field.name }}_intern))
-#            self._{{ field.name }}_array = ({{ field.pytype }}{% for dim in field.dims %} * {{ dim }}{% endfor %}).from_address(ctypes.addressof(self._{{ field.name }}_intern.contents))
-#            return self._{{ field.name }}_array
+        if not hasattr(self, "_{{ field.name }}"):
+            self._{{ field.name }}_intern = ctypes.POINTER({{ field.pytype }})()
+            {{ module.name }}.{{ type.name }}_get_{{ field.name }}(self._ptr, ctypes.byref(self._{{ field.name }}_intern))
+            self._{{ field.name }} = ({{ field.pytype }}{% for dim in field.dims %} * {{ dim }}{% endfor %}).from_address(ctypes.addressof(self._{{ field.name }}_intern.contents))
+        return self._{{ field.name }}
     	{%- else %}
     	{{ field.name }}_intern = {{ field.pytype }}()
     	{{ module.name }}.{{ type.name }}_get_{{ field.name }}(self._ptr, ctypes.byref(self._{{ field.name }}_intern))
@@ -150,7 +151,7 @@ class {{ type.name }}(object):
 {{ module.name }}.{{ export_name }}.restype = None
 {{ module.name }}.{{ export_name }}.argtypes = [{{ arg_types(subroutine.args) }}]
 def {{ subroutine.name }}({{ arg_names(subroutine.args) }}):
-	{{- arg_specs(subroutine.args) }}
+    {{- arg_specs(subroutine.args) }}
     {{ module.name }}.{{ export_name }}({{ call_args(subroutine.args, outargs) }})
     {%- if outargs %}
     return {% for outarg in outargs %}{{ outarg }}.value{% if not loop.last %}, {% endif %}{% endfor %}
@@ -167,7 +168,7 @@ def {{ subroutine.name }}({{ arg_names(subroutine.args) }}):
 {{ module.name }}.{{ export_name }}.restype = {{ function.ret.pytype }}
 {{ module.name }}.{{ export_name }}.argtypes = [{{ arg_types(function.args) }}]
 def {{ function.name }}({{ arg_names(function.args) }}):
-	{{- arg_specs(function.args) }}
+    {{- arg_specs(function.args) }}
     {{ function.name }}_intern = {{ module.name }}.{{ export_name }}({{ call_args(function.args, outargs) }})
     return {{ function.name }}_intern{% if outargs %}{% for outarg in outargs %}, {{ outarg }}.value{% endfor %}{% endif %}
     
@@ -180,16 +181,20 @@ def {{ function.name }}({{ arg_names(function.args) }}):
     {{- arg_specs(function.args) }}
     {%- if function.ret.strlen %}
     {{ function.name }}_value = ctypes.create_string_buffer({{ function.ret.strlen }})
+    {%- elif function.ret.dims %}
+    {{ function.name }}_value = ({{ function.ret.pytype }}{% for dim in function.ret.dims %} * {{ dim }}{% endfor %})()
     {%- else %}
     {{ function.name }}_value = {{ function.ret.pytype }}()
     {%- endif %}
     {{ module.name }}.{{ export_name }}({{ call_args(function.args, outargs) }}{% if function.args %}, {% endif %}
     {%- if function.ret.strlen -%}
     {{ function.name }}_value
+    {%- elif function.ret.dims -%}
+    ctypes.byref(ctypes.cast({{ function.name }}_value, ctypes.POINTER({{ function.ret.pytype }})))
     {%- else -%}
     ctypes.byref({{ function.name }}_value)
     {%- endif -%})
-    return {{ function.name }}_value.value{% if outargs %}{% for outarg in outargs %}, {{ outarg }}.value{% endfor %}{% endif %}
+    return {{ function.name }}_value{% if not function.ret.dims %}.value{% endif %}{% if outargs %}{% for outarg in outargs %}, {{ outarg }}.value{% endfor %}{% endif %}
 
 {%- endif%}
 {%- endif %}

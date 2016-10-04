@@ -145,6 +145,7 @@ class Module(Node):
             for funcdef in self._ast.select("function_subprogram")
         ]
         
-        import pprint
-        pp = pprint.PrettyPrinter(indent=4)
-        pp.pprint(self)
+#        import pprint
+#        pp = pprint.PrettyPrinter(indent=4)
+#        pp.pprint(self)
+

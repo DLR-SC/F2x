@@ -198,6 +198,7 @@ def main():
                     print('\t{0}\t;{1}'.format(line, src.pre_source_lines[line - 1]))
                     
             else:
+                print(e)
                 for err in e.errors:
                     val = err.args.get('value', '<Not defined>')
                     line = err.args.get('line', -1)

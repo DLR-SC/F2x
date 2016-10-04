@@ -19,8 +19,8 @@
 
 {%- macro var_decl(var, name, value=False, arg_names={}, intent=None) -%}
 		{{ var.type }}{% if var.kind %}({{ var.kind }}){% endif %}
-		{%- if (value and (var.intent == 'IN' or intent == 'IN')) or var.strlen %}, VALUE{% endif -%}
-		{%- if var.dims %}, POINTER{% endif %}
+		{%- if var.dims %}, POINTER
+		{%- elif (value and (var.intent == 'IN' or intent == 'INOUT')) or var.strlen %}, VALUE{% endif -%}
 		{%- if (var.intent or intent) and not var.strlen %}, INTENT({{ var.intent or intent }})
 		{%- endif %} :: {{ name }}
 		{%- if var.strlen %}
@@ -34,13 +34,13 @@
 		{%- if var.dims %}({% for dim in var.dims %}:{% if not loop.last %}, {% endif %}{% endfor %}){% endif %}
 {%- endmacro -%}
 
-{%- macro var_assign(var, name, value) -%}
+{%- macro var_assign(var, name, value, is_call=False) -%}
 		{%- if var.dims -%}
-		{{ name }} => {{ value }}
+		{{ name }} ={% if not is_call %}>{% endif %} {{ value }}
 		{%- elif var.strlen -%}
 		CALL F_C_STRING_PTR({{ value }}, {{ name }})
 		{%- elif var.ftype -%}
-		{{ name }}_INTERN => {{ value }}
+		{{ name }}_INTERN ={% if not is_call %}>{% endif %} {{ value }}
 		{{ name }} = C_LOC({{ name }}_INTERN)
 		{%- else -%}
 		{{ name }} = {{ value }}
@@ -182,7 +182,7 @@ CONTAINS
 	{%- if function.ret.ftype %}
 		ALLOCATE({{ export_name.upper() }}_INTERN)
 	{%- endif %}
-		{{ var_assign(function.ret, export_name.upper(), function.name + '(' + call_args(function.args, arg_names) + ')') }}
+		{{ var_assign(function.ret, export_name.upper(), function.name + '(' + call_args(function.args, arg_names) + ')', True) }}
 	END FUNCTION
 
 {%- elif function.ret.getter == 'subroutine' %}
@@ -199,7 +199,7 @@ CONTAINS
 		CALL C_F_POINTER({{ arg.name }}, {{ arg.name }}_INTERN)
 	{%- endif %}
 	{%- endfor %}
-		{{ var_assign(function.ret, export_name.upper() + '_VALUE', function.name + '(' + call_args(function.args, arg_names) + ')') }}
+		{{ var_assign(function.ret, export_name.upper() + '_VALUE', function.name + '(' + call_args(function.args, arg_names) + ')', True) }}
 	END SUBROUTINE
 {%- endif %}
 {%- endif %}

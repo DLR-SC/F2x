@@ -38,3 +38,9 @@ print("## 4")
 print(point.CURVE.NBITS)
 print(point.CURVE.COEFF[:])
 print(point.X, point.Y)
+
+print("## 5")
+ml.CURVEOUT(point.CURVE)
+
+print("## 6")
+
