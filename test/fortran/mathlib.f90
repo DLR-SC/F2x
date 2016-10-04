@@ -5,6 +5,11 @@ MODULE F2MATH
         INTEGER :: NBITS
         REAL(8) :: COEFF(4)
     END TYPE
+    
+    TYPE :: POINT
+        TYPE(CURVE) :: CURVE
+        REAL(8) :: X, Y
+    END TYPE
 
 CONTAINS
 

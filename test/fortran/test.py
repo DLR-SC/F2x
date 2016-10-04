@@ -13,20 +13,28 @@ assert about.rstrip() == "Foo Bar Baz"
 #assert buffer.rstrip() == "Blubb"
 
 assert ml.SWAP(1, 2) == (2, 1)
+
 ml.INFO("Foo Bar")
 
+#curve = ml.CURVE()
+#curve.NBITS = 1024
+#assert curve.NBITS == 1024
+
+#curve.COEFF[:] = [1.2, 2.3, 3.4, 4.5]
+#ml.CURVEOUT(curve)
+
 print("## 1")
-curve = ml.CURVE()
+point = ml.POINT()
+point.X = 12.34
+point.Y = 56.78
+
 print("## 2")
-curve.NBITS = 1024
+point.CURVE.NBITS = 1024
+
 print("## 3")
-assert curve.NBITS == 1024
+point.CURVE.COEFF[:] = [1.2, 2.3, 3.4, 4.5]
+
 print("## 4")
-print(curve.COEFF)
-print("## 5")
-print(curve.COEFF[0])
-print("## 6")
-curve.COEFF[:] = [1.2, 2.3, 3.4, 4.5]
-print("## 7")
-ml.CURVEOUT(curve)
-print("## 8")
+print(point.CURVE.NBITS)
+print(point.CURVE.COEFF[:])
+print(point.X, point.Y)
