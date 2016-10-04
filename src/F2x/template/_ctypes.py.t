@@ -90,12 +90,12 @@ from {{ import_module }} import {{ config.get('pyimport', import_module) }}
 {%- endfor %}
 class {{ type.name }}(object):
     def __init__(self, ptr=None, is_ref=True):
-    	if ptr is None:
-    		self._ptr = {{ module.name }}.{{ type.name }}_new()
-    		self._is_ref = False
-    	else:
-    		self._ptr = ptr
-    		self._is_ref = is_ref
+        if ptr is None:
+            self._ptr = {{ module.name }}.{{ type.name }}_new()
+            self._is_ref = False
+        else:
+            self._ptr = ptr
+            self._is_ref = is_ref
     
     def __del__(self):
         if not self._is_ref:
@@ -103,16 +103,21 @@ class {{ type.name }}(object):
     {%- for field in type.fields %}
     
     def get_{{ field.name }}(self):
-    	{%- if field.getter == 'function' %}
+    	{%- if field.ftype %}
+        return {{ field.ftype }}({{ module.name }}.{{ type.name }}_get_{{ field.name }}(self._ptr), True)
+    	{%- elif field.getter == 'function' %}
         return {{ module.name }}.{{ type.name }}_get_{{ field.name }}(self._ptr)
     	{%- elif field.dims %}
-        try:
-            return self._{{ field.name }}_array
-        except AttributeError:
-            self._{{ field.name }}_intern = ctypes.POINTER({{ field.pytype }})()
-            {{ module.name }}.{{ type.name }}_get_{{ field.name }}(self._ptr, ctypes.byref(self._{{ field.name }}_intern))
-            self._{{ field.name }}_array = ({{ field.pytype }}{% for dim in field.dims %} * {{ dim }}{% endfor %}).from_address(ctypes.addressof(self._{{ field.name }}_intern.contents))
-            return self._{{ field.name }}_array
+        {{ field.name }}_intern = ctypes.POINTER({{ field.pytype }})()
+        {{ module.name }}.{{ type.name }}_get_{{ field.name }}(self._ptr, ctypes.byref({{ field.name }}_intern))
+        return ({{ field.pytype }}{% for dim in field.dims %} * {{ dim }}{% endfor %}).from_address(ctypes.addressof({{ field.name }}_intern.contents))
+#        try:
+#            return self._{{ field.name }}_array
+#        except AttributeError:
+#            self._{{ field.name }}_intern = ctypes.POINTER({{ field.pytype }})()
+#            {{ module.name }}.{{ type.name }}_get_{{ field.name }}(self._ptr, ctypes.byref(self._{{ field.name }}_intern))
+#            self._{{ field.name }}_array = ({{ field.pytype }}{% for dim in field.dims %} * {{ dim }}{% endfor %}).from_address(ctypes.addressof(self._{{ field.name }}_intern.contents))
+#            return self._{{ field.name }}_array
     	{%- else %}
     	{{ field.name }}_intern = {{ field.pytype }}()
     	{{ module.name }}.{{ type.name }}_get_{{ field.name }}(self._ptr, ctypes.byref(self._{{ field.name }}_intern))

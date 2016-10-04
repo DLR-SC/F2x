@@ -29,6 +29,7 @@ class VarDecl(Node):
         "REAL": "ctypes.c_double",
         "INTEGER": "ctypes.c_int",
         "LOGICAL": "ctypes.c_bool",
+        "TYPE(C_PTR)": "ctypes.c_void_p",
     }
      
     def __init__(self, ast, prefix=""):
