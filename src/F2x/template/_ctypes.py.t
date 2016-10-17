@@ -32,9 +32,9 @@
 {%- macro arg_specs(args) %}
 {%- for arg in args %}
 {%- if arg.strlen %}
-    {{ arg.name }}_intern = ctypes.create_string_buffer({% if arg.intent == 'OUT' %}{{ arg.strlen }}{% else %}{{ arg.name }}{% endif %})
+    {{ arg.name }}_intern = ctypes.create_string_buffer({% if arg.intent != 'OUT' %}{{ arg.name }}.encode('{{ config.get("parser", "encoding") }}'), {% endif %}{{ arg.strlen }})
 {%- elif arg.dims %}
-    {{ arg.name }}_intern = ({{ arg.pytype }}{% for dim in arg.dims %} * {{ dim }}{% endfor %})(*{{ arg.name }})
+    {{ arg.name }}_intern = ({{ arg.pytype }}{% for dim in arg.dims %} * {{ dim }}{% endfor %})({% if arg.intent == 'IN' or arg.intent == 'INOUT' %}*{{ arg.name }}{% endif %})
 {%- elif arg.intent != 'IN' %}
     {{ arg.name }}_intern = {{ arg.pytype }}({% if arg.intent == 'INOUT' %}{{ arg.name }}{% endif %})
 {%- endif %}{% endfor %} 
@@ -42,12 +42,13 @@
 
 {%- macro call_args(args, outargs) -%}
 {%- for arg in args -%}
-    {%- if arg.strlen %}{{ arg.name }}_intern{%- if arg.intent != 'IN' %}{%- do outargs.append(arg.name + "_intern") -%}{% endif %}
+    {%- if arg.strlen %}{{ arg.name }}_intern{%- if arg.intent != 'IN' %}{%- do outargs.append(arg.name + "_intern.value.decode('" + config.get("parser", "encoding") + "').rstrip()") -%}{% endif %}
     {%- elif arg.ftype %}{{ arg.name }}._ptr
     {%- elif arg.dims %}ctypes.byref(ctypes.cast({{ arg.name }}_intern, ctypes.POINTER({{ arg.pytype }})))
+    {%- if arg.intent == 'OUT' or arg.intent == 'INOUT' %}{% do outargs.append(arg.name + "_intern[:]") %}{% endif %}
     {%- elif arg.intent == 'IN' -%}{{ arg.name }}
     {%- else -%}ctypes.byref({{ arg.name }}_intern)
-    {%- do outargs.append(arg.name + "_intern") -%}
+    {%- do outargs.append(arg.name + "_intern.value") -%}
     {%- endif %}
     {%- if not loop.last %}, {% endif %}
 {%- endfor %}
@@ -79,6 +80,9 @@ from {{ import_module }} import {{ config.get('pyimport', import_module) }}
 {{ module.name }}.{{ type.name }}_free.restype = None
 {{ module.name }}.{{ type.name }}_free.argtypes = [ctypes.c_void_p]
 {%- for field in type.fields %}
+{%- if field.ftype and field.dims %}
+# Skipping {{ type.name }}.{{ field.name }}: Arrays of derived types not yet supported
+{%- else %}
 {%- if field.getter == 'function' %}
 {{ module.name }}.{{ type.name }}_get_{{ field.name }}.restype = {{ field.pytype }}
 {{ module.name }}.{{ type.name }}_get_{{ field.name }}.argtypes = [ctypes.c_void_p]
@@ -89,6 +93,7 @@ from {{ import_module }} import {{ config.get('pyimport', import_module) }}
 {%- if field.setter == 'subroutine' %}
 {{ module.name }}.{{ type.name }}_set_{{ field.name }}.restype = None
 {{ module.name }}.{{ type.name }}_set_{{ field.name }}.argtypes = [ctypes.c_void_p, {{ field.pytype }}]
+{%- endif %}
 {%- endif %}
 {%- endfor %}
 class {{ type.name }}(object):
@@ -104,6 +109,11 @@ class {{ type.name }}(object):
         if not self._is_ref:
             {{ module.name }}.{{ type.name }}_free(self._ptr)
     {%- for field in type.fields %}
+    {%- if field.ftype and field.dims %}
+    
+    # Arrays of derived types not yet supported
+    
+    {%- else %}
     
     def get_{{ field.name }}(self):
     	{%- if field.ftype %}
@@ -134,6 +144,7 @@ class {{ type.name }}(object):
     
     {{ field.name }} = property(get_{{ field.name }})
     {%- endif %}
+    {%- endif %}
     {%- endfor %}
 {%- endfor -%}
 
@@ -154,7 +165,7 @@ def {{ subroutine.name }}({{ arg_names(subroutine.args) }}):
     {{- arg_specs(subroutine.args) }}
     {{ module.name }}.{{ export_name }}({{ call_args(subroutine.args, outargs) }})
     {%- if outargs %}
-    return {% for outarg in outargs %}{{ outarg }}.value{% if not loop.last %}, {% endif %}{% endfor %}
+    return {% for outarg in outargs %}{{ outarg }}{% if not loop.last %}, {% endif %}{% endfor %}
     {%- endif %}
 
 {%- endif %}
@@ -170,7 +181,7 @@ def {{ subroutine.name }}({{ arg_names(subroutine.args) }}):
 def {{ function.name }}({{ arg_names(function.args) }}):
     {{- arg_specs(function.args) }}
     {{ function.name }}_intern = {{ module.name }}.{{ export_name }}({{ call_args(function.args, outargs) }})
-    return {{ function.name }}_intern{% if outargs %}{% for outarg in outargs %}, {{ outarg }}.value{% endfor %}{% endif %}
+    return {{ function.name }}_intern{% if outargs %}{% for outarg in outargs %}, {{ outarg }}{% endfor %}{% endif %}
     
 
 {%- elif function.ret.getter == 'subroutine' %}

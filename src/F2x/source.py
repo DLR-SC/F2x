@@ -11,7 +11,6 @@ import sys
 import time
 
 import plyplus
-import marshal
 
 
 PREPROCESS_RULES = (

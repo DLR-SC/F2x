@@ -66,10 +66,16 @@ class VarDecl(Node):
         dims = self._ast.select(self._prefix + "array_spec int_literal_constant")
         if dims:
             self["dims"] = [int(dim.tail[0]) for dim in dims]
+        else:
+            dims = self._ast.select(self._prefix + "array_spec array_spec_element")
+            if dims:
+                self["dims"] = [0] * len(dims[0].tail)
+
+        if "dims" in self:
             self["getter"] = "subroutine"
             if "setter" in self:
                 del self["setter"]
-        
+
         if self["type"] in self._PYTYPES:
             self["pytype"] = self._PYTYPES[self["type"]]
         

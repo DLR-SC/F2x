@@ -20,8 +20,8 @@
 {%- macro var_decl(var, name, value=False, arg_names={}, intent=None) -%}
 		{{ var.type }}{% if var.kind %}({{ var.kind }}){% endif %}
 		{%- if var.dims %}, POINTER
-		{%- elif (value and (var.intent == 'IN' or intent == 'INOUT')) or var.strlen %}, VALUE{% endif -%}
-		{%- if (var.intent or intent) and not var.strlen %}, INTENT({{ var.intent or intent }})
+		{%- elif (value and (var.intent == 'IN' or intent == 'IN')) or var.strlen %}, VALUE, INTENT(IN)
+		{%- elif (var.intent or intent) and not var.strlen %}, INTENT({{ var.intent or intent }})
 		{%- endif %} :: {{ name }}
 		{%- if var.strlen %}
 		CHARACTER({{ var.strlen }}) :: {{ name }}_INTERN
@@ -91,6 +91,9 @@ CONTAINS
 		DEALLOCATE({{ type.name }}_INTERN)
 	END SUBROUTINE
 {%- for field in type.fields %}
+{%- if field.dims and field.ftype %}
+    ! Array of derived type not yet supported ({{ type.name }}%{{ field.name }})
+{%- else %}
 {%- set getter_name = type.name + '_get_' + field.name %}
 {%- if field.getter == 'function' %}
 
@@ -120,11 +123,12 @@ CONTAINS
 
 		{{ type_var_cast(type) }}
 		{%- if field.strlen %}
-		CALL C_F_STRING_PTR({{ field.name }}_VALUE, {{ type.name }}_INTERN%{{ field.name }})
+		CALL F_STRING_ASSIGN_C_STRING({{ type.name }}_INTERN%{{ field.name }}, {{ field.name }}_VALUE)
 		{%- else %}
 		{{ type.name }}_INTERN%{{ field.name }} = {{ field.name }}_VALUE
 		{%- endif %}
 	END SUBROUTINE
+{%- endif %}
 {%- endif %}
 {%- endfor %}
 {%- endfor %}
@@ -146,7 +150,7 @@ CONTAINS
 	{%- endfor %}
 	{%- for arg in subroutine.args %}
 	{%- if arg.strlen and arg.intent != 'OUT' %}
-		CALL C_F_STRING_PTR({{ arg.name }}, {{ arg.name }}_INTERN)
+		CALL F_STRING_ASSIGN_C_STRING({{ arg.name }}_INTERN, {{ arg.name }})
 	{%- elif arg.ftype %}
 		CALL C_F_POINTER({{ arg.name }}, {{ arg.name }}_INTERN)
 	{%- endif %}
@@ -174,7 +178,7 @@ CONTAINS
 	{%- endfor %}
 	{%- for arg in function.args %}
 	{%- if arg.strlen and arg.intent != 'OUT' %}
-		CALL C_F_STRING_PTR({{ arg.name }}, {{ arg.name }}_INTERN)
+		CALL F_STRING_ASSIGN_C_STRING({{ arg.name }}_INTERN, {{ arg.name }})
 	{%- elif arg.ftype %}
 		CALL C_F_POINTER({{ arg.name }}, {{ arg.name }}_INTERN)
 	{%- endif %}
@@ -194,7 +198,7 @@ CONTAINS
 		{{ var_decl(function.ret, export_name.upper() + '_VALUE', intent='OUT') }}
 	{%- for arg in function.args %}
 	{%- if arg.strlen and arg.intent != 'OUT' %}
-		CALL C_F_STRING_PTR({{ arg.name }}, {{ arg.name }}_INTERN)
+		CALL F_STRING_ASSIGN_C_STRING({{ arg.name }}_INTERN, {{ arg.name }})
 	{%- elif arg.ftype %}
 		CALL C_F_POINTER({{ arg.name }}, {{ arg.name }}_INTERN)
 	{%- endif %}

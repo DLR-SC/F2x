@@ -1,3 +1,6 @@
 [export]
-foo_bar = SRC_Foo_Bar
-bar_foo = SRC_Bar_Foo
+BASIC_ARGS_IN = BAI
+BASIC_ARGS_OUT = BAO
+BASIC_ARGS_INOUT = BAIO
+BASIC_ARGS_ARRAY = BAA
+STRING_ARGS = SA
