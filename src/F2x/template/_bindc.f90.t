@@ -19,7 +19,8 @@
 
 {%- macro var_decl(var, name, value=False, arg_names={}, intent=None) -%}
 		{{ var.type }}{% if var.kind %}({{ var.kind }}){% endif %}
-		{%- if var.dims %}, POINTER
+		{%- if var.ftype %}, VALUE, INTENT(IN)
+		{%- elif var.dims %}, POINTER
 		{%- elif (value and (var.intent == 'IN' or intent == 'IN')) or var.strlen %}, VALUE, INTENT(IN)
 		{%- elif (var.intent or intent) and not var.strlen %}, INTENT({{ var.intent or intent }})
 		{%- endif %} :: {{ name }}

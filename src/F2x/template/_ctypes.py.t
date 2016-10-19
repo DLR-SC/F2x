@@ -33,6 +33,8 @@
 {%- for arg in args %}
 {%- if arg.strlen %}
     {{ arg.name }}_intern = ctypes.create_string_buffer({% if arg.intent != 'OUT' %}{{ arg.name }}.encode('{{ config.get("parser", "encoding") }}'), {% endif %}{{ arg.strlen }})
+{%- elif arg.ftype %}{% if arg.intent == 'OUT' %}
+    {{ arg.name }}_intern = {{ arg.ftype }}(){% endif %}
 {%- elif arg.dims %}
     {{ arg.name }}_intern = ({{ arg.pytype }}{% for dim in arg.dims %} * {{ dim }}{% endfor %})({% if arg.intent == 'IN' or arg.intent == 'INOUT' %}*{{ arg.name }}{% endif %})
 {%- elif arg.intent != 'IN' %}
@@ -43,7 +45,7 @@
 {%- macro call_args(args, outargs) -%}
 {%- for arg in args -%}
     {%- if arg.strlen %}{{ arg.name }}_intern{%- if arg.intent != 'IN' %}{%- do outargs.append(arg.name + "_intern.value.decode('" + config.get("parser", "encoding") + "').rstrip()") -%}{% endif %}
-    {%- elif arg.ftype %}{{ arg.name }}._ptr
+    {%- elif arg.ftype %}{{ arg.name }}{% if arg.intent == 'OUT' %}_intern{% do outargs.append(arg.name + "_intern") %}{% elif arg.intent == 'INOUT' %}{% do outargs.append(arg.name) %}{% endif %}._ptr
     {%- elif arg.dims %}ctypes.byref(ctypes.cast({{ arg.name }}_intern, ctypes.POINTER({{ arg.pytype }})))
     {%- if arg.intent == 'OUT' or arg.intent == 'INOUT' %}{% do outargs.append(arg.name + "_intern[:]") %}{% endif %}
     {%- elif arg.intent == 'IN' -%}{{ arg.name }}
