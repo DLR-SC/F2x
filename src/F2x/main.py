@@ -73,6 +73,8 @@ def init_logger(args):
 def load_templates(log, args):
     log.info(u"Loading {0} templates...".format(len(args.template)))
     templates = []
+    template_loader = jinja2.FileSystemLoader(os.path.join(package_path, u'template'))
+    template_env = jinja2.Environment(loader=template_loader, extensions=['jinja2.ext.do'])
     start = time.time()
     
     for template_filename in args.template:
@@ -81,7 +83,7 @@ def load_templates(log, args):
         
         log.debug(u"* Loading template from {0}...".format(template_filename))
         template_file = open(template_filename, 'r')
-        template = jinja2.Template(template_file.read(), extensions=['jinja2.ext.do'])
+        template = template_env.from_string(template_file.read())
         template_suffix, _ = os.path.splitext(os.path.basename(template_filename))
         templates.append((template, template_suffix))
     
@@ -198,7 +200,6 @@ def main():
                     print('\t{0}\t;{1}'.format(line, src.pre_source_lines[line - 1]))
                     
             else:
-                print(e)
                 for err in e.errors:
                     val = err.args.get('value', '<Not defined>')
                     line = err.args.get('line', -1)

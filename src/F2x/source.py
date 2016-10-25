@@ -3,7 +3,11 @@ Created on 12.02.2016
 
 @author: meinel
 '''
-import ConfigParser
+try:
+    import ConfigParser
+except ImportError:
+    import configparser as ConfigParser
+
 import logging
 import os
 import re
@@ -126,7 +130,7 @@ class SourceFile(object):
         log.debug("Reading source from {0}...".format(self.filename))
         source_file = open(self.filename, 'rb')
         self.source = source_file.read().decode(self.config.get('parser', 'encoding'))
-        self.source_lines = map(unicode.rstrip, self.source.split('\n'))
+        self.source_lines = map(str.rstrip, self.source.split('\n'))
     
     def preprocess(self, rules=None):
         if self.source is None:
@@ -142,14 +146,14 @@ class SourceFile(object):
             else:
                 ignore_lines = map(int, map(str.strip, ignore.split(',')))
 
-            lines = map(unicode.rstrip, self.source.split('\n'))
+            lines = map(str.rstrip, self.source.split('\n'))
             for index in ignore_lines:
                 lines[index - 1] = '!F2x/ignore ' + lines[index - 1]
             
             self.source = '\n'.join(lines)
         
         if self.config.has_section('replace'):
-            lines = map(unicode.rstrip, self.source.split('\n'))
+            lines = map(str.rstrip, self.source.split('\n'))
             for index in self.config.options('replace'):
                 lines[int(index) - 1] = self.config.get('replace', index)
             
@@ -168,7 +172,7 @@ class SourceFile(object):
             log.info("Writing preprocessed source to {0}...".format(pre_source_filename))
             open(pre_source_filename, 'wb').write(self.source.encode(self.config.get('parser', 'encoding')))
 
-        self.pre_source_lines = map(unicode.rstrip, self.source.split('\n'))
+        self.pre_source_lines = map(str.rstrip, self.source.split('\n'))
     
     def parse(self):
         grammar_filename = self.config.get('parser', 'grammar')

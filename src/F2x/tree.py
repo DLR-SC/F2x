@@ -31,6 +31,13 @@ class VarDecl(Node):
         "LOGICAL": "ctypes.c_bool",
         "TYPE(C_PTR)": "ctypes.c_void_p",
     }
+    
+    _CSTYPES = {
+        "REAL": "double",
+        "INTEGER": "long",
+        "LOGICAL": "bool",
+        "TYPE(C_PTR)": "IntPtr",
+    }
      
     def __init__(self, ast, prefix=""):
         """ Slightly modified constructor to allow for re-use for type-specs and var-specs.
@@ -45,11 +52,18 @@ class VarDecl(Node):
         self["name"] = self._ast.select1("name").tail[0]
 
         # Identify FORTRAN type and store properties accordingly
-        type_spec = self._ast.parent().parent().select1("declaration_type_spec")
+        full_spec = self._ast.parent().parent()
+        type_spec = full_spec.select1("declaration_type_spec")
         try:
             self["ftype"] = type_spec.select1("derived_type_spec name").tail[0]
             self["type"] = "TYPE(C_PTR)"
             self["getter"] = "function"
+            self["dynamic"] = False
+            for attr in full_spec.select("component_attr_spec"):
+                if 'ALLOCATABLE' in attr.tail:
+                    self["dynamic"] = 'ALLOCATABLE'
+                elif 'POINTER' in attr.tail:
+                    self["dynamic"] = 'POINTER'
         except ValueError:
             try:
                 self["strlen"] = int(type_spec.select1("char_selector int_literal_constant").tail[0])
@@ -62,14 +76,19 @@ class VarDecl(Node):
                 self["getter"] = "function"
                 self["setter"] = "subroutine"
                 
-        # Identify additional modifiers (i.e. arrays etc.)
-        dims = self._ast.select(self._prefix + "array_spec int_literal_constant")
-        if dims:
-            self["dims"] = [int(dim.tail[0]) for dim in dims]
-        else:
-            dims = self._ast.select(self._prefix + "array_spec array_spec_element")
+        # Identify array dimensions
+        for ast in (self._ast, full_spec):
+            dims = ast.select(self._prefix + "array_spec int_literal_constant")
+            if dims:
+                self["dims"] = [int(dim.tail[0]) for dim in dims]
+                break
+           
+            dims = ast.select(self._prefix + "array_spec array_spec_element")
+            if not dims:
+                dims = ast.select(self._prefix + "array_spec deferred_shape_spec_list")
             if dims:
                 self["dims"] = [0] * len(dims[0].tail)
+                break
 
         if "dims" in self:
             self["getter"] = "subroutine"
@@ -79,6 +98,9 @@ class VarDecl(Node):
         if self["type"] in self._PYTYPES:
             self["pytype"] = self._PYTYPES[self["type"]]
         
+        if self["type"] in self._CSTYPES:
+            self["cstype"] = self._CSTYPES[self["type"]]
+
         try:
             kind_selector = type_spec.select1("kind_selector int_literal_constant")
             self["kind"] = int(kind_selector.tail[0])

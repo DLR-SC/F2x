@@ -3,7 +3,7 @@ using System;
 using System.Runtime.InteropServices;
 {%- for typ in module.types %}
 
-class {{ typ.name }} {
+public class {{ typ.name }} {
 	internal IntPtr c_ptr;
 	private Boolean is_ref;
 	
@@ -25,6 +25,7 @@ class {{ typ.name }} {
 	~{{ typ.name }}() {
 		if (!this.is_ref) {
 			{{ typ.name }}_free(this.c_ptr);
+		}
 	}
 	
 	/* Getter/setter for attributes. */
@@ -38,6 +39,7 @@ class {{ typ.name }} {
 			{{ typ.name }}.get_{{ field.name }}(this.c_ptr, value);
 			return value;
 		}
+{%- endif %}
 	}
 	
 	[DllImport("{{ config.get('generate', 'dll') }}", EntryPoint="{{ typ.name }}_new")]
@@ -84,8 +86,8 @@ class {{ typ.name }} {
 	private extern static void {{ typ.name }}_set_{{ field.name }}(IntPtr c_ptr, {{ field.cstype }} {{ field.name }}_value);
 	{%- endif %}
 {%- endfor %}
-}
 {%- endfor %}
+}
 {%- if config.has_section('export') %}
 
 class {{ module.name }} {
@@ -175,4 +177,4 @@ class {{ module.name }} {
 {%- endfor %}
 }
 {%- endif %}
-
+{%- endfor %}
