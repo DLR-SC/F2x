@@ -59,11 +59,6 @@ class VarDecl(Node):
             self["type"] = "TYPE(C_PTR)"
             self["getter"] = "function"
             self["dynamic"] = False
-            for attr in full_spec.select("component_attr_spec"):
-                if 'ALLOCATABLE' in attr.tail:
-                    self["dynamic"] = 'ALLOCATABLE'
-                elif 'POINTER' in attr.tail:
-                    self["dynamic"] = 'POINTER'
         except ValueError:
             try:
                 self["strlen"] = int(type_spec.select1("char_selector int_literal_constant").tail[0])
@@ -75,6 +70,12 @@ class VarDecl(Node):
                 self["type"] = type_spec.select1("intrinsic_type_kind").tail[0]
                 self["getter"] = "function"
                 self["setter"] = "subroutine"
+
+        for attr in full_spec.select("component_attr_spec"):
+            if 'ALLOCATABLE' in attr.tail:
+                self["dynamic"] = 'ALLOCATABLE'
+            elif 'POINTER' in attr.tail:
+                self["dynamic"] = 'POINTER'
                 
         # Identify array dimensions
         for ast in (self._ast, full_spec):
