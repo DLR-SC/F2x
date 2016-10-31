@@ -92,7 +92,6 @@ class VarDecl(Node):
                 break
 
         if "dims" in self:
-            self["getter"] = "subroutine"
             if "setter" in self:
                 del self["setter"]
 

@@ -1,7 +1,7 @@
 {#####################################################################################################################}
-{# F2x-Template library: _bindc_types.f90.tl                                                                         #}
+{# F2x-Template library: _ctypes_types.f90.tl                                                                        #}
 {#                                                                                                                   #}
-{# This library provides macros used by the '_bindc_f90.t' template for derived type handling.                       #}
+{# This library provides macros used by the '_glue.py.t' template for derived type handling.                         #}
 {#####################################################################################################################}
 
 {#-------------------------------------------------------------------------------------------------------------------#}
@@ -20,14 +20,16 @@
 {%- if field.dynamic %}
 {{ module.name }}.{{ type.name }}_{{ field.name }}_init.argtypes = [ctypes.c_void_p, ctypes.c_int]
 {{ module.name }}.{{ type.name }}_{{ field.name }}_init.restype = None
+{{ module.name }}.{{ type.name }}_{{ field.name }}_clear.argtypes = [ctypes.c_void_p]
+{{ module.name }}.{{ type.name }}_{{ field.name }}_clear.restype = None
+{{ module.name }}.{{ type.name }}_{{ field.name }}_size.argtypes = [ctypes.c_void_p]
+{{ module.name }}.{{ type.name }}_{{ field.name }}_size.restype = ctypes.c_int
 {%- endif %}
 
 {#- ... item access for derived type arrays ...#}
 {%- if field.ftype %}
-{{ module.name }}.{{ type.name }}_{{ field.name }}_size.argtypes = [ctypes.c_void_p]
-{{ module.name }}.{{ type.name }}_{{ field.name }}_size.restype = ctypes.c_int
-{{ module.name }}.{{ type.name }}_{{ field.name }}_item.argtypes = [ctypes.c_void_p, ctypes.c_int]
-{{ module.name }}.{{ type.name }}_{{ field.name }}_item.restype = ctypes.c_void_p
+{{ module.name }}.{{ type.name }}_get_{{ field.name }}.argtypes = [ctypes.c_void_p, ctypes.c_int]
+{{ module.name }}.{{ type.name }}_get_{{ field.name }}.restype = ctypes.c_void_p
 {#- ... and normal access to others. #}
 {%- else %}
 {{ module.name }}.{{ type.name }}_get_{{ field.name }}.argtypes = [ctypes.c_void_p]
@@ -43,10 +45,6 @@
 {%- elif field.getter == 'function' %}
 {{ module.name }}.{{ type.name }}_get_{{ field.name }}.argtypes = [ctypes.c_void_p]
 {{ module.name }}.{{ type.name }}_get_{{ field.name }}.restype = {{ field.pytype }}
-
-{#- Otherwise no read access at all. #}
-{%- else %}
-# No read access to {{ type.name }}.{{ field.name }}
 {%- endif %}
 
 {#- All setter share the same interface (if available). #}
@@ -55,28 +53,6 @@
 {{ module.name }}.{{ type.name }}_set_{{ field.name }}.restype = None
 {%- endif %}
 {%- endfor %}
-{%- endmacro %}
-
-{#-------------------------------------------------------------------------------------------------------------------#}
-{# Type constructor: Decides if reference or own and initializes fields on demand.                                   #}
-{% macro constructor(type) -%}
-    def __init__(self, ptr=None, owned=False, **kw):
-        if ptr is not None:
-            self._ptr = ptr
-            self._owned = owned
-        else:
-            self._ptr = {{ module.name }}.{{ type.name }}_new()
-            self._owned = True
-            for key, value in kw.items():
-                setattr(self, key, value)
-{%- endmacro %}
-    
-{#-------------------------------------------------------------------------------------------------------------------#}
-{# Type destructor: Frees Fortran-allocated memory if it is owned.                                                   #}
-{% macro destructor(type) -%}
-    def __del__(self):
-        if self._owned:
-            {{ module.name }}.{{ type.name }}_free(self._ptr)
 {%- endmacro %}
 
 {#-------------------------------------------------------------------------------------------------------------------#}
@@ -91,15 +67,14 @@
 
     {#- Implied-size arrays are only allocatable at runtime. #}
     {%- if not field.dynamic %}
-    {#- Fixed-size arrays are easier to handle. #}
-    {%- else %}
     {%- do prop.append("_get_" + field.name) %}
     _{{ field.name }}_TYPE = {{ field.pytype }}{% for dim in field.dims %} * {{ dim }}{% endfor %}
     def _get_{{ field.name }}(self):
-       	address = {{ module.name }}.{{ type.name }}_get_{{ field.name }}(self._ptr)
-       	return _{{ field.name }}_TYPE.from_address(address)
+        if not hasattr(self, '_{{ field.name }}'):
+            address = {{ module.name }}.{{ type.name }}_get_{{ field.name }}(self._ptr)
+            self._{{ field.name }} = self._{{ field.name }}_TYPE.from_address(address)
+        return self._{{ field.name }}
     {%- endif %}
-
     {%- endif %}
 
     {#- Subroutine as getter only allowed for strings (so far). #}
@@ -118,7 +93,7 @@
         {#- Derived types are automatically wrapped. #}
         return {{ field.ftype }}({{ module.name }}.{{ type.name }}_get_{{ field.name }}(self._ptr))
         {%- else %}
-    	return {{ module.name }}.{{ type.name }}_get_{{ field.name }}(self._ptr)
+        return {{ module.name }}.{{ type.name }}_get_{{ field.name }}(self._ptr)
     	{%- endif %}
     {%- endif %}
 {%- endmacro %}
@@ -126,7 +101,12 @@
 {#-------------------------------------------------------------------------------------------------------------------#}
 {# Type field setter: Assigns the given value to the derived type's field automatically converting Python types.     #}
 {% macro setter(type, field, prop) -%}
-    {%- if field.setter == 'subroutine' %}
+    {%- if field.dims and not field.dynamic and not field.ftype %}
+    {%- do prop.append("_set_" + field.name) %}
+    def _set_{{ field.name }}(self, value):
+        self.{{ field.name }}[:] = value
+
+    {%- elif field.setter == 'subroutine' %}
     {%- do prop.append("_set_" + field.name) %}
     def _set_{{ field.name }}(self, value):
         {{ module.name }}.{{ type.name }}_set_{{ field.name }}(self._ptr, value)
@@ -138,18 +118,20 @@
 {% macro property(type, field, prop) -%}
     {#- Arrays of derived types have their own access method. #}
     {%- if field.dims and field.ftype %}
-    {{ field.name }} = DTArray(
+    {{ field.name }} = DerivedTypeArray(
         {{ field.ftype }},
         {{ module.name }}.{{ type.name }}_{{ field.name }}_init,
+        {{ module.name }}.{{ type.name }}_{{ field.name }}_clear,
         {{ module.name }}.{{ type.name }}_{{ field.name }}_size,
-        {{ module.name }}.{{ type.name }}_{{ field.name }}_item,
+        {{ module.name }}.{{ type.name }}_get_{{ field.name }},
     )
     
     {#- Dynamically allocated arrays also have their own access method. #}
     {%- elif field.dims and field.dynamic %}
-    {{ field.name }} = Array(
-    	{{ field.pytype }},
+    {{ field.name }} = DynamicArray(
+        {{ field.pytype }},
         {{ module.name }}.{{ type.name }}_{{ field.name }}_init,
+        {{ module.name }}.{{ type.name }}_{{ field.name }}_clear,
         {{ module.name }}.{{ type.name }}_{{ field.name }}_size,
         {{ module.name }}.{{ type.name }}_get_{{ field.name }},
     )

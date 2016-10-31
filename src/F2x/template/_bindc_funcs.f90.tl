@@ -16,7 +16,7 @@
         {{ arg_types(sub.args, callargs, outargs) }}
 
         {{ arg_casts(sub.args) }}
-        CALL {{ sub.name }}({% for arg in callargs %}{{ arg }}{% if not loop.last %}, {% endif %}{% endfor %})
+        CALL {{ sub.name }}({{ join_list(callargs) }})
     END SUBROUTINE
 {%- endmacro %}
 
@@ -26,17 +26,23 @@
 {%- set callargs = [] -%}
 {%- set outargs = [] -%}
     FUNCTION {{ export_name.upper() }}({{ dummy_args(func.args) }}) BIND(C, name="{{  export_name }}")
-        {{ arg_types(func.args, callargs, outargs) }}
+        {{ arg_types(func.args, callargs, outargs) }}{% if func.ret.dims %}
+        TYPE(C_PTR) :: {{  export_name.upper() }}
+        {{ type_spec(func.ret) }}, POINTER :: {{ export_name.upper() }}_ARRAY{% else %}
         {{ type_spec(func.ret) }} :: {{ export_name.upper() }}{% if func.ret.ftype %}
-        TYPE({{ func.ret.ftype }}), POINTER :: {{ export_name.upper() }}_INTERN{% endif %}
+        TYPE({{ func.ret.ftype }}), POINTER :: {{ export_name.upper() }}_INTERN{% endif %}{% endif %}
 
         {{ arg_casts(func.args) }}
-    {%- if func.ret.ftype %}
+    {%- if func.ret.dims %}
+        ALLOCATE({{ export_name.upper() }}_ARRAY({{ join_list(func.ret.dims) }}))
+        {{ export_name.upper() }}_ARRAY({{ dims_list(func.ret.dims) }}) = {{ func.name }}({{ join_list(callargs) }})
+        {{ export_name.upper() }} = C_LOC({{ export_name.upper() }}_ARRAY)
+    {%- elif func.ret.ftype %}
         ALLOCATE({{ export_name.upper() }}_INTERN)
-        {{ export_name.upper() }}_INTERN = {{ func.name }}({% for arg in callargs %}{{ arg }}{% if not loop.last %}, {% endif %}{% endfor %})
+        {{ export_name.upper() }}_INTERN = {{ func.name }}({{ join_list(callargs) }})
         {{ export_name.upper() }} = C_LOC({{ export_name.upper() }}_INTERN)
     {%- else %}
-        {{ export_name.upper() }} = {{ func.name }}({% for arg in callargs %}{{ arg }}{% if not loop.last %}, {% endif %}{% endfor %})
+        {{ export_name.upper() }} = {{ func.name }}({{ join_list(callargs) }})
     {%- endif %}
     END FUNCTION
 {%- endmacro %}
@@ -49,24 +55,37 @@
     SUBROUTINE {{ export_name.upper() }}({% if func.args %}{{ dummy_args(func.args) }}, {% endif %}RESULT_VALUE) BIND(C, name="{{  export_name }}")
         {{ arg_types(func.args, callargs, outargs) }}{% if func.ret.strlen %}
         {{ type_spec(func.ret) }} :: RESULT_VALUE
-        CHARACTER(LEN={{ func.ret.strlen }}) :: RESULT_VALUE_INTERN{% elif func.ret.dims %}
-        TYPE(C_PTR), INTENT(IN), VALUE :: RESULT_VALUE
-        {{ type_spec(func.ret) }}, POINTER :: RESULT_VALUE_INTERN{% endif %}
+        CHARACTER(LEN={{ func.ret.strlen }}) :: RESULT_VALUE_INTERN{% endif %}
 
         {{ arg_casts(func.args) }}
         {% if func.ret.strlen %}
-        RESULT_VALUE_INTERN = {{ func.name }}({% for arg in callargs %}{{ arg }}{% if not loop.last %}, {% endif %}{% endfor %})
+        RESULT_VALUE_INTERN = {{ func.name }}({{ join_list(callargs) }})
         CALL F_C_STRING(RESULT_VALUE_INTERN, RESULT_VALUE)
-        {% elif func.ret.dims %}
-        CALL C_F_POINTER(RESULT_VALUE, RESULT_VALUE_INTERN, [{% for dim in func.ret.dims %}{{ dim }}{% if not loop.last %}, {% endif %}{% endfor %}])
-        RESULT_VALUE_INTERN({% for dim in func.ret.dims %}:{% if not loop.last %}, {% endif %}{% endfor %}) = {{ func.name }}({% for arg in callargs %}{{ arg }}{% if not loop.last %}, {% endif %}{% endfor %})
-        {% endif %} 
+        {% endif %}
     END SUBROUTINE
 {%- endmacro %}
 
 
 {#===================================================================================================================#}
 {# Internal helper macros                                                                                            #}
+
+{#-------------------------------------------------------------------------------------------------------------------#}
+{# Compile list of comma-separated values.                                                                           #}
+{% macro join_list(args) -%}
+    {%- for arg in args -%}
+    {{ arg }}
+    {%- if not loop.last %}, {% endif -%}
+    {% endfor %}
+{%- endmacro %}
+
+{#-------------------------------------------------------------------------------------------------------------------#}
+{# Create list of dimensions.                                                                                        #}
+{% macro dims_list(dims) -%}
+    {%- for dim in dims -%}
+    :
+    {%- if not loop.last %}, {% endif -%}
+    {% endfor %}
+{%- endmacro %}
 
 {#-------------------------------------------------------------------------------------------------------------------#}
 {# Compile list with dummy args.                                                                                     #}
@@ -81,7 +100,7 @@
 {% macro type_spec(arg) -%}
     {{ arg.type }}{% if arg.kind %}(KIND={{ arg.kind }}){% endif %}
 {%- if arg.dims -%}
-, DIMENSION({%- for dim in arg.dims -%}:{%- if not loop.last %}, {% endif -%}{%- endfor -%})
+, DIMENSION({{ dims_list(arg.dims) }})
 {%- endif -%}
 {%- if arg.intent %}, INTENT({{ arg.intent }}){% endif %}
 {%- if not arg.dims and arg.intent == 'IN' -%}
