@@ -97,6 +97,5 @@ def test_compound_type_basicarray():
 
 
 def test_compound_type_basicarray_init():
-    bt = src.BASIC_TYPE(INTFIELD=5)
-    with pytest.raises(NotImplementedError):
-        src.COMPOUND_TYPE(BASICARRAY=[bt])
+    ct = src.COMPOUND_TYPE(BASICARRAY=[src.BASIC_TYPE(INTFIELD=5)])
+    assert ct.BASICARRAY[0].INTFIELD == 5

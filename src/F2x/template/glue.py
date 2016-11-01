@@ -22,7 +22,6 @@ class DerivedType(object):
 
     def __del__(self):
         if self._owned:
-            print("Deleting {0}...".format(self))
             self._free(self._ptr)
             self._ptr = None
 
@@ -30,6 +29,7 @@ class DerivedType(object):
         return "<{0} at {1:X}>".format(self.__class__.__name__, self._ptr)
 
     def call(self, method, *args):
+        print("Call {0} on {1}".format(method.__name__, self))
         return method(self._ptr, *args)
 
 
@@ -116,12 +116,8 @@ class DerivedTypeArray(DynamicArray):
                 item = self._array.getitem(self._instance, index)
                 item.copy_from(value)
 
-    def __set__(self, instance, value):
-        raise NotImplementedError()
-
     def getitem(self, instance, index):
         address = instance.call(self._get, index)
-        print(address)
         return self._type(address)
 
     def make_array(self, instance):
