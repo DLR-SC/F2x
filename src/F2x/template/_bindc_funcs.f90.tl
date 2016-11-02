@@ -17,6 +17,7 @@
 
         {{ arg_casts(sub.args) }}
         CALL {{ sub.name }}({{ join_list(callargs) }})
+        {{ out_casts(sub.args) }}
     END SUBROUTINE
 {%- endmacro %}
 
@@ -44,6 +45,7 @@
     {%- else %}
         {{ export_name.upper() }} = {{ func.name }}({{ join_list(callargs) }})
     {%- endif %}
+        {{ out_casts(func.args) }}
     END FUNCTION
 {%- endmacro %}
 
@@ -62,6 +64,7 @@
         RESULT_VALUE_INTERN = {{ func.name }}({{ join_list(callargs) }})
         CALL F_C_STRING(RESULT_VALUE_INTERN, RESULT_VALUE)
         {% endif %}
+        {{ out_casts(func.args) }}
     END SUBROUTINE
 {%- endmacro %}
 
@@ -123,8 +126,22 @@
 {# Declare dummy args (and internal shadows where required).                                                         #}
 {% macro arg_casts(args) -%}
 {%- for arg in args -%}
-    {%- if arg.ftype %}
+    {%- if arg.strlen %}
+        CALL C_F_STRING({{ arg.name }}, {{ arg.name }}_STR)
+    {%- elif arg.ftype %}
         CALL C_F_POINTER({{ arg.name }}, {{ arg.name }}_INTERN)
+    {%- endif %}
+{%- endfor -%}
+{%- endmacro %}
+
+{#-------------------------------------------------------------------------------------------------------------------#}
+{# Declare dummy args (and internal shadows where required).                                                         #}
+{% macro out_casts(args) -%}
+{%- for arg in args if arg.intent == 'OUT' or arg.intent == 'INOUT' -%}
+    {%- if arg.strlen %}
+        CALL F_C_STRING({{ arg.name }}_STR, {{ arg.name }}, {{ arg.strlen }})
+    {%- elif arg.ftype %}
+        {{ arg.name }} = C_LOC({{ arg.name }}_INTERN)
     {%- endif %}
 {%- endfor -%}
 {%- endmacro %}

@@ -1,6 +1,7 @@
 import pytest
 
 from F2x_test.fortran import source_glue as src
+from Cython.Compiler.Naming import outer_scope_cname
 
 
 def test_basic_type_intfield():
@@ -99,3 +100,63 @@ def test_compound_type_basicarray():
 def test_compound_type_basicarray_init():
     ct = src.COMPOUND_TYPE(BASICARRAY=[src.BASIC_TYPE(INTFIELD=5)])
     assert ct.BASICARRAY[0].INTFIELD == 5
+
+
+def test_basic_args_in():
+    src.BASIC_ARGS_IN(1, 2.3, True)
+
+
+def test_basic_args_inout():
+    intarg, realarg, logicalarg = src.BASIC_ARGS_INOUT(1, 2.3, True)
+    assert intarg == 2
+    assert realarg == 1.15
+    assert logicalarg == False
+
+
+def test_basic_args_out():
+    intarg, realarg, logicalarg = src.BASIC_ARGS_OUT()
+    assert intarg == 1
+    assert abs(realarg - 2.3) < 0.1
+    assert logicalarg == True
+
+
+def test_array_args():
+    outarray, inoutarray = src.BASIC_ARGS_ARRAY([1, 2, 3], [7, 8])
+    assert outarray == [4, 5, 6]
+    assert inoutarray == [8, 8]
+
+
+def test_string_args():
+    outstr, inoutstr = src.STRING_ARGS("in", "inout")
+    assert outstr == "inout"
+    assert inoutstr == "in"
+
+
+def test_derived_type_args():
+    a = src.BASIC_TYPE(INTFIELD=2)
+    b = src.BASIC_TYPE(REALFIELD=3.4)
+    c, d = src.DERIVED_TYPE_ARGS(a, b)
+    assert a.INTFIELD == b.INTFIELD
+    assert b.REALFIELD == c.REALFIELD
+    assert b.REALFIELD == d.REALFIELD
+    assert b._ptr == d._ptr
+
+
+def test_basic_return_value():
+    assert src.BASIC_RETURN_VALUE() == 123
+
+
+def test_derived_type_return_value():
+    res = src.DERIVED_TYPE_RETURN_VALUE()
+    assert type(res) is src.BASIC_TYPE
+    assert len(res.REALARRAY) == 2
+    assert abs(res.REALARRAY[0] - 1.2) < 0.1
+    assert abs(res.REALARRAY[1] - 3.4) < 0.1
+
+
+def test_string_return_value():
+    assert src.STRING_RETURN_VALUE() == "Foo Bar"
+
+
+def test_array_return_value():
+    assert src.ARRAY_RETURN_VALUE() == [1, 2, 3]

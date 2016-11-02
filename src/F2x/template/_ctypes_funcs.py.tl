@@ -1,7 +1,7 @@
 {#####################################################################################################################}
 {# F2x-Template library: _ctypes_funcs.py.tl                                                                         #}
 {#                                                                                                                   #}
-{# This library provides macros used by the '_bglue.py.t' template for subprocess and function access.               #}
+{# This library provides macros used by the '_glue.py.t' template for subprocess and function access.               #}
 {#####################################################################################################################}
 
 {#-------------------------------------------------------------------------------------------------------------------#}
@@ -22,25 +22,48 @@ def {{ sub.name }}({{ join_args(sub.args) }}):
 {#-------------------------------------------------------------------------------------------------------------------#}
 {# Function call: Translate input parameters and return result and output parameters.                                #}
 {% macro function(func, export_name) -%}
-{{ module.name }}.{{ export_name }}.argtypes = []
+{%- set callargs = [] -%}
+{%- set outargs = [] -%}
+{{ module.name }}.{{ export_name }}.argtypes = [{{ join_types(func.args) }}]
+{%- if func.ret.dims %}
+{{ module.name }}.{{ export_name }}.restype = ctypes.POINTER({{ func.ret.pytype }})
+{%- else %}
 {{ module.name }}.{{ export_name }}.restype = {{ func.ret.pytype }}
+{%- endif %}
 def {{ func.name }}({{ join_args(func.args) }}):
     {{ prepare_args(func.args, callargs, outargs) }}
     result = {{ module.name }}.{{ export_name }}({{ join_list(callargs) }})
-    return result
+    {%- if func.ret.ftype %}
+    return {{ func.ret.ftype }}(result)
+    {%- elif func.ret.strlen %}
+    return result.value.decode('{{ config.get('parser', 'encoding') }}')
+    {%- else %}
+    return result{% if func.ret.dims %}[:{% for dim in func.ret.dims if dim %}{{ dim }}{% if not loop.last %} * {% endif %}{% endfor %}]{% endif %}
+    {%- endif -%}
     {%- if outargs -%}
     , {{ join_list(outargs) }}
     {%- endif %}
-    return {{ module.name }}.{{ export_name }}()
 {%- endmacro %}
 
 {#-------------------------------------------------------------------------------------------------------------------#}
 {# Function via subroutine call: Translate input parameters and return output parameters.                            #}
 {% macro subfunc(sub, export_name) -%}
-{{ module.name }}.{{ export_name }}.argtypes = []
+{%- set callargs = [] -%}
+{%- set outargs = [] -%}
+{{ module.name }}.{{ export_name }}.argtypes = [{% if sub.args %}{{ join_types(sub.args) }}, {% endif %}{% if sub.ret.strlen %}ctypes.c_char_p{% else %}ctypes.c_void_p{% endif %}]
 {{ module.name }}.{{ export_name }}.restype = None
 def {{ sub.name }}({{ join_args(sub.args) }}):
-    {{ module.name }}.{{ export_name }}()
+    {%- if sub.ret.strlen -%}
+    {%- do outargs.append('result.value.decode("' + config.get('parser', 'encoding') + '").rstrip()') %}
+    result = ctypes.create_string_buffer({{ sub.ret.strlen }})
+    result_ptr = ctypes.cast(result, ctypes.c_char_p)
+    {%- else %}
+    # Unsupported return type {{ arg.type }}
+    {%- endif %}
+    {{ prepare_args(sub.args, callargs, outargs) }}
+    {%- if sub.ret.strlen -%}{%- do callargs.append('result_ptr') -%}{%- endif %}
+    {{ module.name }}.{{ export_name }}({{ join_list(callargs) }})
+    return {{ join_list(outargs) }}
 {%- endmacro %}
 
 
@@ -77,7 +100,7 @@ def {{ sub.name }}({{ join_args(sub.args) }}):
 
 {#- Arrays are special, however dynamic or not does not matter. -#}
 {%- if arg.dims and not arg.ftype -%}
-ctypes.POINTER({{ arg.pytype }})
+ctypes.POINTER(ctypes.POINTER({{ arg.pytype }}))
 
 {#- Strings have an own pointer type. -#}
 {%- elif arg.strlen -%}
@@ -124,17 +147,26 @@ ctypes.POINTER({{ arg.pytype }})
     {%- do callargs.append(None) %}
     {%- if arg.intent == 'OUT' or arg.intent == 'INOUT' %}{%- do outargs.append(None) -%}{%- endif %}
     # TODO prepare Derived Type
-    
     {%- elif arg.dims[0] %}
-    {%- do callargs.append(arg.name + '_intern') %}
-    {%- if arg.intent == 'OUT' or arg.intent == 'INOUT' %}{%- do outargs.append(arg.name + '_intern[:]') -%}{%- endif %}
-    {{ arg.name }}_intern = ({{ arg.pytype }}{% for dim in arg.dims if dim %} * {{ dim }}{% endfor %})({% if not arg.intent == 'OUT' %}*{{ arg.name }}{% endif %})
-    
+    {%- do callargs.append('ctypes.byref(' + arg.name + '_intern)') -%}
+    {%- if arg.intent == 'OUT' or arg.intent == 'INOUT' %}{%- do outargs.append(arg.name + '_array[:]') -%}{%- endif %}
+    {{ arg.name }}_array = ({{ arg.pytype }}{% for dim in arg.dims if dim %} * {{ dim }}{% endfor %})({% if not arg.intent == 'OUT' %}*{{ arg.name }}{% endif %})
+    {{ arg.name }}_intern = ctypes.cast({{ arg.name }}_array, ctypes.POINTER({{ arg.pytype }}))
     {%- else %}
-    {%- do callargs.append(None) %}
-    {%- if arg.intent == 'OUT' or arg.intent == 'INOUT' %}{%- do outargs.append(None) -%}{%- endif %}
-    # Cannot handle dynamic arrays
-    
+    {%- if arg.intent == 'OUT' %}
+    {%- do callargs.append(None) -%}
+    {%- do outargs.append(None) -%}
+    # Cannot handle dynamic out arrays
+    {%- elif arg.intent == 'INOUT' %}
+    {%- do callargs.append('ctypes.byref(' + arg.name + '_intern)') -%}
+    {%- do outargs.append(arg.name + '_array[:]') %}
+    {{ arg.name }}_array = ({{ arg.pytype }} * len({{ arg.name }}))(*{{ arg.name }})
+    {{ arg.name }}_intern = ctypes.cast({{ arg.name }}_array, ctypes.POINTER({{ arg.pytype }}))
+    {%- else %}
+    {%- do callargs.append('ctypes.byref(' + arg.name + '_intern)') -%}
+    {{ arg.name }}_array = ({{ arg.pytype }} * len({{ arg.name }}))({% if not arg.intent == 'OUT' %}*{{ arg.name }}{% endif %})
+    {{ arg.name }}_intern = ctypes.cast({{ arg.name }}_array, ctypes.POINTER({{ arg.pytype }}))
+    {%- endif %}
     {%- endif %}
     
     {#- ... as do DerivedTypes (which carry their own pointer) ... -#}
@@ -142,15 +174,26 @@ ctypes.POINTER({{ arg.pytype }})
     {%- if not arg.intent or arg.intent == 'IN' %}
     {%- do callargs.append(arg.name + '._ptr') %}
     {%- elif arg.intent == 'INOUT' %}
-    {%- do callargs.append('ctypes.byref(' + arg.name + '._ptr)') %}
+    {%- do callargs.append('ctypes.byref(ctypes.cast(' + arg.name + '._ptr, ctypes.c_void_p))') %}
     {%- do outargs.append(arg.name) %}
     {%- else %}
-    # TODO Derived Type output variables.
-    {%- do callargs.append(None) %}
-    {%- do outargs.append(None) %}
+    {%- do callargs.append('ctypes.byref(ctypes.cast(' + arg.name + '_intern._ptr, ctypes.c_void_p))') %}
+    {%- do outargs.append(arg.name + '_intern') %}
+    {{ arg.name }}_intern = {{ arg.ftype }}(None, False)
     {%- endif %}
     
-    {#- Basic types are only special in INOUT/OUT mode. -#}
+    {#- ... strings are passed via buffer ...#}
+    {%- elif arg.strlen %}
+    {%- if arg.intent == 'OUT' or arg.intent == 'INOUT' %}
+    {%- do callargs.append('ctypes.byref(' + arg.name + '_ptr)') %}
+    {%- do outargs.append(arg.name + '_intern.value.decode("' + config.get('parser', 'encoding') + '")') -%}
+    {% else %}
+    {%- do callargs.append(arg.name + '_ptr') %}
+    {%- endif %}
+    {{ arg.name }}_intern = ctypes.create_string_buffer({% if not arg.intent == 'OUT'%}{{ arg.name }}.encode('{{ config.get('parser', 'encoding') }}'), {% endif %}{{ arg.strlen }})
+    {{ arg.name }}_ptr = ctypes.cast({{ arg.name }}_intern, ctypes.c_char_p)
+    
+    {#- ... and basic types are only special in INOUT/OUT mode. -#}
     {%- else %}
     {%- if not arg.intent or arg.intent == 'IN' %}
     {%- do callargs.append(arg.name) %}

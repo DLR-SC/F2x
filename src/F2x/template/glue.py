@@ -29,7 +29,6 @@ class DerivedType(object):
         return "<{0} at {1:X}>".format(self.__class__.__name__, self._ptr)
 
     def call(self, method, *args):
-        print("Call {0} on {1}".format(method.__name__, self))
         return method(self._ptr, *args)
 
 

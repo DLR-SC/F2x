@@ -1,0 +1,56 @@
+= Supported features
+
+This document summarizes the supported features of FORTRAN. Most of the features are implemented in the different
+templates, so there will be a section on every template there is.
+
+== Type support
+
+The following basic types are supported. 
+
+[width="80%",options="header"]
+|============================================
+|Fortran type     |C type  |Comment
+|INTEGER          |int     |
+|REAL(8)          |double  |
+|LOGICAL          |bool    |
+|CHARACTER(__N__) |char *  |Only fixed length strings are allowed by now.
+|============================================
+
+There is also support for derived types. For best compatibility, memory management is left to FORTRAN. Instances
+of derived types are opaque pointers in (i.e. void *) and can only be accessed using generated getter and setter
+functions / routines.
+
+== BIND-C-Support
+
+The `_bindc.f90.t` provides a C-like interface to the FORTRAN code is as used by all other higher level templates.
+Due to this fact, only features supported by this layer can also be supported by other layers. Although the
+actual template is rather complex, it is important to support as much as possible on this level.
+
+=== Derived data types
+
+Derived data types are automatically wrapped. Fields, that are not supported (yet) are simply ignored. I.e. you
+still can use the derived type but you cannot access those fields.
+
+[width="80%",options="header"]
+|============================================
+|Field type                   |Attributes                 |Read |Write |Comment
+.4+|INTEGER, REAL(8), LOGICAL |                           |X    |X     |
+                              |DIMENSION(__N__)           |-    |-     |
+                              |ALLOCATEABLE, DIMENSION(:) |-    |-     |
+                              |POINTER                    |     |      |
+|============================================
+
+=== Subroutines
+
+Subroutines can be wrapped. Make sure to list them in the [export] section of the wrapper configuration (i.e. the
+*.f90-wrap file). The following dummy arguments are currently considered:
+
+[width="80%",options="header"]
+|=========================================================================
+|   Fortran type              |Attributes  |INTENT(IN) |INTENT(OUT) |INTENT(INOUT) |Comment
+.2+|INTEGER, REAL(8), LOGICAL |            |X          |X           |X             |
+                              |DIMENSION(:)|X          |X           |X             |INOUT arrays are not manipulated in-place (yet). Instead, a new array is returned.
+.2+|CHARACTER(__N__)          |            |X          |X           |X             |
+                              |DIMENSION(:)|-          |-           |-             |Arrays of strings are not handled yet as the semantics are a bit unclear.
+|TYPE(...)                    |            |X          |X           |X             |
+|=========================================================================
