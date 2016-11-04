@@ -1,5 +1,5 @@
 [replace]
-53 =        INTEGER, INTENT(OUT) :: OUTARRAY(3)
+55 =        INTEGER, INTENT(OUT) :: OUTARRAY(3)
 
 
 [export]

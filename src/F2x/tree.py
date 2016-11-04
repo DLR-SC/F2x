@@ -64,6 +64,7 @@ class VarDecl(Node):
                 self["strlen"] = int(type_spec.select1("char_selector int_literal_constant").tail[0])
                 self["intent"] = "IN"
                 self["type"] = "TYPE(C_PTR)"
+                self["pytype"] = "ctypes.c_char_p"
                 self["getter"] = "subroutine"
                 self["setter"] = "subroutine"
             except ValueError:
@@ -95,10 +96,12 @@ class VarDecl(Node):
             if "setter" in self:
                 del self["setter"]
 
-        if self["type"] in self._PYTYPES:
+        if "pytype" not in self \
+        and self["type"] in self._PYTYPES:
             self["pytype"] = self._PYTYPES[self["type"]]
         
-        if self["type"] in self._CSTYPES:
+        if "cstype" not in self \
+        and self["type"] in self._CSTYPES:
             self["cstype"] = self._CSTYPES[self["type"]]
 
         try:

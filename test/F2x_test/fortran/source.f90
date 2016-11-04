@@ -5,6 +5,8 @@ MODULE SOURCE
         REAL(8) :: REALFIELD
         LOGICAL :: LOGICALFIELD
 
+        CHARACTER(32) :: CHARFIELD
+
         INTEGER                        :: INTARRAY(3)
         REAL(8), ALLOCATABLE           :: REALARRAY(:)
         LOGICAL, POINTER, DIMENSION(:) :: LOGICALARRAY => NULL()

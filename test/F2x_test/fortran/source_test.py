@@ -1,7 +1,6 @@
 import pytest
 
 from F2x_test.fortran import source_glue as src
-from Cython.Compiler.Naming import outer_scope_cname
 
 
 def test_basic_type_intfield():
@@ -27,6 +26,11 @@ def test_basic_type_logicalfield_false():
     bt.LOGICALFIELD = False
     assert bt.LOGICALFIELD == False
 
+
+def test_basic_type_charfield():
+    bt = src.BASIC_TYPE()
+    bt.CHARFIELD = "test"
+    assert bt.CHARFIELD == "test"
 
 def test_basic_type_init():
     bt = src.BASIC_TYPE(INTFIELD=2, REALFIELD=3.4, LOGICALFIELD=False)
@@ -97,9 +101,9 @@ def test_compound_type_basicarray():
     assert ct.BASICARRAY[1].REALFIELD == 2.3
 
 
-def test_compound_type_basicarray_init():
-    ct = src.COMPOUND_TYPE(BASICARRAY=[src.BASIC_TYPE(INTFIELD=5)])
-    assert ct.BASICARRAY[0].INTFIELD == 5
+#def test_compound_type_basicarray_init():
+#    ct = src.COMPOUND_TYPE(BASICARRAY=[src.BASIC_TYPE(INTFIELD=5)])
+#    assert ct.BASICARRAY[0].INTFIELD == 5
 
 
 def test_basic_args_in():

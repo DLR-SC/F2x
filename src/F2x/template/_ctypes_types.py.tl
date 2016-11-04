@@ -38,7 +38,7 @@
 
 {#- Subroutines getter only for strings. #}
 {%- elif field.getter == 'subroutine' and field.strlen %}
-{{ module.name }}.{{ type.name }}_get_{{ field.name }}.argtypes = [ctypes.c_void_p, ctypes.c_char_p]
+{{ module.name }}.{{ type.name }}_get_{{ field.name }}.argtypes = [ctypes.c_void_p, {{ field.pytype }}]
 {{ module.name }}.{{ type.name }}_get_{{ field.name }}.restype = None
 
 {#- All other getters are straight forward. #}
@@ -83,7 +83,7 @@
     def _get_{{ field.name }}(self):
         buffer = ctypes.create_string_buffer({{ field.strlen + 1 }})
         {{ module.name }}.{{ type.name }}_get_{{ field.name }}(self._ptr, buffer)
-        return buffer.value
+        return buffer.value.decode("{{ config.get('parser', 'encoding') }}").rstrip()
 
 	{#- Other types are (more ore less) straight forward. #}
     {%- elif field.getter == 'function' %}
@@ -109,7 +109,12 @@
     {%- elif field.setter == 'subroutine' %}
     {%- do prop.append("_set_" + field.name) %}
     def _set_{{ field.name }}(self, value):
+        {%- if field.strlen %}
+        buffer = ctypes.create_string_buffer(value.encode("{{ config.get('parser', 'encoding') }}"), {{ field.strlen }})
+        {{ module.name }}.{{ type.name }}_set_{{ field.name }}(self._ptr, buffer)
+        {%- else %}
         {{ module.name }}.{{ type.name }}_set_{{ field.name }}(self._ptr, value)
+        {%- endif %}
     {%- endif %}
 {%- endmacro %}
 
