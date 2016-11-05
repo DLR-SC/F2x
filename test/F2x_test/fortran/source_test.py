@@ -1,3 +1,8 @@
+# -*- encoding: utf-8 -*-
+"""
+These tests use the generated interfaces for 'source.f90'. To see details on the exported types and routines, please
+see the base source file itself.
+"""
 import pytest
 
 from F2x_test.fortran import source_glue as src
@@ -125,9 +130,9 @@ def test_basic_args_out():
 
 
 def test_array_args():
-    outarray, inoutarray = src.BASIC_ARGS_ARRAY([1, 2, 3], [7, 8])
+    outarray, inoutarray = src.BASIC_ARGS_ARRAY([1, 2, 3], [6, 7, 8])
     assert outarray == [4, 5, 6]
-    assert inoutarray == [8, 8]
+    assert inoutarray == [7, 7, 8]
 
 
 def test_string_args():

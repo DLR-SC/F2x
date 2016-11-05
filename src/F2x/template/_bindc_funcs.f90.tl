@@ -102,10 +102,9 @@
 {# Type declaration of an argument.                                                                                  #}
 {% macro type_spec(arg) -%}
     {{ arg.type }}{% if arg.kind %}(KIND={{ arg.kind }}){% endif %}
-{%- if arg.dims -%}
-, DIMENSION({{ dims_list(arg.dims) }})
+{%- if arg.dims %}, DIMENSION({{ dims_list(arg.dims) }})
+{%- elif arg.intent %}, INTENT({{ arg.intent }})
 {%- endif -%}
-{%- if arg.intent %}, INTENT({{ arg.intent }}){% endif %}
 {%- if not arg.dims and arg.intent == 'IN' -%}
 	, VALUE
 {%- endif -%}
@@ -114,19 +113,39 @@
 {#-------------------------------------------------------------------------------------------------------------------#}
 {# Declare dummy args (and internal shadows where required).                                                         #}
 {% macro arg_types(args, callargs, outargs) -%}
-{%- for arg in args -%}
-        {{ type_spec(arg) }} :: {{ arg.name }}{% if arg.ftype %}{% do callargs.append(arg.name + '_INTERN') %}
-        TYPE({{ arg.ftype }}), POINTER :: {{ arg.name }}_INTERN{% elif arg.strlen %}{% do callargs.append(arg.name + '_STR') %}
-        CHARACTER(LEN={{ arg.strlen }}) :: {{ arg.name }}_STR{% else %}{% do callargs.append(arg.name) %}{% endif %}
-        {% if arg.intent == 'IN' or arg.intent == 'INOUT' %}{% do outargs.append(arg) %}{% endif -%}
-{%- endfor -%}
+{%- for arg in args %}
+    {%- if arg.dims %}
+    {%- do callargs.append(arg.name + '_INTERN') %}
+        TYPE(C_PTR), INTENT({{ arg.intent }}) :: {{ arg.name }}
+        {{ type_spec(arg) }}, POINTER :: {{ arg.name }}_INTERN
+    {%- else %}
+        {{ type_spec(arg) }} :: {{ arg.name }}
+        {%- if arg.ftype %}
+        {%- do callargs.append(arg.name + '_INTERN') %}
+        TYPE({{ arg.ftype }}), POINTER :: {{ arg.name }}_INTERN
+        {%- elif arg.strlen %}
+        {%- do callargs.append(arg.name + '_STR') %}
+        CHARACTER(LEN={{ arg.strlen }}) :: {{ arg.name }}_STR
+        {%- else %}
+        {%- do callargs.append(arg.name) %}
+        {%- endif %}
+    {%- endif %}
+
+    {%- if arg.intent == 'IN' or arg.intent == 'INOUT' %}{% do outargs.append(arg) %}{% endif -%}
+{%- endfor %}
 {%- endmacro %}
 
 {#-------------------------------------------------------------------------------------------------------------------#}
 {# Declare dummy args (and internal shadows where required).                                                         #}
 {% macro arg_casts(args) -%}
 {%- for arg in args -%}
-    {%- if arg.strlen %}
+    {%- if arg.dims %}
+        {%- if arg.intent == 'OUT' %}
+        ALLOCATE({{ arg.name }}_INTERN({{ join_list(arg.dims) }}))
+        {%- else %}
+        CALL C_F_POINTER({{ arg.name }}, {{ arg.name }}_INTERN, [{{ join_list(arg.dims) }}])
+        {%- endif %}
+    {%- elif arg.strlen %}
         CALL C_F_STRING({{ arg.name }}, {{ arg.name }}_STR)
     {%- elif arg.ftype %}
         CALL C_F_POINTER({{ arg.name }}, {{ arg.name }}_INTERN)
@@ -138,7 +157,9 @@
 {# Declare dummy args (and internal shadows where required).                                                         #}
 {% macro out_casts(args) -%}
 {%- for arg in args if arg.intent == 'OUT' or arg.intent == 'INOUT' -%}
-    {%- if arg.strlen %}
+    {%- if arg.dims %}
+        {{ arg.name }} = C_LOC({{ arg.name }}_INTERN)
+    {%- elif arg.strlen %}
         CALL F_C_STRING({{ arg.name }}_STR, {{ arg.name }}, {{ arg.strlen }})
     {%- elif arg.ftype %}
         {{ arg.name }} = C_LOC({{ arg.name }}_INTERN)

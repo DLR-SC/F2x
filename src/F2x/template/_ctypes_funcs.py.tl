@@ -14,6 +14,7 @@
 def {{ sub.name }}({{ join_args(sub.args) }}):
     {{ prepare_args(sub.args, callargs, outargs) }}
     {{ module.name }}.{{ export_name }}({{ join_list(callargs) }})
+    {{ cleanup_args(sub.args) }}
     {%- if outargs %}
     return {{ join_list(outargs) }}
     {%- endif %}
@@ -63,6 +64,7 @@ def {{ sub.name }}({{ join_args(sub.args) }}):
     {{ prepare_args(sub.args, callargs, outargs) }}
     {%- if sub.ret.strlen -%}{%- do callargs.append('result_ptr') -%}{%- endif %}
     {{ module.name }}.{{ export_name }}({{ join_list(callargs) }})
+    {{ cleanup_args(sub.args) }}
     return {{ join_list(outargs) }}
 {%- endmacro %}
 
@@ -150,8 +152,12 @@ ctypes.POINTER({{ arg.pytype }})
     {%- elif arg.dims[0] %}
     {%- do callargs.append('ctypes.byref(' + arg.name + '_intern)') -%}
     {%- if arg.intent == 'OUT' or arg.intent == 'INOUT' %}{%- do outargs.append(arg.name + '_array[:]') -%}{%- endif %}
-    {{ arg.name }}_array = ({{ arg.pytype }}{% for dim in arg.dims if dim %} * {{ dim }}{% endfor %})({% if not arg.intent == 'OUT' %}*{{ arg.name }}{% endif %})
+    {%- if arg.intent == 'OUT' %}
+    {{ arg.name }}_intern = ctypes.POINTER({{ arg.pytype }})()
+    {%- else %}
+    {{ arg.name }}_array = ({{ arg.pytype }}{% for dim in arg.dims if dim %} * {{ dim }}{% endfor %})(*{{ arg.name }})
     {{ arg.name }}_intern = ctypes.cast({{ arg.name }}_array, ctypes.POINTER({{ arg.pytype }}))
+    {%- endif %}
     {%- else %}
     {%- if arg.intent == 'OUT' %}
     {%- do callargs.append(None) -%}
@@ -206,4 +212,16 @@ ctypes.POINTER({{ arg.pytype }})
     {%- endif %}
 
     {%- endfor %}
+{%- endmacro %}
+
+{#-------------------------------------------------------------------------------------------------------------------#}
+{#- Convert output arguments.                                                                                       -#}
+{% macro cleanup_args(args) -%}
+{%- for arg in args if arg.intent != 'IN' -%}
+    {%- if arg.dims and arg.intent == 'OUT' %}
+    {{ arg.name }}_array = ({{ arg.pytype }}
+    {%- for dim in arg.dims %} * {{ dim }}{% endfor -%}
+    ).from_address(ctypes.addressof({{ arg.name }}_intern.contents))
+    {%- endif %}
+{%- endfor -%}
 {%- endmacro %}

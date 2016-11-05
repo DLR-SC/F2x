@@ -13,8 +13,8 @@ core.setup(
     packages=setuptools.find_packages('src'),
     package_dir={ '': 'src' },
     package_data={
-        'F2x.grammar': ["*.g", ],
-        'F2x.template': ["*.t", ],
+        'F2x.grammar': ["*.g"],
+        'F2x.template': ["*.t", "*.tl"],
     },
     
     install_requires = [
@@ -25,6 +25,7 @@ core.setup(
     entry_points = {
         'console_scripts': [
             'F2x=F2x.main:main',
+            'F2x-lib=F2x.lib.main:main',
         ],
     }
 )

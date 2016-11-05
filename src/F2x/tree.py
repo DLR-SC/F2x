@@ -33,9 +33,9 @@ class VarDecl(Node):
     }
     
     _CSTYPES = {
-        "REAL": "double",
-        "INTEGER": "long",
-        "LOGICAL": "bool",
+        "REAL": "Double",
+        "INTEGER": "Int32",
+        "LOGICAL": "Int32",
         "TYPE(C_PTR)": "IntPtr",
     }
      
@@ -65,6 +65,7 @@ class VarDecl(Node):
                 self["intent"] = "IN"
                 self["type"] = "TYPE(C_PTR)"
                 self["pytype"] = "ctypes.c_char_p"
+                self["cstype"] = "String"
                 self["getter"] = "subroutine"
                 self["setter"] = "subroutine"
             except ValueError:
