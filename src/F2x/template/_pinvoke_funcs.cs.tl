@@ -20,8 +20,9 @@
 {#-------------------------------------------------------------------------------------------------------------------#}
 {# Import function and create calling interface.                                                                     #}
 {% macro func(export_name, func, lib_name) -%}
+{%- set callargs = [] -%}
         [DllImport("{{ lib_name }}", EntryPoint="{{ export_name }}")]
-        private static extern {% if func.ret.dims %}IntPtr{% else %}{{ func.ret.cstype }}{% endif %} {{ export_name }}({{ make_pinvoke_args(sub.args) }});
+        private static extern {% if func.ret.dims %}IntPtr{% else %}{{ func.ret.cstype }}{% endif %} {{ export_name }}({{ make_pinvoke_args(func.args) }});
     {%- if func.ret.ftype %}
         public static {{ func.ret.ftype }} {{ func.name }}({{ make_cs_args(func.args) }}) {
             {{ prepare_args(func.args, callargs) }}
@@ -52,12 +53,13 @@
 {#-------------------------------------------------------------------------------------------------------------------#}
 {# Import function called via subroutine and create calling interface.                                               #}
 {% macro subfunc(export_name, func, lib_name) -%}
+{%- set callargs = [] -%}
         [DllImport("{{ lib_name }}", EntryPoint="{{ export_name }}")]
         private static extern void {{ export_name }}(
             {%- if func.args %}{{ make_pinvoke_args(func.args) }}, {% endif -%}
             {% if func.ret.strlen %}StringBuilder{% else %}ref {{ func.ret.cstype }}{% endif %} result);
         public static {% if func.ret.ftype %}{{ func.ret.ftype }}{% else %}{{ func.ret.cstype }}{% endif %} {{ func.name }}({{ make_cs_args(func.args) }}) {
-            {{ prepare_args(func.args) }}
+            {{ prepare_args(func.args, callargs) }}
         {%- if func.ret.strlen %}
             StringBuilder result = new StringBuilder({{ func.ret.strlen }});
             {{ module.name }}.{{ export_name }}({% if callargs %}{{ join_list(callargs) }}, {% endif %}result);
@@ -80,7 +82,7 @@
 {% macro make_pinvoke_args(args) -%}
 {%- for arg in args -%}
     {%- if arg.dims -%}
-    [In{% if arg.intent != 'IN' %}, Out{% endif %}] ref {{ arg.cstype }}[] {{ arg.name }}
+    [In{% if arg.intent != 'IN' %}, Out{% endif %}] ref {{ arg.cstype }}{% for dim in arg.dims %}[]{% endfor %} {{ arg.name }}
     {%- elif arg.strlen and not arg.intent == 'IN' -%}
     ref StringBuilder {{ arg.name }}
     {%- else -%}
