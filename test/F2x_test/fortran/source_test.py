@@ -106,9 +106,10 @@ def test_compound_type_basicarray():
     assert ct.BASICARRAY[1].REALFIELD == 2.3
 
 
-#def test_compound_type_basicarray_init():
-#    ct = src.COMPOUND_TYPE(BASICARRAY=[src.BASIC_TYPE(INTFIELD=5)])
-#    assert ct.BASICARRAY[0].INTFIELD == 5
+def test_compound_type_basicarray_init():
+    ct = src.COMPOUND_TYPE(BASICARRAY=[src.BASIC_TYPE(INTFIELD=5)])
+    assert len(ct.BASICARRAY) == 1
+    assert ct.BASICARRAY[0].INTFIELD == 5
 
 
 def test_basic_args_in():

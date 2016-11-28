@@ -4,9 +4,9 @@
 # Tool configuration
 CP = cp
 FC = gfortran -fPIC -g
-CSC = mcs -debug
-F2X = F2x
-F2X_LIB = $(shell F2x-lib)
+CSC = C:/Progra~2/MSBuild/14.0/Bin/csc.exe
+F2X = python -m F2x.main
+F2X_LIB = ../src/F2x/lib
 
 # Output targets
 FLIB = lib/libSOURCE.so
@@ -21,7 +21,7 @@ SOURCE_CFG = fortran/source.f90-wrap
 # Fortran shared library dependencies
 FLIB_GEN = fortran/source_glue.f90
 FLIB_SOURCE = $(SOURCE) $(FLIB_GEN)
-FLIB_LIBS = $(F2X_LIB)/fortran/c_interface_module.f90 
+FLIB_LIBS = $(F2X_LIB)/fortran/c_interface_module.f90 $(F2X_LIB)/fortran/f2x_glue.f90
 
 # Python does not need anything else
 PYLIB_GEN = fortran/source_glue.py

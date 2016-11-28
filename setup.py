@@ -17,6 +17,12 @@ core.setup(
         'F2x.template': ["*.t", "*.tl"],
     },
     
+    setup_requires=[
+        'pytest-runner',
+    ],
+    tests_require=[
+        'pytest',
+    ],
     install_requires = [
         'plyplus',
         'jinja2',
