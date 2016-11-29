@@ -5,10 +5,61 @@ import ctypes
 
 from F2x.glue import main
 
-# Impoort Fortran library.
+class F2Array(object):
+    """
+    This class provides access to multi-dimensional Fortran arrays.  It provides the basic interface, however,
+    please use one of the concrete implementations (F2IntArray, F2DoubleArray).
+    
+    Currently, two and three dimensions are supported. The memory is managed by F2x in the Fortran space for
+    maximum compatibility. However, note that the index is 0-based.
+    
+    >>> a = F2IntArray(2, 2)
+    """
+    
+    _LIB = {
+    }
+    
+    def __init__(self, *sizes):
+        """
+        Constructor allocates a new multi-dimensional Fortran array.
+        
+        @param sizes: The size in each dimension to be allocated.
+        """
+        self._lib = self._LIB[len(sizes)]
+        self._sizes = (ctypes.c_int32 * len(sizes))(*sizes)
+        self._sizes_ptr = ctypes.cast(self._sizes, ctypes.POINTER(ctypes.c_int32))
+        self._ptr = self._lib.alloc(self._sizes_ptr)
+
+    def _check_index(self, indices):
+        """
+        Validate index or raise ValueError (if number of indices does not match dimensions) or
+        IndexError (if one of the indices is out of bounds).
+        """
+        if len(indices) != len(self._sizes):
+            raise ValueError()
+    
+        for index, size in zip(indices, self._sizes):
+            if index < 0 \
+            or index >= size:
+                raise IndexError()
+
+    def __getitem__(self, indices):
+        self._check_index(indices)
+        indices = (ctypes.c_int32 * len(self._sizes))(*indices)
+        return self._lib.getitem(self._ptr, self._sizes_ptr, ctypes.cast(indices, ctypes.POINTER(ctypes.c_int32)))
+    
+    def __setitem__(self, indices, value):
+        self._check_index(indices)
+        indices = (ctypes.c_int32 * len(self._sizes))(*indices)
+        self._lib.setitem(self._ptr, self._sizes_ptr, ctypes.cast(indices, ctypes.POINTER(ctypes.c_int32)), value)
+    
+    def __del__(self):
+        self._lib.free(self._ptr, self._sizes_ptr)
+
+# Import Fortran library.
 libF2x = ctypes.cdll.LoadLibrary(main.find_library_path())
 
-# 2D array helpers
+# 2D integer array helpers
 libF2x.F2x_int2d_alloc.argtypes = [ctypes.c_void_p]
 libF2x.F2x_int2d_alloc.restype = ctypes.c_void_p
 libF2x.F2x_int2d_getitem.argtypes = [ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p]
@@ -18,7 +69,13 @@ libF2x.F2x_int2d_setitem.restype = None
 libF2x.F2x_int2d_free.argtypes = [ctypes.c_void_p, ctypes.c_void_p]
 libF2x.F2x_int2d_free.restype = None
 
-# 3D array helpers
+class _FArray_int2d(object):
+    alloc = staticmethod(libF2x.F2x_int2d_alloc)
+    getitem = staticmethod(libF2x.F2x_int2d_getitem)
+    setitem = staticmethod(libF2x.F2x_int2d_setitem)
+    free = staticmethod(libF2x.F2x_int2d_free)
+
+# 3D integer array helpers
 libF2x.F2x_int3d_alloc.argtypes = [ctypes.c_void_p]
 libF2x.F2x_int3d_alloc.restype = ctypes.c_void_p
 libF2x.F2x_int3d_getitem.argtypes = [ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p]
@@ -28,35 +85,54 @@ libF2x.F2x_int3d_setitem.restype = None
 libF2x.F2x_int3d_free.argtypes = [ctypes.c_void_p, ctypes.c_void_p]
 libF2x.F2x_int3d_free.restype = None
 
-class F2Array(object):
-    def __init__(self, *sizes):
-        self._sizes = (ctypes.c_int32 * len(sizes))(*sizes)
-        
-        if len(self._sizes) == 2:
-            self._ptr = libF2x.F2x_int2d_alloc(ctypes.cast(self._sizes, ctypes.POINTER(ctypes.c_int32)))
-        
-        elif len(self._sizes) == 3:
-            self._ptr = libF2x.F2x_int3d_alloc(ctypes.cast(self._sizes, ctypes.POINTER(ctypes.c_int32)))
+class _FArray_int3d(object):
+    alloc = staticmethod(libF2x.F2x_int3d_alloc)
+    getitem = staticmethod(libF2x.F2x_int3d_getitem)
+    setitem = staticmethod(libF2x.F2x_int3d_setitem)
+    free = staticmethod(libF2x.F2x_int3d_free)
 
-    def __getitem__(self, index):
-        _indices = (ctypes.c_int32 * len(self._sizes))(*index)
-        return libF2x.F2x_int2d_getitem(self._ptr, ctypes.cast(self._sizes, ctypes.POINTER(ctypes.c_int32)), ctypes.cast(_indices, ctypes.POINTER(ctypes.c_int32)))
-    
-    def __setitem__(self, index, value):
-        _indices = (ctypes.c_int32 * len(self._sizes))(*index)
-        libF2x.F2x_int2d_setitem(self._ptr, ctypes.cast(self._sizes, ctypes.POINTER(ctypes.c_int32)), ctypes.cast(_indices, ctypes.POINTER(ctypes.c_int32)), value)
-    
-    def __del__(self):
-        if len(self._sizes) == 2:
-            libF2x.F2x_int2d_free(self._ptr, ctypes.cast(self._sizes, ctypes.POINTER(ctypes.c_int32)))
-        
-        elif len(self._sizes) == 3:
-            libF2x.F2x_int3d_free(self._ptr, ctypes.cast(self._sizes, ctypes.POINTER(ctypes.c_int32)))
+class F2IntArray(F2Array):
+    """ Multi-dimensional INTEGER Fortran array. """
+    _LIB = {
+        2: _FArray_int2d,
+        3: _FArray_int3d,
+    }
 
-if __name__ == '__main__':
-    a = F2Array(3, 3)
-    a[0, 0] = 1
-    a[1, 1] = 3
-    print(a[0, 0], a[1, 1])
-    
-    b = F2Array(2, 2, 2)
+# 2D double array helpers
+libF2x.F2x_real2d_alloc.argtypes = [ctypes.c_void_p]
+libF2x.F2x_real2d_alloc.restype = ctypes.c_void_p
+libF2x.F2x_real2d_getitem.argtypes = [ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p]
+libF2x.F2x_real2d_getitem.restype = ctypes.c_double
+libF2x.F2x_real2d_setitem.argtypes = [ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_double]
+libF2x.F2x_real2d_setitem.restype = None
+libF2x.F2x_real2d_free.argtypes = [ctypes.c_void_p, ctypes.c_void_p]
+libF2x.F2x_real2d_free.restype = None
+
+class _FArray_real2d(object):
+    alloc = staticmethod(libF2x.F2x_real2d_alloc)
+    getitem = staticmethod(libF2x.F2x_real2d_getitem)
+    setitem = staticmethod(libF2x.F2x_real2d_setitem)
+    free = staticmethod(libF2x.F2x_real2d_free)
+
+# 3D double array helpers
+libF2x.F2x_real3d_alloc.argtypes = [ctypes.c_void_p]
+libF2x.F2x_real3d_alloc.restype = ctypes.c_void_p
+libF2x.F2x_real3d_getitem.argtypes = [ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p]
+libF2x.F2x_real3d_getitem.restype = ctypes.c_double
+libF2x.F2x_real3d_setitem.argtypes = [ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_double]
+libF2x.F2x_real3d_setitem.restype = None
+libF2x.F2x_real3d_free.argtypes = [ctypes.c_void_p, ctypes.c_void_p]
+libF2x.F2x_real3d_free.restype = None
+
+class _FArray_real3d(object):
+    alloc = staticmethod(libF2x.F2x_real3d_alloc)
+    getitem = staticmethod(libF2x.F2x_real3d_getitem)
+    setitem = staticmethod(libF2x.F2x_real3d_setitem)
+    free = staticmethod(libF2x.F2x_real3d_free)
+
+class F2DoubleArray(F2Array):
+    """ Multi-dimensional REAL(8) Fortran array. """
+    _LIB = {
+        2: _FArray_real2d,
+        3: _FArray_real3d,
+    }
