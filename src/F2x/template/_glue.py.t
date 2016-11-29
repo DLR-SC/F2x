@@ -17,7 +17,8 @@ from {{ import_module }} import {{ config.get('pyimport', import_module) }}
 {%- endfor %}
 {%- endif %}
 
-from F2x.lib.py.glue import DerivedType, DynamicArray, DerivedTypeArray
+from F2x.glue.py.array import F2INTEGERArray, F2REALArray
+from F2x.glue.py.glue import DerivedType, DynamicArray, DerivedTypeArray
 
 _lib = '{{ config.get('generate', 'dll') }}'
 _path = os.path.join(os.path.dirname(__file__), _lib)

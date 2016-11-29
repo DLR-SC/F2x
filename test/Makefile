@@ -6,7 +6,7 @@ CP = cp
 FC = gfortran -fPIC -g
 CSC = C:/Progra~2/MSBuild/14.0/Bin/csc.exe
 F2X = python -m F2x.main
-F2X_LIB = ../src/F2x/lib
+F2X_LIB = ../src/F2x/glue
 
 # Output targets
 FLIB = lib/libSOURCE.so
@@ -34,7 +34,7 @@ CSTEST_SOURCE = cs/source_test.cs
 CSTEST_LIBS = -r:cs/SOURCE.dll $(CSLIB_LIBS)
 
 # Primary target
-all : $(FLIB) $(PYLIB) $(CSLIB) $(CSTEST)
+all : $(FLIB) $(PYLIB) #$(CSLIB) $(CSTEST)
 
 # Code generation
 $(FLIB_GEN) $(PYLIB_GEN) $(CSLIB_GEN) : $(SOURCE) $(SOURCE_CFG)

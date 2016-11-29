@@ -19,7 +19,7 @@ class F2Array(object):
     _LIB = {
     }
     
-    def __init__(self, *sizes):
+    def __init__(self, sizes, ptr=None):
         """
         Constructor allocates a new multi-dimensional Fortran array.
         
@@ -28,7 +28,7 @@ class F2Array(object):
         self._lib = self._LIB[len(sizes)]
         self._sizes = (ctypes.c_int32 * len(sizes))(*sizes)
         self._sizes_ptr = ctypes.cast(self._sizes, ctypes.POINTER(ctypes.c_int32))
-        self._ptr = self._lib.alloc(self._sizes_ptr)
+        self._ptr = ptr or self._lib.alloc(self._sizes_ptr)
 
     def _check_index(self, indices):
         """
@@ -55,6 +55,10 @@ class F2Array(object):
     
     def __del__(self):
         self._lib.free(self._ptr, self._sizes_ptr)
+    
+    @property
+    def ptr(self):
+        return ctypes.POINTER(self._lib.type).from_address(self._ptr)
 
 # Import Fortran library.
 libF2x = ctypes.cdll.LoadLibrary(main.find_library_path())
@@ -70,6 +74,7 @@ libF2x.F2x_int2d_free.argtypes = [ctypes.c_void_p, ctypes.c_void_p]
 libF2x.F2x_int2d_free.restype = None
 
 class _FArray_int2d(object):
+    type = ctypes.c_int32
     alloc = staticmethod(libF2x.F2x_int2d_alloc)
     getitem = staticmethod(libF2x.F2x_int2d_getitem)
     setitem = staticmethod(libF2x.F2x_int2d_setitem)
@@ -86,12 +91,13 @@ libF2x.F2x_int3d_free.argtypes = [ctypes.c_void_p, ctypes.c_void_p]
 libF2x.F2x_int3d_free.restype = None
 
 class _FArray_int3d(object):
+    type = ctypes.c_int32
     alloc = staticmethod(libF2x.F2x_int3d_alloc)
     getitem = staticmethod(libF2x.F2x_int3d_getitem)
     setitem = staticmethod(libF2x.F2x_int3d_setitem)
     free = staticmethod(libF2x.F2x_int3d_free)
 
-class F2IntArray(F2Array):
+class F2INTEGERArray(F2Array):
     """ Multi-dimensional INTEGER Fortran array. """
     _LIB = {
         2: _FArray_int2d,
@@ -109,6 +115,7 @@ libF2x.F2x_real2d_free.argtypes = [ctypes.c_void_p, ctypes.c_void_p]
 libF2x.F2x_real2d_free.restype = None
 
 class _FArray_real2d(object):
+    type = ctypes.c_double
     alloc = staticmethod(libF2x.F2x_real2d_alloc)
     getitem = staticmethod(libF2x.F2x_real2d_getitem)
     setitem = staticmethod(libF2x.F2x_real2d_setitem)
@@ -125,12 +132,13 @@ libF2x.F2x_real3d_free.argtypes = [ctypes.c_void_p, ctypes.c_void_p]
 libF2x.F2x_real3d_free.restype = None
 
 class _FArray_real3d(object):
+    type = ctypes.c_double
     alloc = staticmethod(libF2x.F2x_real3d_alloc)
     getitem = staticmethod(libF2x.F2x_real3d_getitem)
     setitem = staticmethod(libF2x.F2x_real3d_setitem)
     free = staticmethod(libF2x.F2x_real3d_free)
 
-class F2DoubleArray(F2Array):
+class F2REALArray(F2Array):
     """ Multi-dimensional REAL(8) Fortran array. """
     _LIB = {
         2: _FArray_real2d,
