@@ -46,8 +46,8 @@
 {% macro property(type, field) -%}
     {%- if field.dims %}
         public
-            {%- if field.dynamic %} DynamicArray
-            {%- else %} StaticArray
+            {%- if field.dynamic %} FDynamicArrayField
+            {%- else %} FArrayField
             {%- endif %}<
             {%- if field.ftype %}{{ field.ftype }}
             {%- else %}{{ field.cstype }}
@@ -70,7 +70,7 @@
             get {
     {%- if field.dims %}
         {%- if field.ftype %}
-                return new DerivedTypeArray<{{ field.ftype }}>(
+                return new FTypeArrayField<{{ field.ftype }}>(
                     this.ptr,
                     {{ type.name }}.Init{{ field.name }},
                     {{ type.name }}.Clear{{ field.name }},
@@ -78,7 +78,7 @@
                     {{ type.name }}.Get{{ field.name }}
                 );
         {%- elif field.dynamic %}
-                return new Dynamic{{ field.cstype }}Array(
+                return new FDynamicArrayField{{ field.cstype }}(
                     this.ptr,
                     {{ type.name }}.Init{{ field.name }},
                     {{ type.name }}.Clear{{ field.name }},
@@ -86,8 +86,8 @@
                     {{ type.name }}.Get{{ field.name }}
                 );
         {%- else %}
-                return new Static{{ field.cstype }}Array(
-                    this.ptr, {% for dim in field.dims %}{{ dim }}{% if not loop.last %} * {% endif %}{% endfor %},
+                return new F{{ field.dims|length }}DArrayField{{ field.cstype }}(
+                    this.ptr, new Int32[] { {% for dim in field.dims %}{{ dim }}{% if not loop.last %}, {% endif %} }{% endfor %},
                     {{ type.name }}.Get{{ field.name }}
                 );
         {%- endif %}
@@ -115,23 +115,23 @@
 {#-------------------------------------------------------------------------------------------------------------------#}
 {# Generate CopyFrom method for derived types.                                                                       #}
 {% macro copy(type) -%}
-        public override void CopyFrom(F2Type other) {
+        public override void CopyFrom(FType other) {
             {{ type.name }} from = ({{ type.name }})other;
     {%- for field in type.fields %}
             {%- if field.setter %}
             this.{{ field.name }} = from.{{ field.name }};
             {%- elif field.dims %}
             {%- if field.dynamic %}
-            this.{{ field.name }}.Resize(from.{{ field.name }}.Count);
+            this.{{ field.name }}.Init(from.{{ field.name }}.Size);
             {%- endif %}
             {%- if field.ftype %}
-            for (Int32 i = 0; i < from.{{ field.name }}.Count; i++) {
+            for (Int32 i = 0; i < from.{{ field.name }}.Size; i++) {
                 this.{{ field.name }}[i].CopyFrom(from.{{ field.name }}[i]);
             }
             {%- else %}
-            {{ field.cstype }}[] {{ field.name }}_buffer = new {{ field.cstype }}[from.{{ field.name }}.Count];
-            from.{{ field.name }}.CopyTo({{ field.name }}_buffer, 0);
-            this.{{ field.name }}.CopyFrom({{ field.name }}_buffer, 0);
+            {{ field.cstype }}[] {{ field.name }}_buffer = new {{ field.cstype }}[from.{{ field.name }}.Size];
+            from.{{ field.name }}.CopyTo({{ field.name }}_buffer);
+            this.{{ field.name }}.CopyFrom({{ field.name }}_buffer);
             {%- endif %}
             {%- elif field.ftype %}
             this.{{ field.name }}.CopyFrom(from.{{ field.name }});

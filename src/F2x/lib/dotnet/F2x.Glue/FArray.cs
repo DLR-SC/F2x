@@ -3,29 +3,69 @@
 namespace F2x.Glue
 {
     /// <summary>
-    /// This is the base class for arrays wrapped by F2x using the "_glue.f90.t" and "_glue.cs.t" templates.
+    /// General interface to access contents of an array.
     /// </summary>
-    /// <typeparam name="T">The type of the items contained by this array.</typeparam>
-    public abstract class FArray<T>
+    /// <typeparam name="T">Type of the elements this array contains.</typeparam>
+    public interface FArrayAccess<T>
     {
         /// <summary>
         /// Get the item referenced by index.
         /// </summary>
         /// <param name="index">The indices for each dimension (i.e. length of index is number of dimensions). The translation between 0-based (C) and 1-based (Fortran) indices is done automatically.</param>
         /// <returns>The referenced item or value.</returns>
-        public abstract T GetItem(Int32[] index);
+        T GetItem(Int32[] index);
+
+        /// <summary>
+        /// Copy data to managed array.
+        /// </summary>
+        /// <param name="dest">Target to copy to.</param>
+        void CopyTo(T[] dest);
 
         /// <summary>
         /// Set the item referenced by index.
         /// </summary>
         /// <param name="index">The indices for each dimension (i.e. length of index is number of dimensions). The translation between 0-based (C) and 1-based (Fortran) indices is done automatically.</param>
         /// <param name="value">The value to set at the given index.</param>
-        public abstract void SetItem(Int32[] index, T value);
+        void SetItem(Int32[] index, T value);
+
+        /// <summary>
+        /// Copy data from managed array.
+        /// </summary>
+        /// <param name="source">Input data.</param>
+        void CopyFrom(T[] source);
+    }
+
+    /// <summary>
+    /// This is the base class for arrays wrapped by F2x using the "_glue.f90.t" and "_glue.cs.t" templates.
+    /// </summary>
+    /// <typeparam name="T">The type of the items contained by this array.</typeparam>
+    public abstract class FArray<T>
+    {
+        /// <summary>
+        /// Get accessor for the array
+        /// </summary>
+        protected abstract FArrayAccess<T> Access { get; }
 
         /// <summary>
         /// Number of array entries for each dimension.
         /// </summary>
         public abstract Int32[] Count { get; }
+
+        /// <summary>
+        /// Overall size of the array.
+        /// </summary>
+        public Int32 Size
+        {
+            get
+            {
+                Int32 size = 1;
+                foreach (Int32 dim in this.Count)
+                {
+                    size *= dim;
+                }
+                return size;
+            }
+        }
 
         /// <summary>
         /// The rank (i.e. number of dimensions) this array holds.
@@ -46,12 +86,30 @@ namespace F2x.Glue
         {
             get {
                 this.CheckIndex(index);
-                return this.GetItem(index);
+                return this.Access.GetItem(index);
             }
             set {
                 this.CheckIndex(index);
-                this.SetItem(index, value);
+                this.Access.SetItem(index, value);
             }
+        }
+
+        /// <summary>
+        /// Copy data to managed array. It will be written linearzed in Column-Major (i.e. Fortran).
+        /// </summary>
+        /// <param name="dest">Array to save data.</param>
+        public void CopyTo(T[] dest)
+        {
+            this.Access.CopyTo(dest);
+        }
+
+        /// <summary>
+        /// Copy data from managed array. It will be read linearized in Column-Major (i.e. Fortran).
+        /// </summary>
+        /// <param name="source">Data to copy in.</param>
+        public void CopyFrom(T[] source)
+        {
+            this.Access.CopyFrom(source);
         }
 
         /// <summary>

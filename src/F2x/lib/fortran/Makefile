@@ -12,4 +12,4 @@ $(TARGET) : $(OBJECTS)
 	$(FC) -fPIC -shared -o $(TARGET) $(OBJECTS)
 
 clean:
-	$(RM) *.o *.mod
+	$(RM) *.o

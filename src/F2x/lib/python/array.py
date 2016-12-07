@@ -3,7 +3,7 @@ This module provides Python helper classes ("glue code") for use with code gener
 """
 import ctypes
 
-from F2x.glue import main
+from F2x.lib import main
 
 class F2Array(object):
     """
@@ -61,7 +61,7 @@ class F2Array(object):
         return ctypes.POINTER(self._lib.type).from_address(self._ptr)
 
 # Import Fortran library.
-libF2x = ctypes.cdll.LoadLibrary(main.find_library_path())
+libF2x = ctypes.cdll.LoadLibrary(main.find_library_path("fortran", "libF2x.so"))
 
 # 2D integer array helpers
 libF2x.F2x_int2d_alloc.argtypes = [ctypes.c_void_p]

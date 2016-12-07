@@ -40,13 +40,20 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="F1DArrayDouble.cs" />
+    <Compile Include="F1DArrayInt32.cs" />
+    <Compile Include="F3DArrayInt32.cs" />
+    <Compile Include="FArrayField.cs" />
+    <Compile Include="FType.cs" />
     <Compile Include="FArray.cs" />
-    <Compile Include="FDoubleArray.cs" />
-    <Compile Include="FIntArray.cs" />
-    <Compile Include="FSAArray.cs" />
+    <Compile Include="F2DArrayInt32.cs" />
+    <Compile Include="FStaticArray.cs" />
+    <Compile Include="FTypeArrayField.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
-  <ItemGroup />
+  <ItemGroup>
+    <None Include="F2x.Glue.cd" />
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.

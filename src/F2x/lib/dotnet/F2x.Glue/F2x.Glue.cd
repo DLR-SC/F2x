@@ -1,0 +1,95 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<ClassDiagram MajorVersion="1" MinorVersion="1">
+  <Class Name="F2x.Glue.F1DArrayFieldDouble" Collapsed="true">
+    <Position X="3" Y="3.25" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAQAAAgGAACAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>F1DArrayDouble.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="F2x.Glue.FDynamicArrayFieldDouble" Collapsed="true">
+    <Position X="7.5" Y="6.25" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>F1DArrayDouble.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="F2x.Glue.F1DArrayFieldInt32" Collapsed="true">
+    <Position X="18.75" Y="3.25" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAQAAAgEAACAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>F1DArrayInt32.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="F2x.Glue.FDynamicArrayFieldInt32" Collapsed="true">
+    <Position X="12" Y="6.25" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>F1DArrayInt32.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="F2x.Glue.F2DArrayFieldInt32" Collapsed="true">
+    <Position X="5.25" Y="3.25" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAQAAAgEAACAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>F2DArrayInt32.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="F2x.Glue.F2DArrayInt32" Collapsed="true">
+    <Position X="14.25" Y="4.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAEQAAAAEAACAAAAAAAAAAAAAAAAAAAAAAAAAI=</HashCode>
+      <FileName>F2DArrayInt32.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="F2x.Glue.F3DArrayFieldInt32" Collapsed="true">
+    <Position X="21" Y="3.25" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAQAAAgEAACAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>F3DArrayInt32.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="F2x.Glue.F3DArrayInt32" Collapsed="true">
+    <Position X="16.5" Y="4.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAEQAAAAEAACAAAAAAAAAAAAAAAAAAAAAAAAAI=</HashCode>
+      <FileName>F3DArrayInt32.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="F2x.Glue.FArray&lt;T&gt;" Collapsed="true">
+    <Position X="12" Y="0.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>CAABAAAAAAAAAGAACAAAAAQAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>FArray.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="F2x.Glue.FArrayField&lt;T&gt;" Collapsed="true">
+    <Position X="12" Y="1.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAIAAAAQAQAAAAEAAAAAAAAAAAAA=</HashCode>
+      <FileName>FArrayField.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="F2x.Glue.FDynamicArrayField&lt;T&gt;" Collapsed="true">
+    <Position X="9.75" Y="4.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AEAAAAAEQAAAgACACAAAAACAAAAAAAAAAAACAAAAAAI=</HashCode>
+      <FileName>FArrayField.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="F2x.Glue.FStaticArray&lt;T&gt;" Collapsed="true">
+    <Position X="12" Y="3.25" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAI=</HashCode>
+      <FileName>FStaticArray.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="F2x.Glue.FTypeArrayField&lt;T&gt;" Collapsed="true">
+    <Position X="9.75" Y="6.25" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>FTypeArrayField.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Font Name="Segoe UI" Size="9" />
+</ClassDiagram>
