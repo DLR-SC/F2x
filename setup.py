@@ -1,5 +1,11 @@
+import os
+import sys
+sys.path.append(os.path.join(os.path.dirname(__file__), "src"))
+
 import setuptools
 from distutils import core
+
+from F2x.lib import setup
 
 core.setup(
     name='F2x',
@@ -23,15 +29,19 @@ core.setup(
     tests_require=[
         'pytest',
     ],
-    install_requires = [
+    install_requires=[
         'plyplus',
         'jinja2',
     ],
     
-    entry_points = {
+    entry_points={
         'console_scripts': [
             'F2x=F2x.main:main',
             'F2x-lib=F2x.lib.main:main',
         ],
+    },
+    
+    cmdclass={
+        'build_glue': setup.BuildGlue,
     }
 )
