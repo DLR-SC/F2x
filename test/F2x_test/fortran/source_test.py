@@ -6,7 +6,7 @@ see the base source file itself.
 import pytest
 
 from F2x_test.fortran import source_glue as src
-from F2x.glue.py.array import F2INTEGERArray, F2REALArray
+from F2x.lib.python.array import F2INTEGERArray, F2REALArray
 
 
 def test_basic_type_intfield():
