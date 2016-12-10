@@ -155,10 +155,14 @@ class FuncDef(SubDef):
         var_specs = super(FuncDef, self)._init_children()
 
         # Capture return type of function for return value.
-        try:
-            self["ret"] = var_specs[self["name"] + "_VALUE"]
-        except KeyError:
-            self["ret"] = var_specs[self["name"]]
+        res_name = self._ast.select("result_name name")
+        if res_name:
+            self["ret"] = var_specs[res_name[0].tail[0]]
+        else:
+            try:
+                self["ret"] = var_specs[self["name"] + "_VALUE"]
+            except KeyError:
+                self["ret"] = var_specs[self["name"]]
 
 class Module(Node):
     def _init_children(self):
