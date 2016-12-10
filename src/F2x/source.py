@@ -173,7 +173,7 @@ class SourceFile(object):
             log.info("Writing preprocessed source to {0}...".format(pre_source_filename))
             open(pre_source_filename, 'wb').write(self.source.encode(self.config.get('parser', 'encoding')))
 
-        self.pre_source_lines = map(unicode.rstrip, self.source.split('\n'))
+        self.pre_source_lines = list(map(unicode.rstrip, self.source.split('\n')))
     
     def parse(self):
         grammar_filename = self.config.get('parser', 'grammar')
