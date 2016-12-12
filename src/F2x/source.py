@@ -131,7 +131,7 @@ class SourceFile(object):
         log.debug("Reading source from {0}...".format(self.filename))
         source_file = open(self.filename, 'rb')
         self.source = source_file.read().decode(self.config.get('parser', 'encoding'))
-        self.source_lines = map(unicode.rstrip, self.source.split('\n'))
+        self.source_lines = list(map(unicode.rstrip, self.source.split('\n')))
     
     def preprocess(self, rules=None):
         if self.source is None:
