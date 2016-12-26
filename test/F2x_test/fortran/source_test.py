@@ -5,6 +5,7 @@ see the base source file itself.
 """
 import pytest
 
+import F2x
 from F2x_test.fortran import source_glue as src
 
 
@@ -106,9 +107,14 @@ def test_compound_type_basicarray():
     assert ct.BASICARRAY[1].REALFIELD == 2.3
 
 
-#def test_compound_type_basicarray_init():
-#    ct = src.COMPOUND_TYPE(BASICARRAY=[src.BASIC_TYPE(INTFIELD=5)])
-#    assert ct.BASICARRAY[0].INTFIELD == 5
+# The following test will fail with invalid memory error. This is a problem of the
+# template...
+@pytest.mark.skipif("F2x.version < 0x10")
+def test_compound_type_basicarray_init():
+    bt = src.BASIC_TYPE(INTFIELD=5)
+    ba = [bt]
+    ct = src.COMPOUND_TYPE(BASICARRAY=ba)
+    assert ct.BASICARRAY[0].INTFIELD == 5
 
 
 def test_basic_args_in():
