@@ -1,5 +1,5 @@
 {#####################################################################################################################}
-{# F2x-Template library: _pinvoke_types.cs.tl                                                                         #}
+{# F2x-Template library: _pinvoke_types.cs.tl                                                                        #}
 {#                                                                                                                   #}
 {# This library provides macros used by the '_bindc.cs.t' template for derived type handling.                        #}
 {#####################################################################################################################}
@@ -7,6 +7,7 @@
 {#-------------------------------------------------------------------------------------------------------------------#}
 {# Import the accessor routines for a field.                                                                         #}
 {% macro import(type, field, lib_name) -%}
+        // Accessors for {{ type.name }}.{{ field.name }}
     {%- if field.dims %}
 
         {%- if field.dynamic %}
@@ -44,6 +45,7 @@
 {#-------------------------------------------------------------------------------------------------------------------#}
 {# Create property to access field.                                                                                  #}
 {% macro property(type, field) -%}
+        // Property for {{ type.name }}.{{ field.name }}
     {%- if field.dims %}
         public
             {%- if field.dynamic %} DynamicArray
@@ -121,18 +123,20 @@
             {%- if field.setter %}
             this.{{ field.name }} = from.{{ field.name }};
             {%- elif field.dims %}
+            {
             {%- if field.dynamic %}
-            this.{{ field.name }}.Resize(from.{{ field.name }}.Count);
+                this.{{ field.name }}.Resize(from.{{ field.name }}.Count);
             {%- endif %}
             {%- if field.ftype %}
-            for (Int32 i = 0; i < from.{{ field.name }}.Count; i++) {
-                this.{{ field.name }}[i].CopyFrom(from.{{ field.name }}[i]);
-            }
+                for (Int32 i = 0; i < from.{{ field.name }}.Count; i++) {
+                    this.{{ field.name }}[i].CopyFrom(from.{{ field.name }}[i]);
+                }
             {%- else %}
-            {{ field.cstype }}[] {{ field.name }}_buffer = new {{ field.cstype }}[from.{{ field.name }}.Count];
-            from.{{ field.name }}.CopyTo({{ field.name }}_buffer, 0);
-            this.{{ field.name }}.CopyFrom({{ field.name }}_buffer, 0);
+                {{ field.cstype }}[] buffer = new {{ field.cstype }}[from.{{ field.name }}.Count];
+                from.{{ field.name }}.CopyTo(buffer, 0);
+                this.{{ field.name }}.CopyFrom(buffer, 0);
             {%- endif %}
+            }
             {%- elif field.ftype %}
             this.{{ field.name }}.CopyFrom(from.{{ field.name }});
             {%- endif %}
