@@ -214,9 +214,16 @@ def {{ sub.name }}({{ join_args(sub.args) }}):
                 {%- do callargs.append('ctypes.byref(' + arg.name + '_intern)') %}
                 {%- do outargs.append(arg.name + '_intern.value') %}
     {{ arg.name }}_intern = {{ arg.pytype }}({% if arg.intent == 'INOUT' %}{{ arg.name }}{% endif %})
+<<<<<<< HEAD
             {%- endif %}
         {%- endif %}
     {%- endfor -%}
+=======
+    {%- endif %}
+
+    {%- endif %}
+
+    {%- endfor %}
 {%- endmacro %}
 
 {#-------------------------------------------------------------------------------------------------------------------#}

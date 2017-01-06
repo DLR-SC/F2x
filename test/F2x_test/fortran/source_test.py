@@ -108,6 +108,7 @@ def test_compound_type_basicarray():
     assert ct.BASICARRAY[1].REALFIELD == 2.3
 
 
+<<<<<<< HEAD
 # The following test will fail with invalid memory error. This is a problem of the
 # template...
 @pytest.mark.skipif("F2x.version < 0x10")
@@ -115,6 +116,12 @@ def test_compound_type_basicarray_init():
     bt = src.BASIC_TYPE(INTFIELD=5)
     ba = [bt]
     ct = src.COMPOUND_TYPE(BASICARRAY=ba)
+=======
+@pytest.mark.skip
+def test_compound_type_basicarray_init():
+    ct = src.COMPOUND_TYPE(BASICARRAY=[src.BASIC_TYPE(INTFIELD=5)])
+    assert len(ct.BASICARRAY) == 1
+>>>>>>> cleanup
     assert ct.BASICARRAY[0].INTFIELD == 5
 
 

@@ -125,6 +125,7 @@
             {%- elif field.dims %}
             {
             {%- if field.dynamic %}
+<<<<<<< HEAD
                 this.{{ field.name }}.Resize(from.{{ field.name }}.Count);
             {%- endif %}
             {%- if field.ftype %}
@@ -135,6 +136,18 @@
                 {{ field.cstype }}[] buffer = new {{ field.cstype }}[from.{{ field.name }}.Count];
                 from.{{ field.name }}.CopyTo(buffer, 0);
                 this.{{ field.name }}.CopyFrom(buffer, 0);
+=======
+            this.{{ field.name }}.Init(from.{{ field.name }}.Size);
+            {%- endif %}
+            {%- if field.ftype %}
+            for (Int32 i = 0; i < from.{{ field.name }}.Size; i++) {
+                this.{{ field.name }}[i].CopyFrom(from.{{ field.name }}[i]);
+            }
+            {%- else %}
+            {{ field.cstype }}[] {{ field.name }}_buffer = new {{ field.cstype }}[from.{{ field.name }}.Size];
+            from.{{ field.name }}.CopyTo({{ field.name }}_buffer);
+            this.{{ field.name }}.CopyFrom({{ field.name }}_buffer);
+>>>>>>> cleanup
             {%- endif %}
             }
             {%- elif field.ftype %}

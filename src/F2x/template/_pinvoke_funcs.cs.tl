@@ -20,12 +20,18 @@
 {#-------------------------------------------------------------------------------------------------------------------#}
 {# Import function and create calling interface.                                                                     #}
 {% macro func(export_name, func, lib_name) -%}
+<<<<<<< HEAD
     {%- set callargs = [] -%}
         [DllImport("{{ lib_name }}", EntryPoint="{{ export_name }}")]
         private static extern
         {%- if func.ret.dims %} IntPtr
         {%- else %} {{ func.ret.cstype }}
         {%- endif %} {{ export_name }}({{ make_pinvoke_args(func.args) }});
+=======
+{%- set callargs = [] -%}
+        [DllImport("{{ lib_name }}", EntryPoint="{{ export_name }}")]
+        private static extern {% if func.ret.dims %}IntPtr{% else %}{{ func.ret.cstype }}{% endif %} {{ export_name }}({{ make_pinvoke_args(func.args) }});
+>>>>>>> cleanup
     {%- if func.ret.ftype %}
         public static {{ func.ret.ftype }} {{ func.name }}({{ make_cs_args(func.args) }}) {
             {{ prepare_args(func.args, callargs) }}
@@ -58,7 +64,11 @@
 {#-------------------------------------------------------------------------------------------------------------------#}
 {# Import function called via subroutine and create calling interface.                                               #}
 {% macro subfunc(export_name, func, lib_name) -%}
+<<<<<<< HEAD
     {%- set callargs = [] -%}
+=======
+{%- set callargs = [] -%}
+>>>>>>> cleanup
         [DllImport("{{ lib_name }}", EntryPoint="{{ export_name }}")]
         private static extern void {{ export_name }}(
             {%- if func.args %}{{ make_pinvoke_args(func.args) }}, {% endif -%}
@@ -85,6 +95,7 @@
 {#-------------------------------------------------------------------------------------------------------------------#}
 {# Compile list of arguments for native interface call.                                                              #}
 {% macro make_pinvoke_args(args) -%}
+<<<<<<< HEAD
     {%- for arg in args -%}
         {%- if arg.dims -%}
             [In{% if arg.intent != 'IN' %}, Out{% endif %}] ref {{ arg.cstype }}
@@ -99,6 +110,19 @@
 
         {%- if not loop.last %}, {% endif -%}
     {%- endfor -%}
+=======
+{%- for arg in args -%}
+    {%- if arg.dims -%}
+    [In{% if arg.intent != 'IN' %}, Out{% endif %}] ref {{ arg.cstype }}{% for dim in arg.dims %}[]{% endfor %} {{ arg.name }}
+    {%- elif arg.strlen and not arg.intent == 'IN' -%}
+    ref StringBuilder {{ arg.name }}
+    {%- else -%}
+    {%- if not arg.intent == 'IN' %}ref {% endif -%}
+    {{ arg.cstype }} {{ arg.name }}
+    {%- endif -%}
+    {%- if not loop.last %}, {% endif -%}
+{%- endfor -%}
+>>>>>>> cleanup
 {%- endmacro %}
 
 {#-------------------------------------------------------------------------------------------------------------------#}
