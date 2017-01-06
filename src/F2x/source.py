@@ -131,7 +131,7 @@ class SourceFile(object):
         log.debug("Reading source from {0}...".format(self.filename))
         source_file = open(self.filename, 'rb')
         self.source = source_file.read().decode(self.config.get('parser', 'encoding'))
-        self.source_lines = map(unicode.rstrip, self.source.split('\n'))
+        self.source_lines = list(map(unicode.rstrip, self.source.split('\n')))
     
     def preprocess(self, rules=None):
         if self.source is None:
@@ -173,7 +173,7 @@ class SourceFile(object):
             log.info("Writing preprocessed source to {0}...".format(pre_source_filename))
             open(pre_source_filename, 'wb').write(self.source.encode(self.config.get('parser', 'encoding')))
 
-        self.pre_source_lines = map(unicode.rstrip, self.source.split('\n'))
+        self.pre_source_lines = list(map(unicode.rstrip, self.source.split('\n')))
     
     def parse(self):
         grammar_filename = self.config.get('parser', 'grammar')

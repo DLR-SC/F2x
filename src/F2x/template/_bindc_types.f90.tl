@@ -40,13 +40,15 @@
     SUBROUTINE {{ type.name }}_{{ field.name }}_INIT({{ type.name }}_PTR, {{ field.name }}_SIZE) BIND(C, name="{{ type.name }}_{{ field.name }}_init")
         TYPE(C_PTR), INTENT(IN), VALUE :: {{ type.name }}_PTR
         TYPE({{ type.name }}), POINTER :: {{ type.name }}_INTERN => NULL()
-        INTEGER, VALUE :: {{ field.name }}_SIZE
-        
+        TYPE(C_PTR), INTENT(IN), VALUE :: {{ field.name }}_SIZE
+        INTEGER, DIMENSION(:), POINTER :: {{ field.name }}_SIZE_INTERN
+
         CALL C_F_POINTER({{ type.name }}_PTR, {{ type.name }}_INTERN)
+        CALL C_F_POINTER({{ field.name }}_SIZE, {{ field.name }}_SIZE_INTERN, [{{ field.dims|length }}])
         {%- if field.dynamic == 'ALLOCATABLE' %}
-        IF (.NOT. ALLOCATED({{ type.name }}_INTERN%{{ field.name }})) ALLOCATE({{ type.name }}_INTERN%{{ field.name }}({{ field.name }}_SIZE))
+        IF (.NOT. ALLOCATED({{ type.name }}_INTERN%{{ field.name }})) ALLOCATE({{ type.name }}_INTERN%{{ field.name }}({% for _ in field.dims %}{{ field.name }}_SIZE_INTERN({{ loop.index }}){% if not loop.last %}, {% endif %}{% endfor %}))
         {%- elif field.dynamic == 'POINTER' %}
-        IF (.NOT. ASSOCIATED({{ type.name }}_INTERN%{{ field.name }})) ALLOCATE({{ type.name }}_INTERN%{{ field.name }}({{ field.name }}_SIZE))
+        IF (.NOT. ASSOCIATED({{ type.name }}_INTERN%{{ field.name }})) ALLOCATE({{ type.name }}_INTERN%{{ field.name }}({% for _ in field.dims %}{{ field.name }}_SIZE_INTERN({{ loop.index }}){% if not loop.last %}, {% endif %}{% endfor %}))
         {%- endif %}
     END SUBROUTINE
 

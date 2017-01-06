@@ -28,7 +28,7 @@ namespace {{ config.get('generate', 'namespace') }} {
 
     ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // TYPE {{ type.name }} from {{ module.name }}
-    public class {{ type.name }} : F2Type {
+    public class {{ type.name }} : FType {
         public {{ type.name }}() : base({{ type.name }}.New(), true) {
         }
 

@@ -8,20 +8,20 @@ class SourceTest {
 		bt.INTFIELD = 1;
 		bt.REALFIELD = 2.3;
 		bt.LOGICALFIELD = 0;
-		bt.CHARFIELD = "test";
+//		bt.CHARFIELD = "test";
 
-		for (Int32 i = 0; i < bt.INTARRAY.Count; i++) {
+		for (Int32 i = 0; i < bt.INTARRAY.Size; i++) {
 		    bt.INTARRAY[i] = (i + 1) * 2;
 		}
 
-		bt.REALARRAY.Resize(2);
+		bt.REALARRAY.Init(2);
 		bt.REALARRAY[0] = 1.2;
 		bt.REALARRAY[1] = 3.4;
 
 		Console.WriteLine("bt.INTFIELD = {0}", bt.INTFIELD);
 		Console.WriteLine("bt.REALFIELD = {0}", bt.REALFIELD);
 		Console.WriteLine("bt.LOGICALFIELD = {0}", bt.LOGICALFIELD);
-		Console.WriteLine("bt.CHARFIELD = {0}", bt.CHARFIELD);
+//		Console.WriteLine("bt.CHARFIELD = {0}", bt.CHARFIELD);
 		Console.Write("bt.INTARRAY = { ");
 		foreach (Int32 v in bt.INTARRAY) {
 		    Console.Write("{0} ", v);
@@ -82,12 +82,12 @@ class SourceTest {
         String instr = "in";
         String outstr = "out";
         String inoutstr = "inout";
-        SOURCE.SOURCE.STRING_ARGS(instr, ref outstr, ref inoutstr);
+//        SOURCE.SOURCE.STRING_ARGS(instr, ref outstr, ref inoutstr);
         Console.WriteLine("STRING_ARGS(...) -> {0} {1}", outstr, inoutstr);
 
         Console.WriteLine("BASIC_RETURN_VALUE() = {0}", SOURCE.SOURCE.BASIC_RETURN_VALUE());
         Console.WriteLine("DERIVED_TYPE_RETURN_VALUE() = {0}", SOURCE.SOURCE.DERIVED_TYPE_RETURN_VALUE());
-        Console.WriteLine("STRING_RETURN_VALUE() = {0}", SOURCE.SOURCE.STRING_RETURN_VALUE());
+//        Console.WriteLine("STRING_RETURN_VALUE() = {0}", SOURCE.SOURCE.STRING_RETURN_VALUE());
 
         Int32[] arrayres = SOURCE.SOURCE.ARRAY_RETURN_VALUE();
         Console.Write("ARRAY_RETURN_VALUE() = { ");

@@ -4,15 +4,15 @@
 # Tool configuration
 CP = cp
 FC = gfortran -fPIC -g
-CSC = mcs -debug
-F2X = F2x
-F2X_LIB = $(shell F2x-lib)
+CSC = C:/Progra~2/MSBuild/14.0/Bin/csc.exe
+F2X = python -m F2x.main
+F2X_INC = $(shell python -m F2x.lib.main -Fc)
 
 # Output targets
 FLIB = lib/libSOURCE.so
 PYLIB = F2x_test/fortran/source_glue.py
-CSLIB = cs/SOURCE.dll
-CSTEST = cs/source_test.exe
+CSLIB = dotnet/SOURCE.dll
+CSTEST = dotnet/source_test.exe
 
 # General dependencies
 SOURCE = fortran/source.f90
@@ -21,7 +21,7 @@ SOURCE_CFG = fortran/source.f90-wrap
 # Fortran shared library dependencies
 FLIB_GEN = fortran/source_glue.f90
 FLIB_SOURCE = $(SOURCE) $(FLIB_GEN)
-FLIB_LIBS = $(F2X_LIB)/fortran/c_interface_module.f90 
+FLIB_LIBS = $(shell python -m F2x.lib.main -FIx)
 
 # Python does not need anything else
 PYLIB_GEN = fortran/source_glue.py
@@ -29,9 +29,9 @@ PYLIB_GEN = fortran/source_glue.py
 # C# library dependencies and tests
 CSLIB_GEN = fortran/source_glue.cs
 CSLIB_SOURCE = $(CSLIB_GEN)
-CSLIB_LIBS = -r:$(F2X_LIB)/cs/F2x.Glue.dll
-CSTEST_SOURCE = cs/source_test.cs
-CSTEST_LIBS = -r:cs/SOURCE.dll $(CSLIB_LIBS)
+CSLIB_LIBS = $(shell python -m F2x.lib.main -N -I)
+CSTEST_SOURCE = dotnet/source_test.cs
+CSTEST_LIBS = -r:dotnet/SOURCE.dll $(CSLIB_LIBS)
 
 # Primary target
 all : $(FLIB) $(PYLIB) $(CSLIB) $(CSTEST)

@@ -7,6 +7,7 @@ import pytest
 
 import F2x
 from F2x_test.fortran import source_glue as src
+from F2x.lib.python.array import F2INTEGERArray, F2REALArray
 
 
 def test_basic_type_intfield():
@@ -140,6 +141,12 @@ def test_array_args():
     assert outarray == [4, 5, 6]
     assert inoutarray == [7, 7, 8]
 
+
+def test_ndarray_args():
+    a, b = F2INTEGERArray(1, 2), F2INTEGERArray(3, 4, 5)
+    c, d = src.BASIC_ARGS_NDARRAY(a, b)
+    print(a, b, c, d)
+    
 
 def test_string_args():
     outstr, inoutstr = src.STRING_ARGS("in", "inout")
