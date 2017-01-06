@@ -92,5 +92,6 @@ class BuildGlue(Command):
             log.error(out.decode('latin-1'))
             log.error(err.decode('latin-1'))
         else:
-            subprocess.Popen(make_cmd + ["clean"], shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-            make.communicate()
+            clean = subprocess.Popen(make_cmd + ["clean"], shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            clean.communicate()
+
