@@ -1,0 +1,13 @@
+= Known Issues
+
+The following known problems exist:
+
+== Mulit-dimensional INOUT arrays (Python)
+
+There exists a fundamental problem with INOUT arrays. When passed in to a BIND(C) FORTRAN
+routine, they automatically seem to be reordered. However, when they are written and
+returned, they are in FORTRAN order again. The current solution is to pass them in FORTRAN
+order so the returned result can be used.
+
+There is an obvious solution to this problem by simply splitting the INOUT argument into
+an IN and an OUT argument. This is however right now left to the exported code if desired.

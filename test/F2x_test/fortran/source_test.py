@@ -111,17 +111,12 @@ def test_compound_type_basicarray():
 <<<<<<< HEAD
 # The following test will fail with invalid memory error. This is a problem of the
 # template...
-@pytest.mark.skipif("F2x.version < 0x10")
+@pytest.mark.skipif("F2x.VERSION < 0x10")
 def test_compound_type_basicarray_init():
     bt = src.BASIC_TYPE(INTFIELD=5)
     ba = [bt]
     ct = src.COMPOUND_TYPE(BASICARRAY=ba)
-=======
-@pytest.mark.skip
-def test_compound_type_basicarray_init():
-    ct = src.COMPOUND_TYPE(BASICARRAY=[src.BASIC_TYPE(INTFIELD=5)])
     assert len(ct.BASICARRAY) == 1
->>>>>>> cleanup
     assert ct.BASICARRAY[0].INTFIELD == 5
 
 
@@ -150,7 +145,7 @@ def test_array_args():
 
 
 def test_ndarray_args():
-    a, b = F2INTEGERArray(1, 2), F2INTEGERArray(3, 4, 5)
+    a, b = F2INTEGERArray([1, 2]), F2INTEGERArray([3, 4, 5])
     c, d = src.BASIC_ARGS_NDARRAY(a, b)
     print(a, b, c, d)
     
@@ -189,3 +184,4 @@ def test_string_return_value():
 
 def test_array_return_value():
     assert src.ARRAY_RETURN_VALUE() == [1, 2, 3]
+

@@ -143,28 +143,48 @@ def {{ sub.name }}({{ join_args(sub.args) }}):
                 {%- do callargs.append(None) %}
                 {%- if arg.intent == 'OUT' or arg.intent == 'INOUT' %}{%- do outargs.append(None) -%}{% endif %}
     # TODO prepare Derived Type
+            {%- elif arg.dims|length == 1 and arg.dims[0] %}
                 {%- do callargs.append('ctypes.byref(' + arg.name + '_intern)') -%}
                 {%- if arg.intent == 'OUT' or arg.intent == 'INOUT' %}
                     {%- do outargs.append('{0}_intern[:{1}]'.format(arg.name, arg.dims[0])) -%}
                 {%- endif %}
 
                 {%- if arg.intent == 'OUT' %}
+=======
     {%- elif arg.dims|length == 1 and arg.dims[0] %}
+    {%- do callargs.append('ctypes.byref(' + arg.name + '_intern)') -%}
+    {%- if arg.intent == 'OUT' or arg.intent == 'INOUT' %}{%- do outargs.append(arg.name + '_array[:]') -%}{%- endif %}
+    {%- if arg.intent == 'OUT' %}
+>>>>>>> cleanup
     {{ arg.name }}_intern = ctypes.POINTER({{ arg.pytype }})()
                 {%- else %}
     {{ arg.name }}_array = ({{ arg.pytype }}{% for dim in arg.dims if dim %} * {{ dim }}{% endfor %})(*{{ arg.name }})
     {{ arg.name }}_intern = ctypes.cast({{ arg.name }}_array, ctypes.POINTER({{ arg.pytype }}))
+<<<<<<< HEAD
+                {%- endif %}
+            {%- elif arg.dims|length > 1 %}
+                {%- do callargs.append('ctypes.byref(' + arg.name + '.ptr)') -%}
+                {%- if arg.intent == 'OUT' or arg.intent == 'INOUT' %}{%- do outargs.append(arg.name) -%}{%- endif %}
+                {%- if arg.intent == 'OUT' %}
+    {{ arg.name }} = F2{{ arg.type }}Array(({{ join_list(arg.dims) }}))
+                {%- endif %}
+            {%- else %}
+                {%- if arg.intent == 'OUT' %}
+                    {%- do callargs.append(None) -%}
+                    {%- do outargs.append(None) -%}
+=======
+    {%- endif %}
     {%- elif arg.dims|length > 1 %}
     {%- do callargs.append('ctypes.byref(' + arg.name + '.ptr)') -%}
-    {%- if arg.intent == 'OUT' %}
     {%- if arg.intent == 'OUT' or arg.intent == 'INOUT' %}{%- do outargs.append(arg.name) -%}{%- endif %}
+    {%- if arg.intent == 'OUT' %}
     {{ arg.name }} = F2{{ arg.type }}Array(({{ join_list(arg.dims) }}))
     {%- endif %}
-    {%- endif %}
+    {%- else %}
     {%- if arg.intent == 'OUT' %}
     {%- do callargs.append(None) -%}
     {%- do outargs.append(None) -%}
-    {%- else %}
+>>>>>>> cleanup
     # Cannot handle dynamic out arrays
                 {%- elif arg.intent == 'INOUT' %}
                     {%- do callargs.append('ctypes.byref(' + arg.name + '_intern)') -%}
@@ -229,11 +249,11 @@ def {{ sub.name }}({{ join_args(sub.args) }}):
 {#-------------------------------------------------------------------------------------------------------------------#}
 {#- Convert output arguments.                                                                                       -#}
 {% macro cleanup_args(args) -%}
-{%- for arg in args if arg.intent != 'IN' -%}
-    {%- if arg.dims|length == 1 and arg.intent == 'OUT' %}
+    {%- for arg in args if arg.intent != 'IN' -%}
+        {%- if arg.dims|length == 1 and arg.intent == 'OUT' %}
     {{ arg.name }}_array = ({{ arg.pytype }}
-    {%- for dim in arg.dims %} * {{ dim }}{% endfor -%}
+            {%- for dim in arg.dims %} * {{ dim }}{% endfor -%}
     ).from_address(ctypes.addressof({{ arg.name }}_intern.contents))
-    {%- endif %}
-{%- endfor -%}
+        {%- endif %}
+    {%- endfor -%}
 {%- endmacro %}

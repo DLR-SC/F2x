@@ -25,6 +25,25 @@ class Node(dict):
         raise NotImplementedError()
 
 class VarDecl(Node):
+    """
+    A variable declaration.
+
+    The following properties are available:
+
+    - name: The symbolic name of the variable.
+    - type: The C type of this variable. This might be a basic type (REAL, INTEGER, LOGICAL) or TYPE(C) for any
+            other type like arrays, derived types or strings.
+    - pytype, cstype: The type to be used by Python or C# respectively.
+    - intent: May be 'IN', 'OUT' or 'INOUT'.
+    - getter: This indicates whether the generated getter should be a 'function' or 'subroutine'.
+    - setter (opt): This indicates whether a 'subroutine' should be generated as setter.
+    - ftype (opt): The name of the derived type.
+    - strlen (opt): The length of the string.
+    - kind (opt): The kind specifier if available.
+    - dynamic (opt): Indicates whether the variable is 'ALLOCATABLE' or a 'POINTER'.
+    - dims (opt): For an array contains a list with the sizes per dimension.
+    """
+
     _PYTYPES = {
         "REAL": "ctypes.c_double",
         "INTEGER": "ctypes.c_int",
@@ -119,7 +138,12 @@ class VarDecl(Node):
             intent_spec = type_spec.parent().select1("intent_spec")
             self["intent"] = intent_spec.tail[0]
         except ValueError:
-            pass
+            self["intent"] = 'IN'
+
+    def with_intent(self, intent):
+        self["intent"] = intent
+        return self
+
 
 class TypeDef(Node):
     def _init_children(self):
@@ -128,6 +152,9 @@ class TypeDef(Node):
             VarDecl(decl, 'component_') # See documentation of VarDecl.__init__
             for decl in self._ast.select("component_decl")
         ]
+        for field in self["fields"]:
+            del(field["intent"])
+
 
 class SubDef(Node):
     _PREFIX = "subroutine"
@@ -180,8 +207,22 @@ class Module(Node):
             FuncDef(funcdef)
             for funcdef in self._ast.select("function_subprogram")
         ]
-        
-#        import pprint
-#        pp = pprint.PrettyPrinter(indent=4)
-#        pp.pprint(self)
 
+    def export_methods(self, config):
+        if not config.has_section("export"):
+            return
+
+        methods = []
+        for method in self["subroutines"] + self["functions"]:
+            if config.has_option("export", method["name"].lower()):
+                method["export_name"] = config.get("export", method["name"].lower())
+                if "ret" in method:
+                    if method["ret"]["getter"] == "subroutine":
+                        method["ret"]["name"] = method["export_name"].upper() + '_OUT'
+                        method["ret"]["intent"] = "OUT"
+                    else:
+                        method["ret"]["name"] = method["export_name"].upper()
+                        del method["ret"]["intent"]
+                methods.append(method)
+
+        self["methods"] = methods

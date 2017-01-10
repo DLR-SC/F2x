@@ -1,5 +1,5 @@
 {#-#################################################################################################################-#}
-{#- F2x-Template: _glue.f90.t                                                                                      -#}
+{#- F2x-Template: _wrap.f90.t                                                                                      -#}
 {#-                                                                                                                 -#}
 {#- This template generates a wrapper around Fortran routines that are usable from C code. This is done by using    -#}
 {#- the BIND(C) standard to generate compatible interface.                                                          -#}

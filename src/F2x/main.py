@@ -6,6 +6,7 @@ from __future__ import print_function
 import argparse
 import logging
 import os
+import sys
 import time
 
 import jinja2
@@ -59,22 +60,25 @@ def parse_args(argv=None):
     args = argp.parse_args(argv)
     return args
 
+LOG_LEVELS = [
+    logging.DEBUG,
+    logging.INFO,
+    logging.WARNING,
+    logging.ERROR,
+    logging.FATAL
+]
 def init_logger(args):
     # Calculate and set log level: Default is logging.INFO (2*10).
     # Increase for every -q, decrease for every -v. Scale to range logging.DEBUG..logging.FATAL (0..40).
-    log_level = min(max((args.quiet - args.verbose) * 10, logging.DEBUG), logging.FATAL)
-    logging.basicConfig(level=log_level, format="%(levelname)-5s %(msg)s")
+    level = max(0, min(args.quiet - args.verbose, len(LOG_LEVELS) - 1))
+    logging.basicConfig(level=LOG_LEVELS[level], format="%(levelname)-5s %(msg)s")
+
     log = logging.getLogger(__name__)
-#    class log(object):
-#        info = staticmethod(print)
-#        debug = staticmethod(print)
     return log
 
 def load_templates(log, args):
     log.info(u"Loading {0} templates...".format(len(args.template)))
     templates = []
-    template_loader = jinja2.FileSystemLoader(os.path.join(package_path, u'template'))
-    template_env = jinja2.Environment(loader=template_loader, extensions=['jinja2.ext.do'])
     start = time.time()
     
     for template_filename in args.template:
@@ -82,6 +86,9 @@ def load_templates(log, args):
             template_filename = os.path.join(package_path, u'template', template_filename[1:])
         
         log.debug(u"* Loading template from {0}...".format(template_filename))
+        template_path = os.path.dirname(template_filename)
+        template_loader = jinja2.FileSystemLoader(template_path)
+        template_env = jinja2.Environment(loader=template_loader, extensions=['jinja2.ext.do'])
         template_file = open(template_filename, 'r')
         template = template_env.from_string(template_file.read())
         template_suffix, _ = os.path.splitext(os.path.basename(template_filename))
@@ -92,61 +99,6 @@ def load_templates(log, args):
     
     return templates
 
-class TreeAccess(object):
-    DEFAULT_MAPPING = {
-        u'module_name': (u'module_stmt name', False, None),
-        u'uses': (u'use_stmt', True, {
-            u'name': (u'name', False, None)
-        }),
-        u'type_defs': (u'derived_type_def', True, {
-            u'name': (u'derived_type_stmt name', False, None),
-            u'fields': (u'component_def_stmt', True, {
-                u'name': (u'component_decl name', False, None),
-                u'type': (u'intrinsic_type_kind', False, None),
-                u'kind': (u'kind_selector part_ref', False, None),
-                u'double_type': (u'intrinsic_type_spec', False, None),
-                u'type_name': (u'derived_type_spec name', False, None),
-                u'char_length': (u'char_selector int_literal_constant', False, None),
-            }),
-        }),
-        u'functions': (u'function_subprogram', True, {
-            u'name': (u'function_stmt name', False, None),
-            u'args': (u'dummy_arg', True, {
-                u'name': (u'name', False, None),
-            }),
-            u'arg_types': (u'type_declaration_stmt', True, {
-                u'entity_name': (u'entity_decl name', False, None),
-                u'type': (u'intrinsic_type_kind', False, None),
-                u'kind': (u'kind_selector part_ref', False, None),
-                u'double_type': (u'intrinsic_type_spec', False, None),
-            }),
-        }),
-        u'subroutines': (u'subroutine_subprogram', True, {
-            u'name': (u'subroutine_stmt name', False, None),
-            u'args': (u'dummy_arg', True, {
-                u'name': (u'name', False, None),
-            }),
-            u'arg_types': (u'type_declaration_stmt', True, {
-                u'entity_name': (u'entity_decl name', False, None),
-                u'type': (u'intrinsic_type_kind', False, None),
-                u'kind': (u'kind_selector part_ref', False, None),
-                u'double_type': (u'intrinsic_type_spec', False, None),
-            }),
-        }),
-    }
-    
-    def __init__(self, source_tree, mapping=None):
-        self._ast = source_tree
-        self._mapping = mapping or TreeAccess.DEFAULT_MAPPING
-    
-    def __getitem__(self, key):
-        path, coll, mapping = self._mapping.get(key, (key, True, None))
-        item = self._ast.select(path)
-        if coll:
-            item = [TreeAccess(node, mapping) for node in item]
-        else:
-            item = item[0].tail[0]
-        return item
 
 def main():
     args = parse_args()
@@ -214,6 +166,7 @@ def main():
                         print(prefix + space + ('^' * len(val)))
         
         access_tree = tree.Module(src.tree)
+        access_tree.export_methods(src.config)
         
         if not src.config.has_section('generate'):
             src.config.add_section('generate')

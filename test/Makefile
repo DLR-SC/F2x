@@ -4,13 +4,13 @@
 # Tool configuration
 CP = cp
 FC = gfortran -fPIC -g
-CSC = C:/Progra~2/MSBuild/14.0/Bin/csc.exe
+CSC = mcs
 F2X = python -m F2x.main
 F2X_INC = $(shell python -m F2x.lib.main -Fc)
 
 # Output targets
 FLIB = lib/libSOURCE.so
-PYLIB = F2x_test/fortran/source_glue.py
+PYLIB = F2x_test/fortran/source_wrap.py
 CSLIB = dotnet/SOURCE.dll
 CSTEST = dotnet/source_test.exe
 
@@ -19,12 +19,12 @@ SOURCE = fortran/source.f90
 SOURCE_CFG = fortran/source.f90-wrap
 
 # Fortran shared library dependencies
-FLIB_GEN = fortran/source_glue.f90
+FLIB_GEN = fortran/source_wrap.f90
 FLIB_SOURCE = $(SOURCE) $(FLIB_GEN)
 FLIB_LIBS = $(shell python -m F2x.lib.main -FIx)
 
 # Python does not need anything else
-PYLIB_GEN = fortran/source_glue.py
+PYLIB_GEN = fortran/source_wrap.py
 
 # C# library dependencies and tests
 CSLIB_GEN = fortran/source_glue.cs
@@ -34,11 +34,11 @@ CSTEST_SOURCE = dotnet/source_test.cs
 CSTEST_LIBS = -r:dotnet/SOURCE.dll $(CSLIB_LIBS)
 
 # Primary target
-all : $(FLIB) $(PYLIB) $(CSLIB) $(CSTEST)
+all : $(FLIB) $(PYLIB) #$(CSLIB) $(CSTEST)
 
 # Code generation
 $(FLIB_GEN) $(PYLIB_GEN) $(CSLIB_GEN) : $(SOURCE) $(SOURCE_CFG)
-	$(F2X) -t @_glue.f90.t -t @_glue.py.t -t @_glue.cs.t $(SOURCE)
+	$(F2X) -t @bindc/_wrap.f90.t -t @ctypes/_wrap.py.t -t @_glue.cs.t $(SOURCE)
 
 # Fortran library build
 $(FLIB) : $(FLIB_GEN) $(FLIB_SOURCE)

@@ -2,7 +2,7 @@
 {#- F2x-Template: _glue.cs.t                                                                                        -#}
 {#-                                                                                                                 -#}
 {#- This template generates a wrapper around the exported Fortran types and routines to be used by C#. It uses      -#}
-{#- PInvoke to call the BIND(C) interface from _glue.f90.t.                                                         -#}
+{#- PInvoke to call the BIND(C) interface from _wrap.f90.t.                                                         -#}
 {#-#################################################################################################################-#}
 {%- import '_pinvoke_types.cs.tl' as type_lib -%}
 {%- import '_pinvoke_funcs.cs.tl' as func_lib with context -%}
