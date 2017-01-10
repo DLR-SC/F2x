@@ -21,8 +21,12 @@ core.setup(
     package_data={
         'F2x.grammar': ["*.g"],
         'F2x.template': ["*.t", "*.tl"],
+        'F2x.lib': [
+            "*/Makefile",
+            "fortran/libF2x.so", "fortran/*.f90", "fortran/*.mod",
+            "dotnet/F2x.Glue.dll", "dotnet/F2x.Glue/*.cs", "dotnet/F2x.Glue/Properties/AssemblyInfo.cs"]
     },
-    
+
     setup_requires=[
         'pytest-runner',
     ],
@@ -33,15 +37,16 @@ core.setup(
         'plyplus',
         'jinja2',
     ],
-    
+
     entry_points={
         'console_scripts': [
             'F2x=F2x.main:main',
             'F2x-lib=F2x.lib.main:main',
         ],
     },
-    
+
     cmdclass={
+        'build': setup.Build,
         'build_glue': setup.BuildGlue,
     }
 )

@@ -7,9 +7,14 @@ import sys
 
 from distutils import log
 from distutils.core import Command
+from distutils.command.build import build
 
 from F2x.lib import find_library_path
 import subprocess
+
+
+class Build(build):
+    sub_commands = [('build_glue', lambda _: True)] + build.sub_commands
 
 
 class BuildGlue(Command):
