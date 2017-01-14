@@ -1,42 +1,60 @@
 {#-##################################################################################################################-#}
-{# F2x template library used by FORTRAN BIND(C) template to export methods (SUBROUTINEs and FUNCTIONs).               #}
-{#                                                                                                                    #}
-{# This is a library that provides useful macros for the generation of method wrappers.                               #}
+{#- F2x 'bindc' template call library.                                                                               -#}
+{#-                                                                                                                  -#}
+{#- This library contains macros to export FORTRAN `FUNCTION`s and `SUBROUTINE`s to C. It produces `BIND(C)`         -#}
+{#- wrappers that handle parameter conversion.                                                                       -#}
 {#-##################################################################################################################-#}
+
+
+{# Import helper library. #}
 {%- import "vars.f90.tl" as vars -%}
 
-{# Entry point: decide which kind of wrapper to generate. #}
-{% macro export_method(module, method) -%}
+
+{# Export a C API for a method.
+
+   This is the main entry point and only selects whether a `FUNCTION` or a `SUBROUTINE` is wrapped.
+
+   :param method: A :type SubDef: or :type FuncDef: node that should be exported.
+#}
+{% macro export_method(method) -%}
     {% if method.ret -%}
-        {{ export_function(module, method) }}
+        {{ export_function(method) }}
     {%- else -%}
-        {{ export_subroutine(module, method) }}
+        {{ export_subroutine(method) }}
     {%- endif %}
 {%- endmacro %}
 
 
-{#====================================================================================================================#}
-{# FUNCTION exports.                                                                                                  #}
+{# Export a `FUNCTION`.
 
-{# Export a FUNCTION either as FUNCTION or SUBROUTINE with extra OUT argument. #}
-{% macro export_function(module, method) -%}
+   Depending on the return type provides a `FUNCTION` or `SUBROUTINE` with the given export name using `BIND(C)`.
+
+   :param method: A :type FuncDef: node that defines the `FUNCTION` to be exported.
+#}
+{% macro export_function(method) -%}
     ! FUNCTION {{ method.name }}
     {% if method.ret.dims %}
         {#- Array results are casted to C pointers. -#}
-        {{ export_function_array(module, method) }}
+        {{ export_function_array(method) }}
     {%- elif method.ret.ftype -%}
         {#- TYPE(...) results need to be passed via OUT argument. -#}
-        {{ export_function_ftype(module, method) }}
+        {{ export_function_ftype(method) }}
     {%- elif method.ret.strlen -%}
         {#- CHARACTER(*) results need string conversion. -#}
-        {{ export_function_str(module, method) }}
+        {{ export_function_str(method) }}
     {%- else -%}
-        {{ export_function_basic(module, method) }}
+        {{ export_function_basic(method) }}
     {%- endif %}
 {%- endmacro %}
 
-{# Export a FUNCTION that returns an array. Result is returned as TYPE(C_PTR). #}
-{% macro export_function_array(module, method) -%}
+
+{# Export a `FUNCTION` that returns an array.
+
+   This generates a `FUNCTION` returning the result as `TYPE(C_PTR)`.
+
+   :param method: The :type FuncDef: node that specifies the exported `FUNCTIOǸ`.
+#}
+{% macro export_function_array(method) -%}
     {%- set callargs = [] -%}
     FUNCTION {{ method.export_name.upper() }}({{ vars.dummy_args(method.args) }}) BIND(C, name="{{ method.export_name }}")
         {{- declare_args(method) }}
@@ -49,8 +67,14 @@
     END FUNCTION
 {%- endmacro %}
 
-{# Export a FUNCTION with TYPE(...) result which dynamically allocated and returned as TYPE(C_PTR). #}
-{% macro export_function_ftype(module, method) -%}
+
+{# Export a `FUNCTION` that returns a derived type.
+
+   A `FUNCTION` is generated that returns the address of the result as `TYPE(C_PTR)`.
+
+   :param method: The :type FuncDef: node specifying the the `FUNCTION`.
+#}
+{% macro export_function_ftype(method) -%}
     {%- set callargs = [] -%}
     FUNCTION {{ method.export_name.upper() }}({{ vars.dummy_args(method.args) }}) BIND(C, name="{{ method.export_name }}")
         {{- declare_args(method) }}
@@ -63,8 +87,15 @@
     END FUNCTION
 {%- endmacro %}
 
-{# Export a FUNCTION with CHARACTER(*) result that is copied to a C string buffer. #}
-{% macro export_function_str(module, method) -%}
+
+{# Exprort a `FUNCTION` that returns a string.
+
+   A `SUBROUTINE` is generated that returns the result in an additional output argument that contains the string in a
+   newly allocated C string buffer.
+
+   :param method: The :type FuncDef: node that specifies the `FUNCITON`.
+#}
+{% macro export_function_str(method) -%}
     {%- set callargs = [] -%}
     SUBROUTINE {{ method.export_name.upper() }}(
             {%- if method.args %}{{ vars.dummy_args(method.args) }}, {% endif -%}
@@ -78,8 +109,14 @@
     END SUBROUTINE
 {%- endmacro %}
 
-{# Export a basic FUNCTION with simple return type. #}
-{% macro export_function_basic(module, method) -%}
+
+{# Export a `FUNCTION`.
+
+   The result is return by the generated `FUNCTION` as is.
+
+   :param method: The :type FuncDef: node that specifies the simple `FUNCTION`.
+#}
+{% macro export_function_basic(method) -%}
     {%- set callargs = [] -%}
     FUNCTION {{ method.export_name.upper() }}({{ vars.dummy_args(method.args) }}) BIND(C, name="{{ method.export_name }}")
         {{- declare_args(method) }}
@@ -91,11 +128,13 @@
 {%- endmacro %}
 
 
-{#====================================================================================================================#}
-{# SUBROUTINE exports.                                                                                                #}
+{# Export a `SUBROUTINE`.
 
-{# Export a SUBROUTINE. #}
-{% macro export_subroutine(module, method) -%}
+   A `SUBROUTINE` with `BIND(C)` interface with the given export name is generated.
+
+   :param method: The `SubDef` node specifying the exported `SUBROUTINE`.
+#}
+{% macro export_subroutine(method) -%}
     {%- set callargs = [] -%}
     ! SUBROUTINE {{ method.name }}
     SUBROUTINE {{ method.export_name.upper() }}({{ vars.dummy_args(method.args) }}) BIND(C, name="{{ method.export_name }}")
@@ -107,18 +146,26 @@
 {%- endmacro %}
 
 
-{#====================================================================================================================#}
-{# Common helpers.                                                                                                    #}
+{# Declare dummy arguments and required shadows.
 
-{# Add declarations for the dummy arguments. This also creates shadow variables with FORTRAN types where required. #}
+   :param method: The :type SubDef: or :type FuncDef: node for which the dummy arguments and shadow variables should be
+                  declared for.
+#}
 {% macro declare_args(method) -%}
     {%- for arg in method.args %}
         {{ vars.declare_arg(arg) }}
     {%- endfor %}
 {%- endmacro %}
 
-{# Cast arguments to their FORTRAN type if required. This also gathers the names of the arguments that shdould be
-   passed to the callee. #}
+
+{# Cast dummy arguments to internal FORTRAN shadow variables.
+
+   This applies the appropriate conversion where required and adds the name of the actual call argument to the output
+   list.
+
+   :param method: The :type SubDef: or :type FuncDef: node for which casting should be applied.
+   :param callargs: A list that collects the names of the acutal argument names to be used.
+#}
 {% macro cast_args(method, callargs) -%}
     {%- for arg in method.args -%}
         {%- if arg.dims or arg.strlen or arg.ftype %}
@@ -130,6 +177,13 @@
     {%- endfor %}
 {%- endmacro %}
 
+
+{# Cast output arguments back to C types.
+
+   For output arguments the appropriate conversion is applied where required.
+
+   :param method: The :type SubDef: or :type FuncDef: node for which the output arguments should be converted.
+#}
 {% macro uncast_args(method) -%}
     {%- for arg in method.args -%}
         {%- if arg.intent in ("OUT", "INOUT") and (arg.dims or arg.strlen or arg.ftype) -%}
@@ -138,7 +192,11 @@
     {%- endfor %}
 {%- endmacro %}
 
-{# Simply join a list with commas. #}
+
+{# Simply join a list with commas.
+
+   :param args: The list to be joined.
+#}
 {% macro join_list(args) -%}
     {%- for arg in args -%}
         {{ arg }}
