@@ -148,12 +148,17 @@ class VarDecl(Node):
 class TypeDef(Node):
     def _init_children(self):
         self["name"] = self._ast.select1("derived_type_stmt name").tail[0]
+        try:
+            self["public"] = (self._ast.select1("access_spec").tail[0].upper() == 'PUBLIC')
+        except ValueError:
+            self["public"] = False
+
         self["fields"] = [
             VarDecl(decl, 'component_') # See documentation of VarDecl.__init__
             for decl in self._ast.select("component_decl")
         ]
         for field in self["fields"]:
-            del(field["intent"])
+            del field["intent"]
 
 
 class SubDef(Node):

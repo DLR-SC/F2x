@@ -26,7 +26,9 @@ library_path = os.path.join(os.path.dirname(__file__), library_name)
 library = ctypes.cdll.LoadLibrary(library_path)
 
 {% for type in module.types %}
+    {%- if type.public %}
 {{ types.export_type(type) }}
+    {%- endif %}
 {% endfor %}
 
 ########################################################################################################################

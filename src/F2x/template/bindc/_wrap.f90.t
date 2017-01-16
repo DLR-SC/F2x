@@ -20,9 +20,13 @@ MODULE {{ module.name }}_WRAP
 
     IMPLICIT NONE
 
+    INTEGER, PARAMETER :: LF = 8
+
 CONTAINS
 {%- for type in module.types  %}
+    {%- if type.public %}
     {{ types.export_type(type) }}
+    {%- endif %}
 {% endfor %}
 
 {%- if module.methods %}
