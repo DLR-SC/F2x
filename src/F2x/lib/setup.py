@@ -14,6 +14,8 @@ import subprocess
 
 
 class Build(build):
+    # Overrides standard 'build' command to include 'build_glue' as subcommand.
+
     sub_commands = [('build_glue', lambda _: True)] + build.sub_commands
 
 
@@ -49,9 +51,11 @@ class BuildGlue(Command):
                 log.warn("No MinGW path configured. Make sure, 'make' is available.")
 
     def _find_mingw(self):
+        # TODO Implement heuristic.
         return r"D:\MinGW"
     
     def _find_vs(self):
+        # TODO Implement heurisic.
         return r"C:\Program Files (x86)\MSBuild\14.0\Bin"
     
     def run(self):
@@ -99,4 +103,3 @@ class BuildGlue(Command):
         else:
             clean = subprocess.Popen(make_cmd + ["clean"], shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
             clean.communicate()
-
