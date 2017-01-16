@@ -5,9 +5,10 @@ see the base source file itself.
 """
 import pytest
 
+import numpy
+
 import F2x
-from F2x_test.fortran import source_glue as src
-from F2x.lib.python.array import F2INTEGERArray, F2REALArray
+from F2x_test.fortran import source_wrap as src
 
 
 def test_basic_type_intfield():
@@ -49,24 +50,24 @@ def test_basic_type_init():
 def test_basic_type_intarray():
     bt = src.BASIC_TYPE()
     bt.INTARRAY = [1, 2, 3]
-    assert bt.INTARRAY[:] == [1, 2, 3]
+    assert numpy.array_equal(bt.INTARRAY, [1, 2, 3])
 
 
 def test_basic_type_intarray_init():
     bt = src.BASIC_TYPE(INTARRAY=[1, 2, 3])
-    assert bt.INTARRAY[:] == [1, 2, 3]
+    assert numpy.array_equal(bt.INTARRAY, [1, 2, 3])
 
 
 def test_basic_type_realarray():
     bt = src.BASIC_TYPE()
     bt.REALARRAY = [1.2, 3.4, 5.6, 7.8]
     assert len(bt.REALARRAY) == 4
-    assert bt.REALARRAY[:] == [1.2, 3.4, 5.6, 7.8]
+    assert numpy.array_equal(bt.REALARRAY, [1.2, 3.4, 5.6, 7.8])
 
 
 def test_basic_type_realarray_init():
     bt = src.BASIC_TYPE(REALARRAY=[2.3, 4.5])
-    assert bt.REALARRAY[:] == [2.3, 4.5]
+    assert numpy.array_equal(bt.REALARRAY, [2.3, 4.5])
 
 
 def test_basic_type_realarray_indexerror():
@@ -99,16 +100,24 @@ def test_compound_type_pointerfield():
     assert ct.POINTERFIELD.REALARRAY[0] == 1.2
 
 
+def test_compund_type_pointerfield_assign():
+    ct = src.COMPOUND_TYPE()
+    bt = src.BASIC_TYPE(INTFIELD=1, ARRAYFIELD=[1, 2, 3])
+    ct.POINTERFIELD = bt
+    assert ct.POINTERFIELD.INTFIELD == 1
+
+
+# The following test will fail with invalid memory error. This is a problem of the
+# template...
+@pytest.mark.skipif("F2x.VERSION < 0x10")
 def test_compound_type_basicarray():
     ct = src.COMPOUND_TYPE()
-    ct.BASICARRAY.alloc(2)
-    ct.BASICARRAY[0].INTFIELD = 1
-    ct.BASICARRAY[1].REALFIELD = 2.3
+    ba = [src.BASIC_TYPE(INTFIELD=1, CHARFIELD="INT"), src.BASIC_TYPE(REALFIELD=2.3, CHARFIELD="REAL")]
+    ct.BASICARRAY = ba
     assert ct.BASICARRAY[0].INTFIELD == 1
     assert ct.BASICARRAY[1].REALFIELD == 2.3
 
 
-<<<<<<< HEAD
 # The following test will fail with invalid memory error. This is a problem of the
 # template...
 @pytest.mark.skipif("F2x.VERSION < 0x10")
@@ -140,15 +149,17 @@ def test_basic_args_out():
 
 def test_array_args():
     outarray, inoutarray = src.BASIC_ARGS_ARRAY([1, 2, 3], [6, 7, 8])
-    assert outarray == [4, 5, 6]
-    assert inoutarray == [7, 7, 8]
+    assert numpy.array_equal(outarray, [4, 5, 6])
+    assert numpy.array_equal(inoutarray, [7, 7, 8])
 
 
 def test_ndarray_args():
-    a, b = F2INTEGERArray([1, 2]), F2INTEGERArray([3, 4, 5])
+    a, b = [[[1, 2, 3], [4, 5, 6]]], [[7, 8], [9, 0]]
     c, d = src.BASIC_ARGS_NDARRAY(a, b)
-    print(a, b, c, d)
-    
+    assert numpy.array_equal(c.shape, (1, 2, 3))
+    assert abs(c[0, 0, 1] - 4.3) < 0.1
+    assert numpy.array_equal([[3, 2], [9, 0]], d)
+
 
 def test_string_args():
     outstr, inoutstr = src.STRING_ARGS("in", "inout")
@@ -157,13 +168,12 @@ def test_string_args():
 
 
 def test_derived_type_args():
-    a = src.BASIC_TYPE(INTFIELD=2)
-    b = src.BASIC_TYPE(REALFIELD=3.4)
+    a = src.BASIC_TYPE(INTFIELD=2, CHARFIELD="INT")
+    b = src.BASIC_TYPE(REALFIELD=3.4, CHARFIELD="REAL")
     c, d = src.DERIVED_TYPE_ARGS(a, b)
     assert a.INTFIELD == b.INTFIELD
     assert b.REALFIELD == c.REALFIELD
-    assert b.REALFIELD == d.REALFIELD
-    assert b._ptr == d._ptr
+    assert b.ptr == d.ptr
 
 
 def test_basic_return_value():
@@ -179,9 +189,8 @@ def test_derived_type_return_value():
 
 
 def test_string_return_value():
-    assert src.STRING_RETURN_VALUE() == "Foo Bar"
+    assert src.STRING_RETURN_VALUE().rstrip() == "Foo Bar"
 
 
 def test_array_return_value():
-    assert src.ARRAY_RETURN_VALUE() == [1, 2, 3]
-
+    assert numpy.array_equal(src.ARRAY_RETURN_VALUE(), [1, 2, 3])

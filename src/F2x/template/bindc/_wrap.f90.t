@@ -5,6 +5,7 @@
 {#- `FUNCTION`s and `SUBROUTINE`s.                                                                                   -#}
 {#-##################################################################################################################-#}
 
+
 {#- Import helper libraries. -#}
 {%- import "calls.f90.tl" as calls -%}
 {%- import "types.f90.tl" as types -%}
@@ -21,7 +22,7 @@ MODULE {{ module.name }}_WRAP
 
 CONTAINS
 {%- for type in module.types  %}
-    {{ types.export_type(module, type) }}
+    {{ types.export_type(type) }}
 {% endfor %}
 
 {%- if module.methods %}
@@ -29,7 +30,7 @@ CONTAINS
     ! Exported subroutines and functions
     {%- for method in module.methods %}
 
-    {{ calls.export_method(module, method) }}
+    {{ calls.export_method(method) }}
     {% endfor %}
 {%- endif %}
 END

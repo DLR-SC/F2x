@@ -58,7 +58,7 @@
 #}
 {%  macro destructor(type) -%}
     SUBROUTINE {{ type.name }}_FREE(PTR) BIND(C, name="{{ type.name }}_free")
-        TYPE(C_PTR), INTENT(INOUT), VALUE :: PTR
+        TYPE(C_PTR), INTENT(INOUT) :: PTR
         TYPE({{ type.name }}), POINTER :: INSTANCE
 
         IF (.NOT. C_ASSOCIATED(PTR)) RETURN

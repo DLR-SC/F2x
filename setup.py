@@ -36,6 +36,7 @@ core.setup(
     install_requires=[
         'plyplus',
         'jinja2',
+        'numpy',
     ],
 
     entry_points={
