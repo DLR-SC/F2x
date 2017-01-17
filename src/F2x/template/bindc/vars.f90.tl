@@ -51,7 +51,7 @@
 {% macro declare_arg_array(arg) -%}
         TYPE(C_PTR){%- if arg.intent %}, INTENT({{ arg.intent }}){% endif %} :: {{ arg.name }}
     {%- if arg.strlen %}
-        CHARARCTER({{ arg.strlen }}), DIMENSIONS({{ join_dims(arg) }}) :: {{ arg.name }}_INTERN
+        CHARACTER({{ arg.strlen }}), DIMENSION({{ join_dims(arg) }}) :: {{ arg.name }}_INTERN
     {%- elif arg.ftype %}
         TYPE({{ arg.ftype }}), DIMENSION({{ join_dims(arg, ':') }}), POINTER :: {{ arg.name }}_INTERN
     {%- else %}
