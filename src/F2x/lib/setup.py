@@ -73,17 +73,17 @@ class BuildGlue(Command):
         self._run_make("fortran")
         os.chdir(old_cwd)
         
-        log.info("Building .Net assembly...")
-        if self.vs_path is not None:
-            os.environ["PATH"] = os.pathsep.join([self.vs_path] + mingw_path + old_path)
-            self._run_make("dotnet")
-        elif self.mono_path is not None:
-            os.environ["PATH"] = os.pathsep.join([self.mono_path] + mingw_path + old_path)
-            args = ['CS=mcs'.format(self.mono_path)]
-            self._run_make("dotnet", args)
-        else:
-            log.warn("No C# compiler found. The .Net assembly will not be built.")
-        os.chdir(old_cwd)
+        #log.info("Building .Net assembly...")
+        #if self.vs_path is not None:
+        #    os.environ["PATH"] = os.pathsep.join([self.vs_path] + mingw_path + old_path)
+        #    self._run_make("dotnet")
+        #elif self.mono_path is not None:
+        #    os.environ["PATH"] = os.pathsep.join([self.mono_path] + mingw_path + old_path)
+        #    args = ['CS=mcs'.format(self.mono_path)]
+        #    self._run_make("dotnet", args)
+        #else:
+        #    log.warn("No C# compiler found. The .Net assembly will not be built.")
+        #os.chdir(old_cwd)
         
         os.environ["PATH"] = os.pathsep.join(old_path)
     
