@@ -2,7 +2,7 @@
 MODULE SOURCE
 
     ! BASIC_TYPE has some different fields all of which are supported built-in types.
-    TYPE :: BASIC_TYPE
+    TYPE, PUBLIC :: BASIC_TYPE
         INTEGER :: INTFIELD
         REAL(8) :: REALFIELD
         LOGICAL :: LOGICALFIELD
@@ -15,7 +15,7 @@ MODULE SOURCE
     END TYPE
 
     ! COMPOUND_TYPE aggregates BASIC_TYPE in fields and arrays.
-    TYPE :: COMPOUND_TYPE
+    TYPE, PUBLIC :: COMPOUND_TYPE
         TYPE(BASIC_TYPE) :: BASICFIELD
         TYPE(BASIC_TYPE), ALLOCATABLE :: ALLOCATEFIELD
         TYPE(BASIC_TYPE), POINTER :: POINTERFIELD => NULL()

@@ -25,6 +25,7 @@ namespace = SOURCE
 
 [parser]
 ignore =
+	10
     76 ;        OUTARRAY3D(:,:,:) = 0.0_8
     77 ;        INOUTARRAY2D(:,:) = 3
     78

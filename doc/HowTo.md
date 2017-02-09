@@ -9,13 +9,13 @@ In contrast to `README.md`, this file reflects the actual status of this project
 
 	$ git clone https://github.com/led02/F2x
 	$ cd F2x
-	$ setup.py install
+	$ python setup.py install
 
 This should install all dependencies and a command line tool to wrap your Fortran code.
 
 **F2x** brings additional helper libraries that are directly or indirectly used by the generated wrapper. These should be built automatically when `setup.py install` is run. However, you can still invoke the build process manually using:
 
-    $ setup.py build_glue
+    $ python setup.py build_glue
 
 
 ## What it does
@@ -60,25 +60,6 @@ When this is wrapped e.g. to Python, you can easily do the following:
     foo.bar = 23
     print(foo.bar, foo.baz)
     
-While in C# you would do:
-
-    using System;
-    using F2x.Glue;
-    using test;
-    
-    class Main
-    {
-        public static Int32 Main(String[] args)
-        {
-            Foo foo = test.INIT_FOO(42, "spam");
-            Console.WriteLine("{0}", foo.bar);
-            foo.bar = 23;
-            Console.WriteLine("{0} {1}", foo.bar, foo.baz);
-            return 0;
-        }
-    }
-
-
 For language specific details, please refer to the additinal documentation for the supported languages.
 
 
@@ -121,12 +102,12 @@ For language specific details, please refer to the additinal documentation for t
 
 ## Basic usage
 
-To wrap a Fortran file, you need to tell `F2x` at least, which templates should be rendered (i.e. which wrappers to generate). Usally, you need some kind of Fortran or C glue code. This is generated using the `_glue.f90.t` template which is part of **F2x**. This produces a Fortran glue module that will be compiled with a C compatible ABI. A second
-templates accesses these modules from another language. There are already a `_glue.py.t` and ` _glue.cs.t`  template that generate Python and .Net/C# wrappers respectively.
+To wrap a Fortran file, you need to tell `F2x` at least, which templates should be rendered (i.e. which wrappers to generate). Usally, you need some kind of Fortran or C glue code. This is generated using the `bindc/_glue.f90.t` template which is part of **F2x**. This produces a Fortran glue module that will be compiled with a C compatible ABI. A second
+template accesses these modules from another language. There are already a `ctypes/_glue.py.t` template that generates a Python wrapper.
 
 So if you want to wrap a file called `foo.f90` to Python using the bundled templates, you should run:
 
-	$ F2x -t @_glue.f90.t -t @_glue.py.t foo.f90
+	$ F2x -t @bindc/_glue.f90.t -t @ctypes/_glue.py.t foo.f90
 
 The generated files will be named just like the input file but without the original extension and with the name of the template appended (again, without the `.t`). So `foo.f90` will produce a Fortran glue module called `foo_glue.f90` and a Python module called `foo_glue.py`.
 
@@ -201,7 +182,6 @@ When the wrapper was generated, most languages (like Fortran, C#) require an add
       -h, --help           show this help message and exit
       --fortran, -F        Use FORTRAN as traget language.
       --python, -P         Use Python as target language.
-      --dotnet, -N         Use Microsoft .Net (C#) as target language.
       --lang LANG          Select other language as target.
     
     Mode:
@@ -217,14 +197,9 @@ Assume you have a Fortran module `foo.f90` wrapped using `_glue.f90.t` and `_glu
 
     $ gfortran -fPIC -shared -o libfoo.so foo.f90 foo_glue.f90 $(F2x-lib -FIx)
 
-To build the .Net assembly using Mono, you need to call:
-
-    $ mcs -t:library -out:foo.dll foo_glue.cs $(F2x-lib -Nc)
-
 
 ## Known problems
 
 * Callback functions are not yet supported.
 * If you compile your ignore lists, be sure not to include empty blocks. Instead ignore the whole block including start and the respective `END` instruction. As the wrapper does not do *any* sematic analysis, you can ignore almost the whole execution part of your functions and subroutines.
 * `-v` and `-q` are cumulative, i.e. you can specify them several times to increase/decrease verbosity.
- BER

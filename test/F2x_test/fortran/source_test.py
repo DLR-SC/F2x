@@ -8,7 +8,7 @@ import pytest
 import numpy
 
 import F2x
-from F2x_test.fortran import source_wrap as src
+from F2x_test.fortran import source_glue as src
 
 
 def test_basic_type_intfield():

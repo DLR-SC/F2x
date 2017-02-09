@@ -20,7 +20,7 @@ core.setup(
     package_dir={ '': 'src' },
     package_data={
         'F2x.grammar': ["*.g"],
-        'F2x.template': ["*.t", "*.tl"],
+        'F2x.template': ["*/*.t", "*/*.tl"],
         'F2x.lib': [
             "*/Makefile",
             "fortran/libF2x.so", "fortran/*.f90", "fortran/*.mod",
