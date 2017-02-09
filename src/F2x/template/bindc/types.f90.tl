@@ -223,7 +223,7 @@
         END IF
         CALL C_F_POINTER(PTR, INSTANCE)
         {%- if field.strlen %}
-        {{ field.name }} = C_MALLOC({{ field.strlen }}_8 + 1)
+        {{ field.name }} = C_MALLOC({{ field.strlen }}_C_SIZE_T + 1)
         CALL F_C_STRING(INSTANCE%{{ field.name }}, {{ field.name }})
         {%- endif %}
     END SUBROUTINE

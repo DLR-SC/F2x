@@ -129,7 +129,7 @@
         {{ arg.name }} = C_LOC({{ arg.name }}_INTERN)
     {%- elif arg.strlen %}
         {%- if arg.intent == 'OUT' %}
-        {{ arg.name }} = C_MALLOC({{ arg.strlen }}_8 + 1)
+        {{ arg.name }} = C_MALLOC({{ arg.strlen }}_C_SIZE_T + 1)
         {%- endif %}
         CALL F_C_STRING({{ arg.name }}_INTERN, {{ arg.name }})
     {%- elif arg.ftype %}
