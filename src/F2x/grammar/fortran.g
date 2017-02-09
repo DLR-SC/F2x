@@ -608,7 +608,7 @@ type_param_value
     |   T_COLON
     ;
 
-intrinsic_type_char : T_CHARACTER (char_selector)?;
+intrinsic_type_char : T_CHARACTER;
 
 intrinsic_type_kind
     : T_INTEGER
@@ -618,10 +618,10 @@ intrinsic_type_kind
     ;
 
 intrinsic_type_spec
-    :   intrinsic_type_kind (kind_selector)?
+    :   intrinsic_type_char (char_selector)?
+    |   intrinsic_type_kind (kind_selector)?
     |   T_DOUBLEPRECISION
     |   T_DOUBLECOMPLEX
-    |   intrinsic_type_char (char_selector)?
     ;
 
 kind_selector

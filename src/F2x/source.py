@@ -3,7 +3,12 @@ Created on 12.02.2016
 
 @author: meinel
 '''
-import ConfigParser
+try:
+    import ConfigParser
+except ImportError:
+    import configparser as ConfigParser
+    unicode = str
+
 import logging
 import os
 import re
@@ -76,6 +81,7 @@ log = logging.getLogger(__name__)
 grammar_cache = {}
 package_path, _ = os.path.split(__file__)
 
+
 def load_grammar(grammar_filename):
     if grammar_filename[0] == u'@':
         # Replace '@'-prefix with path to F2x.grammar.
@@ -108,7 +114,7 @@ class SourceFile(object):
 
         self.filename = filename
         self.config_filename = filename + args.config_suffix
-        self.config = ConfigParser.ConfigParser()
+        self.config = ConfigParser.RawConfigParser()
 
         if os.path.exists(self.config_filename):
             log.debug("Reading config for {0} from {1}...".format(self.filename, self.config_filename))
@@ -119,13 +125,13 @@ class SourceFile(object):
         
         for opt in ('grammar', 'output_pre', 'encoding'):
             if not self.config.has_option('parser', opt):
-                self.config.set('parser', opt, str(getattr(args, opt)))
+                self.config.set('parser', opt, unicode(getattr(args, opt)))
     
     def read(self):
         log.debug("Reading source from {0}...".format(self.filename))
         source_file = open(self.filename, 'rb')
         self.source = source_file.read().decode(self.config.get('parser', 'encoding'))
-        self.source_lines = map(unicode.rstrip, self.source.split('\n'))
+        self.source_lines = list(map(unicode.rstrip, self.source.split('\n')))
     
     def preprocess(self, rules=None):
         if self.source is None:
@@ -139,16 +145,16 @@ class SourceFile(object):
             if '\n' in ignore:
                 ignore_lines = map(int, [line.split(';')[0].rstrip() for line in ignore.splitlines() if line])
             else:
-                ignore_lines = map(int, map(str.strip, ignore.split(',')))
+                ignore_lines = map(int, map(unicode.strip, ignore.split(',')))
 
-            lines = map(unicode.rstrip, self.source.split('\n'))
+            lines = list(map(unicode.rstrip, self.source.split('\n')))
             for index in ignore_lines:
                 lines[index - 1] = '!F2x/ignore ' + lines[index - 1]
             
             self.source = '\n'.join(lines)
         
         if self.config.has_section('replace'):
-            lines = map(unicode.rstrip, self.source.split('\n'))
+            lines = list(map(unicode.rstrip, self.source.split('\n')))
             for index in self.config.options('replace'):
                 lines[int(index) - 1] = self.config.get('replace', index)
             
@@ -167,7 +173,7 @@ class SourceFile(object):
             log.info("Writing preprocessed source to {0}...".format(pre_source_filename))
             open(pre_source_filename, 'wb').write(self.source.encode(self.config.get('parser', 'encoding')))
 
-        self.pre_source_lines = map(unicode.rstrip, self.source.split('\n'))
+        self.pre_source_lines = list(map(unicode.rstrip, self.source.split('\n')))
     
     def parse(self):
         grammar_filename = self.config.get('parser', 'grammar')

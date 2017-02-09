@@ -14,7 +14,7 @@ dist/
 downloads/
 eggs/
 .eggs/
-lib/
+#lib/
 lib64/
 parts/
 sdist/
@@ -55,3 +55,19 @@ docs/_build/
 
 # PyBuilder
 target/
+
+# PyCharm
+.idea/
+
+# Generated glue libs
+*_glue.py
+*_glue.cs
+*_glue.f90
+
+# FORTRAN atrifacts
+*.mod
+
+# C# compilation artifacts
+*.exe
+*.dll
+*.mdb
