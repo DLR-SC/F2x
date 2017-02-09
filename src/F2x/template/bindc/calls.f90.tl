@@ -57,6 +57,7 @@
 {% macro export_function_array(method) -%}
     {%- set callargs = [] -%}
     FUNCTION {{ method.export_name.upper() }}({{ vars.dummy_args(method.args) }}) BIND(C, name="{{ method.export_name }}")
+!DEC$ ATTRIBUTES DLLEXPORT :: {{ method.export_name }}
         {{- declare_args(method) }}
         {{ vars.declare_arg(method.ret) }}
         {{ cast_args(method, callargs) }}
@@ -77,6 +78,7 @@
 {% macro export_function_ftype(method) -%}
     {%- set callargs = [] -%}
     FUNCTION {{ method.export_name.upper() }}({{ vars.dummy_args(method.args) }}) BIND(C, name="{{ method.export_name }}")
+!DEC$ ATTRIBUTES DLLEXPORT :: {{ method.export_name }}
         {{- declare_args(method) }}
         {{ vars.declare_arg(method.ret) }}
         {{ cast_args(method, callargs) }}
@@ -100,6 +102,7 @@
     SUBROUTINE {{ method.export_name.upper() }}(
             {%- if method.args %}{{ vars.dummy_args(method.args) }}, {% endif -%}
             {{ method.ret.name }}) BIND(C, name="{{ method.export_name }}")
+!DEC$ ATTRIBUTES DLLEXPORT :: {{ method.export_name }}
         {{- declare_args(method) }}
         {{ vars.declare_arg(method.ret) }}
         {{ cast_args(method, callargs) }}
@@ -119,6 +122,7 @@
 {% macro export_function_basic(method) -%}
     {%- set callargs = [] -%}
     FUNCTION {{ method.export_name.upper() }}({{ vars.dummy_args(method.args) }}) BIND(C, name="{{ method.export_name }}")
+!DEC$ ATTRIBUTES DLLEXPORT :: {{ method.export_name }}
         {{- declare_args(method) }}
         {{ vars.declare_arg(method.ret) }}
         {{ cast_args(method, callargs) }}
@@ -138,6 +142,7 @@
     {%- set callargs = [] -%}
     ! SUBROUTINE {{ method.name }}
     SUBROUTINE {{ method.export_name.upper() }}({{ vars.dummy_args(method.args) }}) BIND(C, name="{{ method.export_name }}")
+!DEC$ ATTRIBUTES DLLEXPORT :: {{ method.export_name }}
         {{- declare_args(method) }}
         {{ cast_args(method, callargs) }}
         CALL {{ method.name }}({{ join_list(callargs) }})

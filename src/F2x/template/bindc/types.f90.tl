@@ -40,6 +40,7 @@
 #}
 {% macro constructor(type) -%}
     FUNCTION {{ type.name }}_NEW() RESULT(PTR) BIND(C, name="{{ type.name }}_new")
+!DEC$ ATTRIBUTES DLLEXPORT :: {{ type.name }}_new
         TYPE(C_PTR) :: PTR
         TYPE({{ type.name }}), POINTER :: INSTANCE
 
@@ -58,6 +59,7 @@
 #}
 {%  macro destructor(type) -%}
     SUBROUTINE {{ type.name }}_FREE(PTR) BIND(C, name="{{ type.name }}_free")
+!DEC$ ATTRIBUTES DLLEXPORT :: {{ type.name }}_free
         TYPE(C_PTR), INTENT(INOUT) :: PTR
         TYPE({{ type.name }}), POINTER :: INSTANCE
 
@@ -103,6 +105,7 @@
 #}
 {% macro allocator(type, field) -%}
     SUBROUTINE {{ type.name }}_ALLOC_{{ field.name }}(PTR{% if field.dims %}, SIZES{% endif %}) BIND(C, name="{{ type.name }}_alloc_{{ field.name }}")
+!DEC$ ATTRIBUTES DLLEXPORT :: {{ type.name }}_alloc_{{ field.name }}
         TYPE(C_PTR), INTENT(IN), VALUE :: PTR
         TYPE({{ type.name }}), POINTER :: INSTANCE
     {%- if field.dims %}
@@ -160,6 +163,7 @@
 #}
 {% macro getter_array(type, field) -%}
     SUBROUTINE {{ type.name }}_GET_{{ field.name }}(PTR, {{ field.name }}) BIND(C, name="{{ type.name }}_get_{{ field.name }}")
+!DEC$ ATTRIBUTES DLLEXPORT :: {{ type.name }}_get_{{ field.name }}
         TYPE(C_PTR), INTENT(IN), VALUE :: PTR
         TYPE({{ type.name }}), POINTER :: INSTANCE
         {{ vars.declare_arg(field.with_intent("OUT")) }}
@@ -184,6 +188,7 @@
 #}
 {% macro getter_func(type, field) -%}
     FUNCTION {{ type.name }}_GET_{{ field.name }}(PTR) RESULT({{ field.name }}) BIND(C, name="{{ type.name }}_get_{{ field.name }}")
+!DEC$ ATTRIBUTES DLLEXPORT :: {{ type.name }}_get_{{ field.name }}
         TYPE(C_PTR), INTENT(IN), VALUE :: PTR
         TYPE({{ type.name }}), POINTER :: INSTANCE
         {{ vars.declare_arg(field) }}
@@ -213,6 +218,7 @@
 #}
 {% macro getter_sub(type, field) -%}
     SUBROUTINE {{ type.name }}_GET_{{ field.name }}(PTR, {{ field.name }}) BIND(C, name="{{ type.name }}_get_{{ field.name }}")
+!DEC$ ATTRIBUTES DLLEXPORT :: {{ type.name }}_get_{{ field.name }}
         TYPE(C_PTR), INTENT(IN), VALUE :: PTR
         TYPE({{ type.name }}), POINTER :: INSTANCE
         {{ vars.declare_arg(field.with_intent("OUT")) }}
@@ -239,6 +245,7 @@
 #}
 {% macro setter(type, field) -%}
     SUBROUTINE {{ type.name }}_SET_{{ field.name }}(PTR, {{ field.name }}) BIND(C, name="{{ type.name }}_set_{{ field.name }}")
+!DEC$ ATTRIBUTES DLLEXPORT :: {{ type.name }}_set_{{ field.name }}
         TYPE(C_PTR), INTENT(IN), VALUE :: PTR
         TYPE({{ type.name }}), POINTER :: INSTANCE
         {{ vars.declare_arg(field.with_intent('IN')) }}
