@@ -6,7 +6,7 @@ Installation of F2x follows the Python standard installation routine: Get the so
 
 To generate wrapper code, you need a template that should be applied. There are some templates available that come bundled with F2x. To use them, prefix the respective template name with `@` and F2x will find them in it's package directory. For example if you wish to wrap your `module.f90` with to Python using the `BIND('C')` and `ctypes`, you should issue
 
-	$ F2x -t @_glue.f90.t -t @_glue.py.t module.f90
+	$ F2x -t @bindc/_glue.f90.t -t @ctypes/_glue.py.t module.f90
 
 This will generate `module_gluec.f90` and `module_glue.py` alongside your `module.f90`. When compiling the FORTRAN code note that you need to link against `libF2x.so`.
 
