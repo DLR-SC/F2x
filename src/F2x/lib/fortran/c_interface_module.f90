@@ -308,7 +308,7 @@ contains
         F_string(i:i) = p_chars(i)
         i=i+1
       end do
-      if (i<len(F_string)) F_string(i:) = NUL
+      if (i<len(F_string)) F_string(i:) = ' '
     end if
   end subroutine C_F_string_ptr
 
