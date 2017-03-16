@@ -21,6 +21,12 @@ from F2x.template.ctypes.glue import FType, Field, ArrayField, \
                                      constructor, destructor, \
                                      array_from_pointer
 
+{% if config.has_section("pyimport") -%}
+	{% for imp in config.options() -%}
+from {{ imp }} import {{ config.get("pyimport", imp) }}
+	{%- endfor %}
+{%- endif %}
+
 library_name = '{{ config.get('generate', 'dll') }}'
 library_path = os.path.join(os.path.dirname(__file__), library_name)
 library = ctypes.cdll.LoadLibrary(library_path)
