@@ -134,7 +134,7 @@ def {{ method.name }}(
     {{ arg.name }}_ARRAY = numpy.ndarray(({% for dim in arg.dims %}{{ dim }}, {% endfor %}), dtype={{ arg.pytype }}, buffer={{ arg.name }}_CARRAY, order='F')
         {%- endif %}
     {%- elif arg.strlen %}
-        {%- do retargs.append(arg.name + '_INTERN.value.decode("' + config.get("parser", "encoding") + '")') -%}
+        {%- do retargs.append(arg.name + '_INTERN.value.decode("' + config.get("parser", "encoding") + '").rstrip()') -%}
     {%- elif arg.ftype %}
         {%- do retargs.append(arg.name + '_OUT') -%}
     {{ arg.name }}_OUT = {{ arg.ftype }}(ctypes.c_void_p({{ arg.name }}), False)
@@ -154,7 +154,7 @@ def {{ method.name }}(
             {%- do retargs.append(arg.name + '_ARRAY') -%}
         {%- endif %}
     {%- elif arg.strlen %}
-        {%- do retargs.append(arg.name + '_INTERN.value.decode("' + config.get("parser", "encoding") + '")') -%}
+        {%- do retargs.append(arg.name + '_INTERN.value.decode("' + config.get("parser", "encoding") + '").rstrip()') -%}
     {%- elif arg.ftype %}
         {%- do retargs.append(arg.name) -%}
     {%- else %}

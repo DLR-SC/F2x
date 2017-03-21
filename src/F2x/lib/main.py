@@ -4,7 +4,7 @@ from F2x.lib import find_library_path
 
 _LANGUAGES = {
     "fortran": {
-        "include" : ("c_interface_module.f90", '-I"{1}"'),
+        "include" : ("c_interface_module.mod", '-I"{1}"'),
         "lib": ("libF2x.so", '"{0}"'),
         "libpath" : ("libF2x.so", '-L"{1}"'),
     },

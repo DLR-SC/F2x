@@ -290,7 +290,7 @@ class FType(object):
             self._free(ctypes.byref(self.ptr))
 
     def copy_from(self, other):
-        for name, field in self.fields():
+        for name, _ in self.fields():
             try:
                 value = getattr(other, name)
             except (UnicodeDecodeError, ValueError, NullPointerError):

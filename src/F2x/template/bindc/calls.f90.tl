@@ -56,7 +56,7 @@
 #}
 {% macro export_function_array(method) -%}
     {%- set callargs = [] -%}
-    FUNCTION {{ method.export_name.upper() }}({{ vars.dummy_args(method.args) }}) BIND(C, name="{{ method.export_name }}")
+    {{ vars.func_decl(method, True) }}
         {{- declare_args(method) }}
         {{ vars.declare_arg(method.ret) }}
         {{ cast_args(method, callargs) }}
@@ -76,7 +76,7 @@
 #}
 {% macro export_function_ftype(method) -%}
     {%- set callargs = [] -%}
-    FUNCTION {{ method.export_name.upper() }}({{ vars.dummy_args(method.args) }}) BIND(C, name="{{ method.export_name }}")
+    {{ vars.func_decl(method, True) }}
         {{- declare_args(method) }}
         {{ vars.declare_arg(method.ret) }}
         {{ cast_args(method, callargs) }}
@@ -97,9 +97,7 @@
 #}
 {% macro export_function_str(method) -%}
     {%- set callargs = [] -%}
-    SUBROUTINE {{ method.export_name.upper() }}(
-            {%- if method.args %}{{ vars.dummy_args(method.args) }}, {% endif -%}
-            {{ method.ret.name }}) BIND(C, name="{{ method.export_name }}")
+    {{ vars.sub_decl(method, True) }}
         {{- declare_args(method) }}
         {{ vars.declare_arg(method.ret) }}
         {{ cast_args(method, callargs) }}
@@ -118,7 +116,7 @@
 #}
 {% macro export_function_basic(method) -%}
     {%- set callargs = [] -%}
-    FUNCTION {{ method.export_name.upper() }}({{ vars.dummy_args(method.args) }}) BIND(C, name="{{ method.export_name }}")
+    {{ vars.func_decl(method, True) }}
         {{- declare_args(method) }}
         {{ vars.declare_arg(method.ret) }}
         {{ cast_args(method, callargs) }}
@@ -137,7 +135,7 @@
 {% macro export_subroutine(method) -%}
     {%- set callargs = [] -%}
     ! SUBROUTINE {{ method.name }}
-    SUBROUTINE {{ method.export_name.upper() }}({{ vars.dummy_args(method.args) }}) BIND(C, name="{{ method.export_name }}")
+    {{ vars.sub_decl(method, True) }}
         {{- declare_args(method) }}
         {{ cast_args(method, callargs) }}
         CALL {{ method.name }}({{ join_list(callargs) }})

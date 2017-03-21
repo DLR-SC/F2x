@@ -339,7 +339,7 @@ contains
     strlen = len(F_string)
     if (present(C_string_len)) then
       if (C_string_len <= 0) return
-      strlen = min(strlen,C_string_len-1)
+      strlen = min(strlen,C_string_len)
     end if
     if (.not. C_associated(C_string)) then
       return
@@ -348,7 +348,7 @@ contains
     forall (i=1:strlen)
       p_chars(i) = F_string(i:i)
     end forall
-    p_chars(strlen+1) = NUL
+    p_chars(strlen) = NUL
   end subroutine F_C_string_ptr
 
   pure &
