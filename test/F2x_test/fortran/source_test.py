@@ -109,7 +109,7 @@ def test_compund_type_pointerfield_assign():
 
 # The following test will fail with invalid memory error. This is a problem of the
 # template...
-@pytest.mark.skipif("F2x.VERSION < 0x10")
+#@pytest.mark.skipif("F2x.VERSION < 0x10")
 def test_compound_type_basicarray():
     ct = src.COMPOUND_TYPE()
     ba = [src.BASIC_TYPE(INTFIELD=1, CHARFIELD="INT"), src.BASIC_TYPE(REALFIELD=2.3, CHARFIELD="REAL")]
@@ -161,6 +161,7 @@ def test_ndarray_args():
     assert numpy.array_equal([[3, 2], [9, 0]], d)
 
 
+@pytest.mark.skipif("F2x.VERSION < 0x10")
 def test_string_args():
     outstr, inoutstr = src.STRING_ARGS("in", "inout")
     assert outstr == "inout"

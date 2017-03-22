@@ -9,7 +9,7 @@
 {# Output a function declaration.
 
    Declare a function header complete with dummy args, BIND(C) and exports.
-   
+
    :param method: The :type FuncDef: node to generate the header for.
 #}
 {% macro func_decl(method, ifort_dll=False) -%}
@@ -23,7 +23,7 @@
 {# Output a subroutine declaration.
 
    Declare a subroutine header complete with dummy args, BIND(C) and exports.
-   
+
    :param method: The :type SubDef: node to generate the header for.
 #}
 {% macro sub_decl(method, ifort_dll=False) -%}

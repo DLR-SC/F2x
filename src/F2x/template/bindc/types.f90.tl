@@ -141,12 +141,43 @@
 #}
 {% macro getter(type, field) -%}
     {%- if field.dims %}
+        {%- if field.ftype %}
+    {{ getter_farray(type, field) }}
+        {%- else %}
     {{ getter_array(type, field) }}
+        {%- endif %}
     {%- elif field.getter == 'function' %}
     {{ getter_func(type, field) }}
     {%- else %}
     {{ getter_sub(type, field) }}
     {%- endif %}
+{%- endmacro %}
+
+
+{# Generate a getter for a derived type array field.
+#}
+{% macro getter_farray(type, field) -%}
+    FUNCTION {{ type.name }}_GET_{{ field.name }}(PTR, INDICES) BIND(C, name="{{ type.name }}_get_{{ field.name }}")
+        TYPE(C_PTR), INTENT(IN), VALUE :: PTR
+        TYPE({{ type.name }}), POINTER :: INSTANCE
+        TYPE(C_PTR), INTENT(IN) :: INDICES
+        INTEGER, DIMENSION(:), POINTER :: INDEX_ARRAY
+        TYPE({{ field.ftype }}), POINTER :: {{ field.name }}_INTERN
+        TYPE(C_PTR) :: {{ type.name }}_GET_{{ field.name }}
+        
+        
+        IF (.NOT. C_ASSOCIATED(PTR)) THEN
+            WRITE (*,*) "Cannot access {{ field.name }} from null pointer."
+            RETURN
+        END IF
+        CALL C_F_POINTER(PTR, INSTANCE)
+        CALL C_F_POINTER(INDICES, INDEX_ARRAY, [{{ field.dims|length }}])
+        {{ field.name }}_INTERN => INSTANCE%{{ field.name }}(
+        {%- for _ in field.dims -%}
+            INDEX_ARRAY({{ loop.index }}) + 1{% if not loop.last %}, {% endif %}
+        {%- endfor -%})
+        {{ type.name }}_GET_{{ field.name }} = C_LOC({{ field.name }}_INTERN)
+    END FUNCTION
 {%- endmacro %}
 
 
