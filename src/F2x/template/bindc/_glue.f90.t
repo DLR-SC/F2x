@@ -29,6 +29,15 @@ CONTAINS
     {%- endif %}
 {% endfor %}
 
+{% if module.globals %}
+    !===================================================================================================================
+    ! Globals
+    {%- for global in module.globals %}
+
+    {{ types.export_field(None, global) }}
+    {% endfor %}
+{%- endif %}
+
 {%- if module.methods %}
     !===================================================================================================================
     ! Exported subroutines and functions

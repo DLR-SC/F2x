@@ -59,15 +59,16 @@
 
    :param arg: A :type VarDecl: node that should be declared.
 #}
-{% macro declare_arg(arg) -%}
+{% macro declare_arg(arg, name=None) -%}
+    {%- if not name %}{% set name=arg.name %}{% endif %}
     {%- if arg.dims -%}
-        {{ declare_arg_array(arg) }}
+        {{ declare_arg_array(arg, name) }}
     {%- elif arg.strlen -%}
-        {{ declare_arg_str(arg) }}
+        {{ declare_arg_str(arg, name) }}
     {%- elif arg.ftype -%}
-        {{ declare_arg_dtype(arg) }}
+        {{ declare_arg_dtype(arg, name) }}
     {%- else -%}
-        {{ declare_arg_basic(arg) }}
+        {{ declare_arg_basic(arg, name) }}
     {%- endif -%}
 {%- endmacro %}
 
@@ -78,15 +79,15 @@
 
    :param arg: A :type VarDecl: node specifiying the variable to be declared.
 #}
-{% macro declare_arg_array(arg) -%}
-        TYPE(C_PTR){%- if arg.intent %}, INTENT({{ arg.intent }}){% endif %} :: {{ arg.name }}
+{% macro declare_arg_array(arg, name) -%}
+        TYPE(C_PTR){%- if arg.intent %}, INTENT({{ arg.intent }}){% endif %} :: {{ name }}
     {%- if arg.strlen %}
-        CHARACTER({{ arg.strlen }}), DIMENSION({{ join_dims(arg) }}) :: {{ arg.name }}_INTERN
+        CHARACTER({{ arg.strlen }}), DIMENSION({{ join_dims(arg) }}) :: {{ name }}_INTERN
     {%- elif arg.ftype %}
-        TYPE({{ arg.ftype }}), DIMENSION({{ join_dims(arg, ':') }}), POINTER :: {{ arg.name }}_INTERN
+        TYPE({{ arg.ftype }}), DIMENSION({{ join_dims(arg, ':') }}), POINTER :: {{ name }}_INTERN
     {%- else %}
         {{ arg.type }}
-        {%- if arg.kind %}(KIND={{ arg.kind }}){% endif %}, DIMENSION({{ join_dims(arg, ':') }}), POINTER :: {{ arg.name }}_INTERN
+        {%- if arg.kind %}(KIND={{ arg.kind }}){% endif %}, DIMENSION({{ join_dims(arg, ':') }}), POINTER :: {{ name }}_INTERN
     {%- endif %}
 {%- endmacro %}
 
@@ -98,9 +99,9 @@
 
    :param arg: A :type VarDecl: node that specifies the variable to be declared.
 #}
-{% macro declare_arg_str(arg) -%}
-        TYPE(C_PTR){%- if arg.intent %}, INTENT({{ arg.intent }}){% endif %} :: {{ arg.name }}
-        CHARACTER({{ arg.strlen }}) :: {{ arg.name }}_INTERN
+{% macro declare_arg_str(arg, name) -%}
+        TYPE(C_PTR){%- if arg.intent %}, INTENT({{ arg.intent }}){% endif %} :: {{ name }}
+        CHARACTER({{ arg.strlen }}) :: {{ name }}_INTERN
 {%- endmacro %}
 
 
@@ -111,9 +112,9 @@
 
    :param arg: The :type VarDecl: node specifiying the derived type variable.
 #}
-{% macro declare_arg_dtype(arg) -%}
-        TYPE(C_PTR){%- if arg.intent %}, INTENT({{ arg.intent }}){% endif %} :: {{ arg.name }}
-        TYPE({{ arg.ftype }}), POINTER :: {{ arg.name }}_INTERN
+{% macro declare_arg_dtype(arg, name) -%}
+        TYPE(C_PTR){%- if arg.intent %}, INTENT({{ arg.intent }}){% endif %} :: {{ name }}
+        TYPE({{ arg.ftype }}), POINTER :: {{ name }}_INTERN
 {%- endmacro %}
 
 
@@ -123,10 +124,10 @@
 
    :param arg: The :type VarDecl: node specifing the variable.
 #}
-{% macro declare_arg_basic(arg) -%}
+{% macro declare_arg_basic(arg, name) -%}
         {{ arg.type }}
     {%- if arg.kind %}(KIND={{ arg.kind }}){% endif %}
-    {%- if arg.intent %}, INTENT({{ arg.intent }}){% endif %} :: {{ arg.name }}
+    {%- if arg.intent %}, INTENT({{ arg.intent }}){% endif %} :: {{ name }}
 {%- endmacro %}
 
 
@@ -137,13 +138,13 @@
 
    :param arg: The :type VarDecl: node that should be casted.
 #}
-{% macro cast_arg(arg) -%}
+{% macro cast_arg(arg, name=None) -%}
     {%- if arg.dims %}
-        CALL C_F_POINTER({{ arg.name }}, {{ arg.name }}_INTERN, [{{ join_dims(arg) }}])
+        CALL C_F_POINTER({{ name or arg.name }}, {{ name or arg.name }}_INTERN, [{{ join_dims(arg, name) }}])
     {%- elif arg.strlen %}
-        CALL C_F_STRING({{ arg.name }}, {{ arg.name }}_INTERN)
+        CALL C_F_STRING({{ name or arg.name }}, {{ name or arg.name }}_INTERN)
     {%- elif arg.ftype %}
-        CALL C_F_POINTER({{ arg.name }}, {{ arg.name }}_INTERN)
+        CALL C_F_POINTER({{ name or arg.name }}, {{ name or arg.name }}_INTERN)
     {%- endif %}
 {%- endmacro %}
 
@@ -154,16 +155,16 @@
 
    :param arg: A :type VarDecl: node that defines the output variable to be uncasted.
 #}
-{% macro uncast_arg(arg) -%}
+{% macro uncast_arg(arg, name=None) -%}
     {%- if arg.dims %}
-        {{ arg.name }} = C_LOC({{ arg.name }}_INTERN)
+        {{ name or arg.name }} = C_LOC({{ name or arg.name }}_INTERN)
     {%- elif arg.strlen %}
         {%- if arg.intent == 'OUT' %}
-        {{ arg.name }} = C_MALLOC({{ arg.strlen }}_C_SIZE_T + 1)
+        {{ name or arg.name }} = C_MALLOC({{ arg.strlen }}_C_SIZE_T + 1)
         {%- endif %}
-        CALL F_C_STRING({{ arg.name }}_INTERN, {{ arg.name }})
+        CALL F_C_STRING({{ name or arg.name }}_INTERN, {{ name or arg.name }})
     {%- elif arg.ftype %}
-        {{ arg.name }} = C_LOC({{ arg.name }}_INTERN)
+        {{ name or arg.name }} = C_LOC({{ name or arg.name }}_INTERN)
     {%- endif %}
 {%- endmacro %}
 

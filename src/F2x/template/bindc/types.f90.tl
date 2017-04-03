@@ -78,14 +78,21 @@
    :param field: A :type VarDecl: node that specifies the field.
 #}
 {% macro export_field(type, field) -%}
+    {%- if type %}
     ! {{ type.name }}%{{ field.name }}
+    {%- else %}
+    ! GLOBAL {{ field.name }}
+    {%- endif %}
     {%- if field.dynamic %}
     {{ allocator(type, field) }}
     {%- endif %}
     {{ getter(type, field) }}
     {%- if field.setter == 'subroutine' %}
-
+        {%- if field.dims and field.strlen %}
+    {{ setter_strarray(type, field) }}
+        {%- else %}
     {{ setter(type, field) }}
+        {%- endif %}
     {%- endif %}
 {%- endmacro %}
 
@@ -102,30 +109,36 @@
    :todo: Maybe split this macro.
 #}
 {% macro allocator(type, field) -%}
-    SUBROUTINE {{ type.name }}_ALLOC_{{ field.name }}(PTR{% if field.dims %}, SIZES{% endif %}) BIND(C, name="{{ type.name }}_alloc_{{ field.name }}")
+    SUBROUTINE {% if type %}{{ type.name }}_{% endif %}ALLOC_{{ field.name }}(
+    {%- if type %}PTR{% if field.dims %}, {% endif %}{% endif %}
+    {%- if field.dims %}SIZES{% endif %}) BIND(C, name="{{ type.name }}_alloc_{{ field.name }}")
+    {%- if type %}
         TYPE(C_PTR), INTENT(IN), VALUE :: PTR
         TYPE({{ type.name }}), POINTER :: INSTANCE
+    {%- endif %}
     {%- if field.dims %}
         TYPE(C_PTR), INTENT(IN) :: SIZES
         INTEGER, DIMENSION(:), POINTER :: SIZE_ARRAY
     {%- endif %}
 
+    {% if type %}
         IF (.NOT. C_ASSOCIATED(PTR){% if field.dims %} .OR. .NOT. C_ASSOCIATED(SIZES){% endif %}) RETURN
         CALL C_F_POINTER(PTR, INSTANCE)
+    {%- endif %}
     {%- if field.dynamic == 'ALLOCATABLE' %}
-        IF (ALLOCATED(INSTANCE%{{ field.name }})) RETURN
+        IF (ALLOCATED({% if type %}INSTANCE%{% endif %}{{ field.name }})) RETURN
     {%- elif field.dynamic == 'POINTER' %}
-        IF (ASSOCIATED(INSTANCE%{{ field.name }})) RETURN
+        IF (ASSOCIATED({% if type %}INSTANCE%{% endif %}{{ field.name }})) RETURN
     {%- endif %}
     {%- if field.dims %}
         CALL C_F_POINTER(SIZES, SIZE_ARRAY, [{{ field.dims|length }}])
-        ALLOCATE(INSTANCE%{{ field.name }}(
+        ALLOCATE({% if type %}INSTANCE%{% endif %}{{ field.name }}(
         {%- for _ in field.dims -%}
             SIZE_ARRAY({{ loop.index }}){% if not loop.last %}, {% endif %}
         {%- endfor -%}
         ))
     {%- else %}
-        ALLOCATE(INSTANCE%{{ field.name }})
+        ALLOCATE({% if type %}INSTANCE%{% endif %}{{ field.name }})
     {%- endif %}
     END SUBROUTINE
 {%- endmacro %}
@@ -143,6 +156,8 @@
     {%- if field.dims %}
         {%- if field.ftype %}
     {{ getter_farray(type, field) }}
+        {%- elif field.strlen %}
+    {{ getter_strarray(type, field) }}
         {%- else %}
     {{ getter_array(type, field) }}
         {%- endif %}
@@ -157,27 +172,61 @@
 {# Generate a getter for a derived type array field.
 #}
 {% macro getter_farray(type, field) -%}
-    FUNCTION {{ type.name }}_GET_{{ field.name }}(PTR, INDICES) BIND(C, name="{{ type.name }}_get_{{ field.name }}")
+{% if type %}{% set  name  = field.name %}{% else %}{% set name = "VALUE" %}{% endif %}
+    FUNCTION {% if type %}{{ type.name }}_{% endif %}GET_{{ field.name }}({% if type %}PTR, {% endif %}INDICES) BIND(C, name="{% if type %}{{ type.name }}_{% endif %}get_{{ field.name }}")
+    {% if type %}
         TYPE(C_PTR), INTENT(IN), VALUE :: PTR
         TYPE({{ type.name }}), POINTER :: INSTANCE
+    {% endif %}
         TYPE(C_PTR), INTENT(IN) :: INDICES
         INTEGER, DIMENSION(:), POINTER :: INDEX_ARRAY
-        TYPE({{ field.ftype }}), POINTER :: {{ field.name }}_INTERN
-        TYPE(C_PTR) :: {{ type.name }}_GET_{{ field.name }}
+        TYPE({{ field.ftype }}), POINTER :: {{ name }}_INTERN
+        TYPE(C_PTR) :: {% if type %}{{ type.name }}_{% endif %}GET_{{ field.name }}
         
-        
+    {% if type %}
         IF (.NOT. C_ASSOCIATED(PTR)) THEN
             WRITE (*,*) "Cannot access {{ field.name }} from null pointer."
             RETURN
         END IF
         CALL C_F_POINTER(PTR, INSTANCE)
+    {% endif %}
         CALL C_F_POINTER(INDICES, INDEX_ARRAY, [{{ field.dims|length }}])
-        {{ field.name }}_INTERN => INSTANCE%{{ field.name }}(
+        {{ name }}_INTERN => {% if type %}INSTANCE%{% endif %}{{ field.name }}(
         {%- for _ in field.dims -%}
             INDEX_ARRAY({{ loop.index }}) + 1{% if not loop.last %}, {% endif %}
         {%- endfor -%})
-        {{ type.name }}_GET_{{ field.name }} = C_LOC({{ field.name }}_INTERN)
+        {% if type %}{{ type.name }}_{% endif %}GET_{{ field.name }} = C_LOC({{ name }}_INTERN)
     END FUNCTION
+{%- endmacro %}
+
+
+{% macro getter_strarray(type, field) -%}
+{% if type %}{% set  name  = field.name %}{% else %}{% set name = "VALUE" %}{% endif %}
+    SUBROUTINE {% if type %}{{ type.name }}_{% endif %}GET_{{ field.name }}(PTR, INDICES, {{ name }}) BIND(C, name="{% if type %}{{ type.name }}_{% endif %}get_{{ field.name }}")
+    {% if type %}
+        TYPE(C_PTR), INTENT(IN), VALUE :: PTR
+        TYPE({{ type.name }}), POINTER :: INSTANCE
+    {% endif %}
+        TYPE(C_PTR), INTENT(IN) :: INDICES
+        INTEGER, DIMENSION(:), POINTER :: INDEX_ARRAY
+        CHARACTER({{ field.strlen }}), POINTER :: {{ name }}_INTERN
+        TYPE(C_PTR), INTENT(OUT) :: {{ name }}
+        
+    {% if type %}
+        IF (.NOT. C_ASSOCIATED(PTR)) THEN
+            WRITE (*,*) "Cannot access {{ field.name }} from null pointer."
+            RETURN
+        END IF
+        CALL C_F_POINTER(PTR, INSTANCE)
+    {% endif %}
+        CALL C_F_POINTER(INDICES, INDEX_ARRAY, [{{ field.dims|length }}])
+        {{ name }}_INTERN => {% if type %}INSTANCE%{% endif %}{{ field.name }}(
+        {%- for _ in field.dims -%}
+            INDEX_ARRAY({{ loop.index }}) + 1{% if not loop.last %}, {% endif %}
+        {%- endfor -%})
+        {{ name }} = C_MALLOC({{ field.strlen }}_C_SIZE_T + 1)
+        CALL F_C_STRING({{ name }}_INTERN, {{ name }})
+    END SUBROUTINE
 {%- endmacro %}
 
 
@@ -190,17 +239,22 @@
    :param field: A :type VarDecl: node that specifies the array field.
 #}
 {% macro getter_array(type, field) -%}
-    SUBROUTINE {{ type.name }}_GET_{{ field.name }}(PTR, {{ field.name }}) BIND(C, name="{{ type.name }}_get_{{ field.name }}")
+{% if type %}{% set  name  = field.name %}{% else %}{% set name = "VALUE" %}{% endif %}
+    SUBROUTINE {% if type %}{{ type.name }}_{% endif %}GET_{{ field.name }}({% if type %}PTR, {% endif %}{{ name }}) BIND(C, name="{% if type %}{{ type.name }}_{% endif %}get_{{ field.name }}")
+    {% if type %}
         TYPE(C_PTR), INTENT(IN), VALUE :: PTR
         TYPE({{ type.name }}), POINTER :: INSTANCE
-        {{ vars.declare_arg(field.with_intent("OUT")) }}
+    {% endif %}
+        {{ vars.declare_arg(field.with_intent("OUT"), name) }}
 
+    {% if type %}
         IF (.NOT. C_ASSOCIATED(PTR)) THEN
             WRITE (*,*) "Cannot access {{ field.name }} from null pointer."
             RETURN
         END IF
         CALL C_F_POINTER(PTR, INSTANCE)
-        {{ field.name }}_INTERN => INSTANCE%{{ field.name }}
+    {% endif %}
+        {{ name }}_INTERN => {% if type %}INSTANCE%{% endif %}{{ field.name }}
         {{ vars.uncast_arg(field) }}
     END SUBROUTINE
 {%- endmacro %}
@@ -214,21 +268,27 @@
    :param field: A :type VarDecl: node specifying the field.
 #}
 {% macro getter_func(type, field) -%}
-    FUNCTION {{ type.name }}_GET_{{ field.name }}(PTR) RESULT({{ field.name }}) BIND(C, name="{{ type.name }}_get_{{ field.name }}")
+{% if type %}{% set  name  = field.name %}{% else %}{% set name = "VALUE" %}{% endif %}
+    FUNCTION {% if type %}{{ type.name }}_{% endif %}GET_{{ field.name }}({% if type %}PTR{% endif %}) RESULT({{ name }}) BIND(C, name="{% if type %}{{ type.name }}_{% endif %}get_{{ field.name }}")
+    {% if type %}
         TYPE(C_PTR), INTENT(IN), VALUE :: PTR
         TYPE({{ type.name }}), POINTER :: INSTANCE
-        {{ vars.declare_arg(field) }}
+    {% endif %}
+        {{ vars.declare_arg(field.with_intent(None), name) }}
+    
 
+    {% if type %}
         IF (.NOT. C_ASSOCIATED(PTR)) THEN
             WRITE (*,*) "Cannot access {{ field.name }} from null pointer."
             RETURN
         END IF
         CALL C_F_POINTER(PTR, INSTANCE)
+    {% endif %}
         {%- if field.ftype %}
-        {{ field.name }}_INTERN => INSTANCE%{{ field.name }}
-        {{ field.name }} = C_LOC({{ field.name }}_INTERN)
+        {{ name }}_INTERN => {% if type %}INSTANCE%{% endif %}{{ field.name }}
+        {{ name }} = C_LOC({{ field.name }}_INTERN)
         {%- else %}
-        {{ field.name }} = INSTANCE%{{ field.name }}
+        {{ name }} = {% if type %}INSTANCE%{% endif %}{{ field.name }}
         {%- endif %}
     END FUNCTION
 {%- endmacro %}
@@ -243,19 +303,24 @@
    :param field: A :type VarDecl: that specifies the field.
 #}
 {% macro getter_sub(type, field) -%}
-    SUBROUTINE {{ type.name }}_GET_{{ field.name }}(PTR, {{ field.name }}) BIND(C, name="{{ type.name }}_get_{{ field.name }}")
+{% if type %}{% set  name  = field.name %}{% else %}{% set name = "VALUE" %}{% endif %}
+    SUBROUTINE {% if type %}{{ type.name }}_{% endif %}GET_{{ field.name }}({% if type %}PTR, {% endif %}{{ name }}) BIND(C, name="{% if type %}{{ type.name }}_{% endif %}get_{{ field.name }}")
+    {% if type %}
         TYPE(C_PTR), INTENT(IN), VALUE :: PTR
         TYPE({{ type.name }}), POINTER :: INSTANCE
-        {{ vars.declare_arg(field.with_intent("OUT")) }}
+    {% endif %}
+        {{ vars.declare_arg(field.with_intent("OUT"), name) }}
 
+    {% if type %}
         IF (.NOT. C_ASSOCIATED(PTR)) THEN
             WRITE (*,*) "Cannot access {{ field.name }} from null pointer."
             RETURN
         END IF
         CALL C_F_POINTER(PTR, INSTANCE)
+    {% endif %}
         {%- if field.strlen %}
-        {{ field.name }} = C_MALLOC({{ field.strlen }}_C_SIZE_T + 1)
-        CALL F_C_STRING(INSTANCE%{{ field.name }}, {{ field.name }})
+        {{ name }} = C_MALLOC({{ field.strlen }}_C_SIZE_T + 1)
+        CALL F_C_STRING({% if type %}INSTANCE%{% endif %}{{ field.name }}, {{ name }})
         {%- endif %}
     END SUBROUTINE
 {%- endmacro %}
@@ -269,20 +334,31 @@
    :param field: A :type VarDecl: node that specifies the settable field.
 #}
 {% macro setter(type, field) -%}
-    SUBROUTINE {{ type.name }}_SET_{{ field.name }}(PTR, {{ field.name }}) BIND(C, name="{{ type.name }}_set_{{ field.name }}")
+{% if type %}{% set  name  = field.name %}{% else %}{% set name = "VALUE" %}{% endif %}
+    SUBROUTINE {% if type %}{{ type.name }}_{%  endif %}SET_{{ field.name }}({% if type %}PTR, {% endif %}{{ name }}) BIND(C, name="{% if type %}{{ type.name }}_{% endif %}set_{{ field.name }}")
+    {% if type %}
         TYPE(C_PTR), INTENT(IN), VALUE :: PTR
         TYPE({{ type.name }}), POINTER :: INSTANCE
-        {{ vars.declare_arg(field.with_intent('IN')) }}
+    {% endif %}
+        {{ vars.declare_arg(field.with_intent('IN'), name) }}
 
+    {% if type %}
         IF (.NOT. C_ASSOCIATED(PTR)) THEN
             WRITE (*,*) "Cannot access {{ field.name }} from null pointer."
             RETURN
         END IF
         CALL C_F_POINTER(PTR, INSTANCE)
+    {% endif %}
         {%- if field.strlen %}
-        CALL C_F_STRING({{ field.name }}, INSTANCE%{{ field.name }})
+        CALL C_F_STRING({{ name }}, {% if type %}INSTANCE%{% endif %}{{ field.name }})
         {%- else %}
-        INSTANCE%{{ field.name }} = {{ field.name }}
+        {% if type %}INSTANCE%{% endif %}{{ field.name }} = {{ name }}
         {%- endif %}
     END SUBROUTINE
 {%- endmacro %}
+
+
+{% macro setter_strarray(type, field) -%}
+! SET NOT IMPLEMENTED YET
+{%- endmacro %}
+
