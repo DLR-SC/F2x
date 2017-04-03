@@ -89,8 +89,8 @@ def load_templates(log, args):
         template_path = os.path.dirname(template_filename)
         template_loader = jinja2.FileSystemLoader(template_path)
         template_env = jinja2.Environment(loader=template_loader, extensions=['jinja2.ext.do'])
-        template_file = open(template_filename, 'r')
-        template = template_env.from_string(template_file.read())
+        with open(template_filename, 'r') as template_file:
+            template = template_env.from_string(template_file.read())
         template_suffix, _ = os.path.splitext(os.path.basename(template_filename))
         templates.append((template, template_suffix))
     
@@ -182,8 +182,8 @@ def main():
                 u'ast': src.tree, u'module': access_tree,
                 u'config': src.config,
                 u'context': { u'filename': source_filename, u'basename': os.path.basename(output_basename), u'args': args } })
-            output_file = open(output_filename, 'wb')
-            output_file.write(output.encode(args.encoding))
+            with open(output_filename, 'wb') as output_file:
+                output_file.write(output.encode(args.encoding))
 
 if __name__ == '__main__':
     main()

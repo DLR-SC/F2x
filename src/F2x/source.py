@@ -129,8 +129,8 @@ class SourceFile(object):
     
     def read(self):
         log.debug("Reading source from {0}...".format(self.filename))
-        source_file = open(self.filename, 'rb')
-        self.source = source_file.read().decode(self.config.get('parser', 'encoding'))
+        with open(self.filename, 'rb') as source_file:
+            self.source = source_file.read().decode(self.config.get('parser', 'encoding'))
         self.source_lines = list(map(unicode.rstrip, self.source.split('\n')))
     
     def preprocess(self, rules=None):
