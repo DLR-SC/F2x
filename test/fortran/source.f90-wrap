@@ -1,8 +1,8 @@
 [replace]
 13 =        REAL(8), ALLOCATABLE :: REALARRAY(2)
-61 =        INTEGER, INTENT(IN) :: INARRAY(3)
-62 =        INTEGER, INTENT(OUT) :: OUTARRAY(3)
-63 =        INTEGER, INTENT(INOUT) :: INOUTARRAY(3)
+66 =        INTEGER, INTENT(IN) :: INARRAY(3)
+67 =        INTEGER, INTENT(OUT) :: OUTARRAY(3)
+68 =        INTEGER, INTENT(INOUT) :: INOUTARRAY(3)
 
 
 [export]
@@ -26,11 +26,11 @@ namespace = SOURCE
 [parser]
 ignore =
 	10
-    76 ;        OUTARRAY3D(:,:,:) = 0.0_8
-    77 ;        INOUTARRAY2D(:,:) = 3
-    78
-    79
-    81
-    82
+    81 ;        OUTARRAY3D(:,:,:) = 0.0_8
+    82 ;        INOUTARRAY2D(:,:) = 3
     83
     84
+    85
+    86
+    87
+    88

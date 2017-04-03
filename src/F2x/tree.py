@@ -112,7 +112,8 @@ class VarDecl(Node):
                 self["dims"] = [0] * len(dims[0].tail)
                 break
 
-        if "dims" in self:
+        if "dims" in self \
+        and "strlen" not in self:
             if "setter" in self:
                 del self["setter"]
 
@@ -203,6 +204,11 @@ class Module(Node):
         self["types"] = [
             TypeDef(typedef)
             for typedef in self._ast.select("derived_type_def")
+        ]
+        self["globals"] = [
+            VarDecl(var)
+            for var in self._ast.select("module > specification_part type_declaration_stmt entity_decl")
+            if len(var.parent().parent().select("access_spec /PUBLIC/")) > 0
         ]
         self["subroutines"] = [
             SubDef(subdef)
