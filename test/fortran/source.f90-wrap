@@ -25,12 +25,6 @@ namespace = SOURCE
 
 [parser]
 ignore =
-	10
-    81 ;        OUTARRAY3D(:,:,:) = 0.0_8
-    82 ;        INOUTARRAY2D(:,:) = 3
-    83
-    84
+	16 ;        CHARACTER(32), DIMENSION(8) :: STRINGARRAY
     85
     86
-    87
-    88
