@@ -26,5 +26,5 @@ namespace = SOURCE
 [parser]
 ignore =
 	16 ;        CHARACTER(32), DIMENSION(8) :: STRINGARRAY
-    85
     86
+    87

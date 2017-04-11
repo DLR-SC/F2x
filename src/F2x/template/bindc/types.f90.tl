@@ -40,6 +40,9 @@
 #}
 {% macro constructor(type) -%}
     FUNCTION {{ type.name }}_NEW() RESULT(PTR) BIND(C, name="{{ type.name }}_new")
+    {%- if ifort_dll %}
+!DEC$ ATTRIBUTES DLLEXPORT :: {{ type.name }}_new
+    {%- endif %}
         TYPE(C_PTR) :: PTR
         TYPE({{ type.name }}), POINTER :: INSTANCE
 
@@ -58,6 +61,9 @@
 #}
 {%  macro destructor(type) -%}
     SUBROUTINE {{ type.name }}_FREE(PTR) BIND(C, name="{{ type.name }}_free")
+    {%- if ifort_dll %}
+!DEC$ ATTRIBUTES DLLEXPORT :: {{ type.name }}_free
+    {%- endif %}
         TYPE(C_PTR), INTENT(INOUT) :: PTR
         TYPE({{ type.name }}), POINTER :: INSTANCE
 
@@ -112,6 +118,9 @@
     SUBROUTINE {% if type %}{{ type.name }}_{% endif %}ALLOC_{{ field.name }}(
     {%- if type %}PTR{% if field.dims %}, {% endif %}{% endif %}
     {%- if field.dims %}SIZES{% endif %}) BIND(C, name="{{ type.name }}_alloc_{{ field.name }}")
+    {%- if ifort_dll %}
+!DEC$ ATTRIBUTES DLLEXPORT :: {% if type %}{{ type.name }}_{% endif %}ALLOC_{{ field.name }}
+    {%- endif %}
     {%- if type %}
         TYPE(C_PTR), INTENT(IN), VALUE :: PTR
         TYPE({{ type.name }}), POINTER :: INSTANCE
@@ -174,6 +183,9 @@
 {% macro getter_farray(type, field) -%}
 {% if type %}{% set  name  = field.name %}{% else %}{% set name = "VALUE" %}{% endif %}
     FUNCTION {% if type %}{{ type.name }}_{% endif %}GET_{{ field.name }}({% if type %}PTR, {% endif %}INDICES) BIND(C, name="{% if type %}{{ type.name }}_{% endif %}get_{{ field.name }}")
+    {%- if ifort_dll %}
+!DEC$ ATTRIBUTES DLLEXPORT :: {% if type %}{{ type.name }}_{% endif %}get_{{ field.name }}
+    {%- endif %}
     {% if type %}
         TYPE(C_PTR), INTENT(IN), VALUE :: PTR
         TYPE({{ type.name }}), POINTER :: INSTANCE
@@ -203,6 +215,9 @@
 {% macro getter_strarray(type, field) -%}
 {% if type %}{% set  name  = field.name %}{% else %}{% set name = "VALUE" %}{% endif %}
     SUBROUTINE {% if type %}{{ type.name }}_{% endif %}GET_{{ field.name }}(PTR, INDICES, {{ name }}) BIND(C, name="{% if type %}{{ type.name }}_{% endif %}get_{{ field.name }}")
+    {%- if ifort_dll %}
+!DEC$ ATTRIBUTES DLLEXPORT :: {% if type %}{{ type.name }}_{% endif %}get_{{ field.name }}
+    {%- endif %}
     {% if type %}
         TYPE(C_PTR), INTENT(IN), VALUE :: PTR
         TYPE({{ type.name }}), POINTER :: INSTANCE
@@ -241,6 +256,9 @@
 {% macro getter_array(type, field) -%}
 {% if type %}{% set  name  = field.name %}{% else %}{% set name = "VALUE" %}{% endif %}
     SUBROUTINE {% if type %}{{ type.name }}_{% endif %}GET_{{ field.name }}({% if type %}PTR, {% endif %}{{ name }}) BIND(C, name="{% if type %}{{ type.name }}_{% endif %}get_{{ field.name }}")
+    {%- if ifort_dll %}
+!DEC$ ATTRIBUTES DLLEXPORT :: {% if type %}{{ type.name }}_{% endif %}get_{{ field.name }}
+    {%- endif %}
     {% if type %}
         TYPE(C_PTR), INTENT(IN), VALUE :: PTR
         TYPE({{ type.name }}), POINTER :: INSTANCE
@@ -270,6 +288,9 @@
 {% macro getter_func(type, field) -%}
 {% if type %}{% set  name  = field.name %}{% else %}{% set name = "VALUE" %}{% endif %}
     FUNCTION {% if type %}{{ type.name }}_{% endif %}GET_{{ field.name }}({% if type %}PTR{% endif %}) RESULT({{ name }}) BIND(C, name="{% if type %}{{ type.name }}_{% endif %}get_{{ field.name }}")
+    {%- if ifort_dll %}
+!DEC$ ATTRIBUTES DLLEXPORT :: {% if type %}{{ type.name }}_{% endif %}get_{{ field.name }}
+    {%- endif %}
     {% if type %}
         TYPE(C_PTR), INTENT(IN), VALUE :: PTR
         TYPE({{ type.name }}), POINTER :: INSTANCE
@@ -305,6 +326,9 @@
 {% macro getter_sub(type, field) -%}
 {% if type %}{% set  name  = field.name %}{% else %}{% set name = "VALUE" %}{% endif %}
     SUBROUTINE {% if type %}{{ type.name }}_{% endif %}GET_{{ field.name }}({% if type %}PTR, {% endif %}{{ name }}) BIND(C, name="{% if type %}{{ type.name }}_{% endif %}get_{{ field.name }}")
+    {%- if ifort_dll %}
+!DEC$ ATTRIBUTES DLLEXPORT :: {% if type %}{{ type.name }}_{% endif %}get_{{ field.name }}
+    {%- endif %}
     {% if type %}
         TYPE(C_PTR), INTENT(IN), VALUE :: PTR
         TYPE({{ type.name }}), POINTER :: INSTANCE
@@ -336,6 +360,9 @@
 {% macro setter(type, field) -%}
 {% if type %}{% set  name  = field.name %}{% else %}{% set name = "VALUE" %}{% endif %}
     SUBROUTINE {% if type %}{{ type.name }}_{%  endif %}SET_{{ field.name }}({% if type %}PTR, {% endif %}{{ name }}) BIND(C, name="{% if type %}{{ type.name }}_{% endif %}set_{{ field.name }}")
+    {%- if ifort_dll %}
+!DEC$ ATTRIBUTES DLLEXPORT :: {% if type %}{{ type.name }}_{% endif %}set_{{ field.name }}
+    {%- endif %}
     {% if type %}
         TYPE(C_PTR), INTENT(IN), VALUE :: PTR
         TYPE({{ type.name }}), POINTER :: INSTANCE

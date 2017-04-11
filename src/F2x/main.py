@@ -180,7 +180,7 @@ def main():
             log.debug(u"* Generating {0}...".format(output_filename))
             output = template.render({
                 u'ast': src.tree, u'module': access_tree,
-                u'config': src.config,
+                u'config': src.config, u'ifort_dll': True,
                 u'context': { u'filename': source_filename, u'basename': os.path.basename(output_basename), u'args': args } })
             with open(output_filename, 'wb') as output_file:
                 output_file.write(output.encode(args.encoding))
