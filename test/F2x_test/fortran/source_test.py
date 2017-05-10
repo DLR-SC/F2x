@@ -201,3 +201,7 @@ def test_global_value():
     assert src.globals.BASICS_READY == False
     src.globals.BASICS_READY = True
     assert src.globals.BASICS_READY == True
+
+
+def test_global_array():
+    src.globals.BASICS.allocate(5)

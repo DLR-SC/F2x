@@ -89,7 +89,7 @@
     {%- else %}
     ! GLOBAL {{ field.name }}
     {%- endif %}
-    {%- if field.dynamic %}
+    {%- if field.dynamic or (type == None and field.dims) %}
     {{ allocator(type, field) }}
     {%- endif %}
     {{ getter(type, field) }}
@@ -117,7 +117,7 @@
 {% macro allocator(type, field) -%}
     SUBROUTINE {% if type %}{{ type.name }}_{% endif %}ALLOC_{{ field.name }}(
     {%- if type %}PTR{% if field.dims %}, {% endif %}{% endif %}
-    {%- if field.dims %}SIZES{% endif %}) BIND(C, name="{{ type.name }}_alloc_{{ field.name }}")
+    {%- if field.dims %}SIZES{% endif %}) BIND(C, name="{% if type %}{{ type.name }}_{% endif %}alloc_{{ field.name }}")
     {%- if ifort_dll %}
 !DEC$ ATTRIBUTES DLLEXPORT :: {% if type %}{{ type.name }}_{% endif %}ALLOC_{{ field.name }}
     {%- endif %}

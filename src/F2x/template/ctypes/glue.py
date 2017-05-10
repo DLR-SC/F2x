@@ -287,8 +287,8 @@ class FTypeFieldArray(object):
 
         self[index].copy_from(value)
     
-    def allocate(self, sizes):
-        self.field.allocator(sizes)
+    def allocate(self, *sizes):
+        self.field.allocator(self.field, sizes)
 
 
 def _array_getter(name, ctype, cfunc):
@@ -407,10 +407,10 @@ def _global_array_allocator(name, cfunc):
     cfunc.restype = None
 
     def _alloc(instance, sizes):
-        csizes = (ctypes.c_int32 * len(instance.dims[name]))(*sizes)
+        csizes = (ctypes.c_int32 * len(instance.dims))(*sizes)
         cptr = ctypes.cast(csizes, ctypes.POINTER(ctypes.c_int32))
         cfunc(ctypes.byref(cptr))
-        instance.dims[name][:] = sizes
+        instance.dims[:] = sizes
 
     return _alloc
 

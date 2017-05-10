@@ -137,11 +137,14 @@ CONTAINS
     END FUNCTION
 
     ! String as return value.
-    FUNCTION STRING_RETURN_VALUE()
-        CHARACTER(32) :: STRING_RETURN_VALUE
+    SUBROUTINE STRING_RETURN_VALUE(RETURN_VALUE)
+        CHARACTER*(*) :: RETURN_VALUE
+        CHARACTER(LEN=29) :: VAL
+        
+        VAL = "Foo Bar"
 
-        STRING_RETURN_VALUE = "Foo Bar"
-    END FUNCTION
+        RETURN_VALUE = VAL
+    END SUBROUTINE
 
     ! Array as return value.
     FUNCTION ARRAY_RETURN_VALUE()

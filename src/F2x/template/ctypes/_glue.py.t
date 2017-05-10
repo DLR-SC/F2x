@@ -46,7 +46,7 @@ class _Globals(object):
         {{ global.ftype or global.pytype }},
         [{{ types.join_dims(global.dims) }}],
         library.get_{{ global.name }}
-        {%- if global.dynamic %},
+        {%- if global.dims %},
         library.alloc_{{ global.name }}
         {%- endif %}
         {%- if global.strlen %},
