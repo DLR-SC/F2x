@@ -204,4 +204,10 @@ def test_global_value():
 
 
 def test_global_array():
-    src.globals.BASICS.allocate(5)
+    src.globals.BASICS.allocate(2)
+    assert len(src.globals.BASICS) == 2
+
+    src.globals.BASICS[0].INTFIELD = 1
+    src.globals.BASICS[1].REALFIELD = 2.3
+    assert src.globals.BASICS[0].INTFIELD == 1
+    assert abs(src.globals.BASICS[1].REALFIELD - 2.3) < 0.01

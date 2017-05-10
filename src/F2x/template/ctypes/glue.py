@@ -279,7 +279,7 @@ class FTypeFieldArray(object):
         if not isinstance(index, (list, tuple)):
             return self[(index, )]
 
-        return self.field.getter(self.ptr, index)
+        return self.field.getter(self.field, index)
 
     def __setitem__(self, index, value):
         if not isinstance(index, (list, tuple)):
@@ -375,7 +375,7 @@ def _global_array_getter(name, ctype, cfunc):
         cfunc.restype = ctypes.c_void_p
 
         def _get(instance, index):
-            index = (ctypes.c_int32 * len(instance.dims[name]))(*index)
+            index = (ctypes.c_int32 * len(instance.dims))(*index)
             cindex = ctypes.cast(index, ctypes.POINTER(ctypes.c_int32))
             cptr = cfunc(ctypes.byref(cindex))
             return ctype(cptr, False)
@@ -390,11 +390,11 @@ def _global_array_getter(name, ctype, cfunc):
             cptr = ctypes.POINTER(ctype)()
             cfunc(ctypes.byref(cptr))
             try:
-                carray = array_from_pointer(ctype, instance.dims[name], cptr)
+                carray = array_from_pointer(ctype, instance.dims, cptr)
             except ValueError:
                 raise NullPointerError
 
-            return numpy.ndarray(instance.dims[name], ctype, carray, order='F')
+            return numpy.ndarray(instance.dims, ctype, carray, order='F')
 
         return _get
 
