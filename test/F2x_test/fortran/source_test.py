@@ -109,7 +109,7 @@ def test_compund_type_pointerfield_assign():
 
 # The following test will fail with invalid memory error. This is a problem of the
 # template...
-#@pytest.mark.skipif("F2x.VERSION < 0x10")
+@pytest.mark.skipif("F2x.VERSION < 0x10")
 def test_compound_type_basicarray():
     ct = src.COMPOUND_TYPE()
     ba = [src.BASIC_TYPE(INTFIELD=1, CHARFIELD="INT"), src.BASIC_TYPE(REALFIELD=2.3, CHARFIELD="REAL")]
@@ -195,3 +195,19 @@ def test_string_return_value():
 
 def test_array_return_value():
     assert numpy.array_equal(src.ARRAY_RETURN_VALUE(), [1, 2, 3])
+
+
+def test_global_value():
+    assert src.globals.BASICS_READY == False
+    src.globals.BASICS_READY = True
+    assert src.globals.BASICS_READY == True
+
+
+def test_global_array():
+    src.globals.BASICS.allocate(2)
+    assert len(src.globals.BASICS) == 2
+
+    src.globals.BASICS[0].INTFIELD = 1
+    src.globals.BASICS[1].REALFIELD = 2.3
+    assert src.globals.BASICS[0].INTFIELD == 1
+    assert abs(src.globals.BASICS[1].REALFIELD - 2.3) < 0.01

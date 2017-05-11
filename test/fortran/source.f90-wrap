@@ -1,8 +1,9 @@
 [replace]
 13 =        REAL(8), ALLOCATABLE :: REALARRAY(2)
-61 =        INTEGER, INTENT(IN) :: INARRAY(3)
-62 =        INTEGER, INTENT(OUT) :: OUTARRAY(3)
-63 =        INTEGER, INTENT(INOUT) :: INOUTARRAY(3)
+66 =        INTEGER, INTENT(IN) :: INARRAY(3)
+67 =        INTEGER, INTENT(OUT) :: OUTARRAY(3)
+68 =        INTEGER, INTENT(INOUT) :: INOUTARRAY(3)
+141 =       CHARACTER(29), INTENT(OUT) :: RETURN_VALUE
 
 
 [export]
@@ -24,13 +25,8 @@ DARRAY_RETURN_VALUE = SRC_DARV
 namespace = SOURCE
 
 [parser]
+encoding = latin-1
 ignore =
-	10
-    76 ;        OUTARRAY3D(:,:,:) = 0.0_8
-    77 ;        INOUTARRAY2D(:,:) = 3
-    78
-    79
-    81
-    82
-    83
-    84
+	16 ;        CHARACTER(32), DIMENSION(8) :: STRINGARRAY
+    86
+    87
