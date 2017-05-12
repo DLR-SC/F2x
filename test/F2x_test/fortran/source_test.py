@@ -204,6 +204,8 @@ def test_global_value():
 
 
 def test_global_array():
+    assert len(src.globals.BASICS) == 0
+
     src.globals.BASICS.allocate(2)
     assert len(src.globals.BASICS) == 2
 
