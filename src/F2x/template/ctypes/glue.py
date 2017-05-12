@@ -62,6 +62,10 @@ def array_from_pointer(ctype, dims, ptr):
 
 
 class NullPointerError(BaseException):
+    """
+    This exception is raised when Python wrapper code tries to access a C pointer that was not (yet) allocated (i.e. is
+    null). This exception is handled to automatically allocate dynamic arrays upon first assignment.
+    """
     pass
 
 
@@ -164,6 +168,105 @@ class Field(object):
             raise AttributeError("Not settable.")
 
 
+def _global_getter(ctype, cfunc):
+    if issubclass(ctype, FType):
+        cfunc.argtypes = []
+        cfunc.restype = ctypes.c_void_p
+
+        def _get():
+            cptr = cfunc()
+            if cptr is None:
+                raise NullPointerError()
+            return ctype(ctypes.c_void_p(cptr), False)
+
+        return _get
+
+    elif ctype == ctypes.c_char_p:
+        cfunc.argtypes = [ctypes.POINTER(ctypes.c_char_p)]
+        cfunc.restype = None
+
+        def _get():
+            cptr = ctypes.c_char_p(0)
+            cfunc(ctypes.byref(cptr))
+            return cptr.value.decode('utf-8').rstrip()
+
+        return _get
+
+    else:
+        cfunc.argtypes = []
+        cfunc.restype = ctype
+        return cfunc
+
+
+def _global_setter(ctype, cfunc, strlen=None):
+    if cfunc is None:
+        return None
+
+    elif ctype == ctypes.c_char_p:
+        cfunc.argtypes = [ctypes.POINTER(ctype)]
+        cfunc.restype = None
+
+        def _set(value):
+            cstring = ctypes.create_string_buffer(value.encode('utf-8'), strlen)
+            cvalue = ctypes.cast(cstring, ctypes.c_char_p)
+            cfunc(ctypes.byref(cvalue))
+
+        return _set
+
+    else:
+        cfunc.argtypes = [ctypes.POINTER(ctype)]
+        cfunc.restype = None
+
+        def _set(value):
+            cvalue = ctype(value)
+            cfunc(ctypes.byref(cvalue))
+
+        return _set
+
+
+def _global_allocator(ctype, cfunc):
+    if cfunc is None:
+        return None
+
+    cfunc.argtypes = []
+    cfunc.restype = None
+    return cfunc
+
+
+class Global(Field):
+    def __init__(self, ctype, getter, setter=None, allocator=None, strlen=None):
+        self.ctype = ctype
+        self.getter = _global_getter(ctype, getter)
+        self.setter = _global_setter(ctype, setter, strlen)
+        self.allocator = _global_allocator(ctype, allocator)
+
+    def __get__(self, instance, owner):
+        if instance is None:
+            return self
+
+        try:
+            return self.getter()
+
+        except NullPointerError:
+            self.allocator()
+            return self.getter()
+
+    def __set__(self, instance, value):
+        if self.setter:
+            self.setter(value)
+
+        elif issubclass(self.ctype, FType):
+            try:
+                target = self.getter()
+            except NullPointerError:
+                self.allocator()
+                target = self.getter()
+            target.copy_from(value)
+
+        else:
+            raise AttributeError("Not settable.")
+
+
 class FTypeFieldArray(object):
     def __init__(self, field, ptr):
         self.field = field
@@ -176,13 +279,16 @@ class FTypeFieldArray(object):
         if not isinstance(index, (list, tuple)):
             return self[(index, )]
 
-        return self.field.getter(self.ptr, index)
+        return self.field.getter(self.field, index)
 
     def __setitem__(self, index, value):
         if not isinstance(index, (list, tuple)):
             self[(index, )] = value
 
         self[index].copy_from(value)
+    
+    def allocate(self, *sizes):
+        self.field.allocator(self.field, sizes)
 
 
 def _array_getter(name, ctype, cfunc):
@@ -238,6 +344,84 @@ class ArrayField(object):
         self.dims = dims
         self.getter = _array_getter(self.name, self.ctype, getter)
         self.allocator = _array_allocator(self.name, allocator)
+
+    def __get__(self, instance, owner):
+        if issubclass(self.ctype, FType):
+            return FTypeFieldArray(self, instance)
+
+        else:
+            return self.getter(instance)
+
+    def __set__(self, instance, value):
+        if issubclass(self.ctype, FType):
+            array = FTypeFieldArray(self, instance)
+            for target, source in zip(array, value):
+                target.copy_from(source)
+
+        else:
+            try:
+                array = self.getter(instance)
+            except NullPointerError:
+                value = numpy.array(value)
+                self.allocator(instance, value.shape)
+                array = self.getter(instance)
+
+            array[:] = value
+
+
+def _global_array_getter(name, ctype, cfunc):
+    if issubclass(ctype, FType):
+        cfunc.argtypes = [ctypes.POINTER(ctypes.POINTER(ctypes.c_int32))]
+        cfunc.restype = ctypes.c_void_p
+
+        def _get(instance, index):
+            index = (ctypes.c_int32 * len(instance.dims))(*index)
+            cindex = ctypes.cast(index, ctypes.POINTER(ctypes.c_int32))
+            cptr = cfunc(ctypes.byref(cindex))
+            return ctype(cptr, False)
+
+        return _get
+
+    else:
+        cfunc.argtypes = [ctypes.POINTER(ctypes.POINTER(ctype))]
+        cfunc.restype = None
+
+        def _get(instance):
+            cptr = ctypes.POINTER(ctype)()
+            cfunc(ctypes.byref(cptr))
+            try:
+                carray = array_from_pointer(ctype, instance.dims, cptr)
+            except ValueError:
+                raise NullPointerError
+
+            return numpy.ndarray(instance.dims, ctype, carray, order='F')
+
+        return _get
+
+
+def _global_array_allocator(name, cfunc):
+    if cfunc is None:
+        return
+
+    cfunc.argtypes = [ctypes.POINTER(ctypes.POINTER(ctypes.c_int32))]
+    cfunc.restype = None
+
+    def _alloc(instance, sizes):
+        csizes = (ctypes.c_int32 * len(instance.dims))(*sizes)
+        cptr = ctypes.cast(csizes, ctypes.POINTER(ctypes.c_int32))
+        cfunc(ctypes.byref(cptr))
+        instance.dims[:] = sizes
+
+    return _alloc
+
+
+class ArrayGlobal(ArrayField):
+    def __init__(self, name, ctype, dims, getter, allocator=None):
+        self.name = name
+        self.ctype = ctype
+        self.dims = dims
+        self.getter = _global_array_getter(self.name, self.ctype, getter)
+        self.allocator = _global_array_allocator(self.name, allocator)
 
     def __get__(self, instance, owner):
         if issubclass(self.ctype, FType):

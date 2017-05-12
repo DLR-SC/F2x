@@ -17,7 +17,7 @@ import os
 
 import numpy
 
-from F2x.template.ctypes.glue import FType, Field, ArrayField, \
+from F2x.template.ctypes.glue import FType, Field, ArrayField, Global, ArrayGlobal, \
                                      constructor, destructor, \
                                      array_from_pointer
 
@@ -34,6 +34,43 @@ library = ctypes.cdll.LoadLibrary(library_path)
 {% for type in module.types if type.public %}
 {{ types.export_type(type) }}
 {% endfor %}
+
+{% if module.globals %}
+########################################################################################################################
+# Global variables.
+class _Globals(object):
+{% for global in module.globals %}
+    {%- if global.dims %}
+    {{ global.name }} = ArrayGlobal(
+        "{{ global.name }}",
+        {{ global.ftype or global.pytype }},
+        [{{ types.join_dims(global.dims) }}],
+        library.get_{{ global.name }}
+        {%- if global.dims %},
+        library.alloc_{{ global.name }}
+        {%- endif %}
+        {%- if global.strlen %},
+        strlen={{ global.strlen }}
+        {%- endif %}
+    )
+    {%- else %}
+    {{ global.name }} = Global(
+        {{ global.ftype or global.pytype }},
+        library.get_{{ global.name }},
+        {%- if global.setter %}
+        library.set_{{ global.name }}
+        {%- else %}
+        None
+        {%- endif %}
+        {%- if global.dynamic %},
+        library.alloc_{{ global.name }}
+        {%- endif %}
+    )
+    {%- endif %}
+{% endfor %}
+
+globals = _Globals()
+{% endif %}
 
 ########################################################################################################################
 # Exported methods.
