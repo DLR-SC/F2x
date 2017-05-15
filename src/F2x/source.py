@@ -162,38 +162,38 @@ class SourceFile(object):
         while ln < len(lines):
             line = lines[ln].strip().upper()
 
-            if st == 0:
-                if line == u'CONTAINS':
-                    st = 1
-
-            elif st == 1:
-                if u'FUNCTION' in line:
-                    st = 2
-                    info = u'FUNCTION'
-                elif u'SUBROUTINE' in line:
-                    st = 2
-                    info = u'SUBROUTINE'
-
-                # Make sure get the whole FUNCTION/SUBROUTINE statement with continuation
-                while lines[ln].endswith('&'):
-                    ln += 1
-
-            elif st == 2:
-                if line \
-                and u'::' not in line \
-                and line[0] != u'!':
-                    st = 3
-                    ln -= 1
-
-            elif st == 3:
-                if u'END' in line \
-                and info in  line:
-                    st = 1
-
-                elif line \
-                and line[0] != u'!':
-                    lines[ln] = u'!F2x-exe' + lines[ln]
-
+            if line \
+            and line[0] != u'!':
+                if st == 0:
+                    if line == u'CONTAINS':
+                        st = 1
+    
+                elif st == 1:
+                    if u'FUNCTION' in line:
+                        st = 2
+                        info = u'FUNCTION'
+                    elif u'SUBROUTINE' in line:
+                        st = 2
+                        info = u'SUBROUTINE'
+    
+                    # Make sure get the whole FUNCTION/SUBROUTINE statement with continuation
+                    while lines[ln].endswith('&'):
+                        ln += 1
+    
+                elif st == 2:
+                    if u'::' not in line:
+                        st = 3
+                        ln -= 1
+    
+                elif st == 3:
+                    if u'END' in line \
+                    and info in  line:
+                        st = 1
+    
+                    elif line \
+                    and line[0] != u'!':
+                        lines[ln] = u'!F2x-exe' + lines[ln]
+    
             ln +=1
 
         # Replace lines.
