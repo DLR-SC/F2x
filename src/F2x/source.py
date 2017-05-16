@@ -190,10 +190,10 @@ class SourceFile(object):
                     and line[0] != u'!':
                         lines[ln] = u'!F2x-exe' + lines[ln]
     
-            # Make sure get the whole FUNCTION/SUBROUTINE statement with continuation
+            # Make sure get the whole statement with continuation
             if st != 3:
                 while ln < len(lines) \
-                and lines[ln].endswith('&'):
+                and lines[ln].strip().endswith('&'):
                     ln += 1
             
             ln +=1
