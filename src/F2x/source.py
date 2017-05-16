@@ -193,7 +193,7 @@ class SourceFile(object):
             # Make sure get the whole statement with continuation
             if st != 3:
                 while ln < len(lines) \
-                and lines[ln].strip().endswith('&'):
+                and lines[ln].endswith('&'):
                     ln += 1
             
             ln +=1
