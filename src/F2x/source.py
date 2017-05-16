@@ -176,10 +176,6 @@ class SourceFile(object):
                         st = 2
                         info = u'SUBROUTINE'
     
-                    # Make sure get the whole FUNCTION/SUBROUTINE statement with continuation
-                    while lines[ln].endswith('&'):
-                        ln += 1
-    
                 elif st == 2:
                     if u'::' not in line:
                         st = 3
@@ -194,7 +190,12 @@ class SourceFile(object):
                     and line[0] != u'!':
                         lines[ln] = u'!F2x-exe' + lines[ln]
     
+            # Make sure get the whole FUNCTION/SUBROUTINE statement with continuation
+            while ln < len(lines) \
+            and lines[ln].endswith('&'):
+                ln += 1
             ln +=1
+
 
         # Replace lines.
         if self.config.has_section('replace'):
