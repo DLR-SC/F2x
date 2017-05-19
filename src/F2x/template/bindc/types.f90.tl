@@ -386,6 +386,33 @@
 
 
 {% macro setter_strarray(type, field) -%}
-! SET NOT IMPLEMENTED YET
+{% if type %}{% set  name  = field.name %}{% else %}{% set name = "VALUE" %}{% endif %}
+    SUBROUTINE {% if type %}{{ type.name }}_{% endif %}SET_{{ field.name }}(PTR, INDICES, {{ name }}) BIND(C, name="{% if type %}{{ type.name }}_{% endif %}set_{{ field.name }}")
+    {%- if ifort_dll %}
+!DEC$ ATTRIBUTES DLLEXPORT :: {% if type %}{{ type.name }}_{% endif %}set_{{ field.name }}
+    {%- endif %}
+    {% if type %}
+        TYPE(C_PTR), INTENT(IN), VALUE :: PTR
+        TYPE({{ type.name }}), POINTER :: INSTANCE
+    {% endif %}
+        TYPE(C_PTR), INTENT(IN) :: INDICES
+        INTEGER, DIMENSION(:), POINTER :: INDEX_ARRAY
+        CHARACTER({{ field.strlen }}), POINTER :: {{ name }}_INTERN
+        TYPE(C_PTR), INTENT(IN) :: {{ name }}
+        
+    {% if type %}
+        IF (.NOT. C_ASSOCIATED(PTR)) THEN
+            WRITE (*,*) "Cannot access {{ field.name }} from null pointer."
+            RETURN
+        END IF
+        CALL C_F_POINTER(PTR, INSTANCE)
+    {% endif %}
+        CALL C_F_POINTER(INDICES, INDEX_ARRAY, [{{ field.dims|length }}])
+        CALL C_F_STRING({{ name }}, {{ name }}_INTERN)
+        {% if type %}INSTANCE%{% endif %}{{ field.name }}(
+        {%- for _ in field.dims -%}
+            INDEX_ARRAY({{ loop.index }}) + 1{% if not loop.last %}, {% endif %}
+        {%- endfor -%}) = {{ name }}_INTERN
+    END SUBROUTINE
 {%- endmacro %}
 

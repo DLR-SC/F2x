@@ -40,6 +40,7 @@ def test_basic_type_charfield():
     bt.CHARFIELD = "test"
     assert bt.CHARFIELD == "test"
 
+
 def test_basic_type_init():
     bt = src.BASIC_TYPE(INTFIELD=2, REALFIELD=3.4, LOGICALFIELD=False)
     assert bt.INTFIELD == 2
@@ -74,6 +75,12 @@ def test_basic_type_realarray_indexerror():
     bt = src.BASIC_TYPE(REALARRAY=[2.3, 4.5])
     with pytest.raises(IndexError):
         bt.REALARRAY[3] = 3.2
+
+
+def test_basic_type_stringarray():
+    bt = src.BASIC_TYPE()
+    bt.STRINGARRAY.allocate(3)
+    bt.STRINGARRAY[0] = "Foo"
 
 
 def test_compound_type_basicfield():

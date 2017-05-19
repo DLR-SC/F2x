@@ -26,7 +26,3 @@ namespace = SOURCE
 
 [parser]
 encoding = latin-1
-ignore =
-	16 ;        CHARACTER(32), DIMENSION(8) :: STRINGARRAY
-    86
-    87
