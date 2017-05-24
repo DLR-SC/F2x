@@ -17,7 +17,7 @@ import os
 
 import numpy
 
-from F2x.template.ctypes.glue import FType, Field, ArrayField, Global, ArrayGlobal, \
+from F2x.template.ctypes.glue import FType, Field, ArrayField, StringArrayField, Global, ArrayGlobal, \
                                      constructor, destructor, \
                                      array_from_pointer
 

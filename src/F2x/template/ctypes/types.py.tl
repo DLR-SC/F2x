@@ -21,17 +21,29 @@ class {{ type.name }}(FType):
 
 
 {% macro export_field(type, field) -%}
-    {%- if field.dims %}
+	{%- if field.dims and field.strlen %}
+    {{ field.name }} = StringArrayField(
+        "{{ field.name }}",
+        {{ field.ftype or field.pytype }},
+        [{{ join_dims(field.dims) }}],
+        library.{{ type.name }}_get_{{ field.name }},
+        library.{{ type.name }}_set_{{ field.name }}
+        {%- if field.dynamic %},
+        library.{{ type.name }}_alloc_{{ field.name }}
+        {%- else %}
+        None
+        {%- endif %},
+        {{ field.strlen }}
+    )
+    {%- elif field.dims %}
     {{ field.name }} = ArrayField(
         "{{ field.name }}",
         {{ field.ftype or field.pytype }},
         [{{ join_dims(field.dims) }}],
-        library.{{ type.name }}_get_{{ field.name }}
+        library.{{ type.name }}_get_{{ field.name }},
+        None
         {%- if field.dynamic %},
         library.{{ type.name }}_alloc_{{ field.name }}
-        {%- endif %}
-        {%- if field.strlen %},
-        strlen={{ field.strlen }}
         {%- endif %}
     )
     {%- else %}
