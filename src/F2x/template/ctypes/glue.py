@@ -288,7 +288,7 @@ class FTypeFieldArray(object):
         self[index].copy_from(value)
     
     def allocate(self, *sizes):
-        self.field.allocator(self.field, sizes)
+        self.field.allocator(self.ptr, sizes)
 
 
 def _array_getter(name, ctype, cfunc):
@@ -322,7 +322,18 @@ def _array_getter(name, ctype, cfunc):
 
 
 def _array_setter(name, ctype, cfunc):
-    return cfunc
+    if ctype == ctypes.c_char_p:
+        cfunc.argtypes = [ctypes.c_void_p, ctypes.POINTER(ctypes.POINTER(ctypes.c_int32)), ctypes.POINTER(ctype)]
+        cfunc.restype = None
+    
+        def _set(instance, index, value):
+            cindex = (ctypes.c_int32 * len(instance.dims))(*index)
+            cptr = ctypes.cast(cindex, ctypes.POINTER(ctypes.c_int32))
+            cbuffer = ctypes.create_string_buffer(value.encode('utf-8'))
+            cvalue = ctypes.cast(cbuffer, ctypes.c_char_p)
+            cfunc(instance.ptr, ctypes.byref(cptr), ctypes.byref(cvalue))
+    
+        return _set
 
 
 def _array_allocator(name, ctype, cfunc):
@@ -334,10 +345,10 @@ def _array_allocator(name, ctype, cfunc):
         cfunc.restype = None
     
         def _alloc(instance, sizes):
-            csizes = (ctypes.c_int32 * len(instance.dims))(*sizes)
+            csizes = (ctypes.c_int32 * len(instance.dims[name]))(*sizes)
             cptr = ctypes.cast(csizes, ctypes.POINTER(ctypes.c_int32))
             cfunc(instance.ptr, ctypes.byref(cptr))
-            instance.dims[:] = sizes
+            instance.dims[name][:] = sizes
     
         return _alloc
     
@@ -360,12 +371,13 @@ class ArrayField(object):
         self.ctype = ctype
         self.dims = dims
         self.getter = _array_getter(self.name, self.ctype, getter)
+        self.setter = _array_setter(self.name, self.ctype, setter)
         self.allocator = _array_allocator(self.name, self.ctype, allocator)
         self.strlen = strlen
 
     def __get__(self, instance, owner):
         if self.strlen is not None:
-            return FTypeFieldArray(self, instance)
+            return StringFieldArray(self, instance)
         
         elif issubclass(self.ctype, FType):
             return FTypeFieldArray(self, instance)
@@ -390,15 +402,13 @@ class ArrayField(object):
             array[:] = value
 
 
-class StringArrayField(ArrayField):
-    def __init__(self, name, ctype, dims, getter, setter, allocator=None, strlen=None):
-        self.name = name
-        self.ctype = ctype
-        self.dims = dims
-        self.getter = _array_getter(self.name, self.ctype, getter)
-        self.setter = _array_setter(self.name, self.ctype, setter)
-        self.allocator = _array_allocator(self.name, self.ctype, allocator)
-        self.strlen = strlen
+class StringFieldArray(FTypeFieldArray):
+    def __setitem__(self, index, value):
+        if not isinstance(index, (list, tuple)):
+            self[(index, )] = value
+
+        self.field.setter(self.ptr, index, value)
+    
 
 
 def _global_array_getter(name, ctype, cfunc):

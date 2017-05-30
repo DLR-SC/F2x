@@ -183,7 +183,7 @@ class SourceFile(object):
     
                 elif st == 3:
                     if u'END' in line \
-                    and info in  line:
+                    and info in line:
                         st = 1
     
                     elif line \

@@ -4,7 +4,7 @@
 # Tool configuration
 CP = cp
 FC = gfortran -fPIC -g
-F2X = python -m F2x.main
+F2X = python -m F2x.main -P
 F2X_INC = $(shell python -m F2x.lib.main -Fc)
 
 # Output targets

@@ -22,7 +22,7 @@ class {{ type.name }}(FType):
 
 {% macro export_field(type, field) -%}
 	{%- if field.dims and field.strlen %}
-    {{ field.name }} = StringArrayField(
+    {{ field.name }} = ArrayField(
         "{{ field.name }}",
         {{ field.ftype or field.pytype }},
         [{{ join_dims(field.dims) }}],
