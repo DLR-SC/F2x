@@ -397,7 +397,7 @@
     {% endif %}
         TYPE(C_PTR), INTENT(IN) :: INDICES
         INTEGER, DIMENSION(:), POINTER :: INDEX_ARRAY
-        CHARACTER({{ field.strlen }}), POINTER :: {{ name }}_INTERN
+        CHARACTER({{ field.strlen }}) :: {{ name }}_INTERN
         TYPE(C_PTR), INTENT(IN) :: {{ name }}
         
     {% if type %}

@@ -278,21 +278,34 @@ class FTypeFieldArray(object):
     def __getitem__(self, index):
         if not isinstance(index, (list, tuple)):
             return self[(index, )]
-
-        return self.field.getter(self.field, index)
+        else:
+            return self.field.getter(self.ptr, index)
 
     def __setitem__(self, index, value):
         if not isinstance(index, (list, tuple)):
             self[(index, )] = value
-
-        self[index].copy_from(value)
+        else:
+            self[index].copy_from(value)
     
     def allocate(self, *sizes):
         self.field.allocator(self.ptr, sizes)
 
 
 def _array_getter(name, ctype, cfunc):
-    if issubclass(ctype, FType):
+    if ctype == ctypes.c_char_p:
+        cfunc.argtypes = [ctypes.c_void_p, ctypes.POINTER(ctypes.POINTER(ctypes.c_int32))]
+        cfunc.restype = ctypes.c_void_p
+
+        def _get(instance, index):
+            index = (ctypes.c_int32 * len(instance.dims))(*index)
+            cindex = ctypes.cast(index, ctypes.POINTER(ctypes.c_int32))
+            cptr = ctypes.c_char_p(0)
+            cfunc(instance.ptr, ctypes.byref(cindex), ctypes.byref(cptr))
+            return cptr.value.decode('utf-8').rstrip()
+
+        return _get
+        
+    elif issubclass(ctype, FType):
         cfunc.argtypes = [ctypes.c_void_p, ctypes.POINTER(ctypes.POINTER(ctypes.c_int32))]
         cfunc.restype = ctypes.c_void_p
 
@@ -406,8 +419,8 @@ class StringFieldArray(FTypeFieldArray):
     def __setitem__(self, index, value):
         if not isinstance(index, (list, tuple)):
             self[(index, )] = value
-
-        self.field.setter(self.ptr, index, value)
+        else:
+            self.field.setter(self.ptr, index, value)
     
 
 

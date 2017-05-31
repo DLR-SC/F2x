@@ -81,6 +81,7 @@ def test_basic_type_stringarray():
     bt = src.BASIC_TYPE()
     bt.STRINGARRAY.allocate(3)
     bt.STRINGARRAY[0] = "Foo"
+    assert bt.STRINGARRAY[0] == "Foo"
 
 
 def test_compound_type_basicfield():
