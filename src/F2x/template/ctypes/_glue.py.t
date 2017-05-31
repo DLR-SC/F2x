@@ -38,7 +38,10 @@ library = ctypes.cdll.LoadLibrary(library_path)
 {% if module.globals %}
 ########################################################################################################################
 # Global variables.
-class _Globals(object):
+class _Globals(FType):
+    _new = lambda _: None
+    _free = lambda _, __: None
+
 {% for global in module.globals %}
     {%- if global.dims %}
     {{ global.name }} = ArrayGlobal(

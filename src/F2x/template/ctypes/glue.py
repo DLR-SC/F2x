@@ -273,7 +273,7 @@ class FTypeFieldArray(object):
         self.ptr = ptr
 
     def __len__(self):
-        return self.field.dims[0]
+        return self.ptr.dims[self.field.name][0]
 
     def __getitem__(self, index):
         if not isinstance(index, (list, tuple)):
@@ -462,10 +462,10 @@ def _global_array_allocator(name, cfunc):
     cfunc.restype = None
 
     def _alloc(instance, sizes):
-        csizes = (ctypes.c_int32 * len(instance.dims))(*sizes)
+        csizes = (ctypes.c_int32 * len(instance.dims[name]))(*sizes)
         cptr = ctypes.cast(csizes, ctypes.POINTER(ctypes.c_int32))
         cfunc(ctypes.byref(cptr))
-        instance.dims[:] = sizes
+        instance.dims[name][:] = sizes
 
     return _alloc
 
