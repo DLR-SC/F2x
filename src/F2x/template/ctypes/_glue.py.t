@@ -22,7 +22,7 @@ from F2x.template.ctypes.glue import FType, Field, ArrayField, Global, ArrayGlob
                                      array_from_pointer
 
 {% if config.has_section("pyimport") -%}
-	{% for imp in config.options("pyimport") -%}
+	{% for imp in config.options("pyimport") %}
 from {{ imp }} import {{ config.get("pyimport", imp) }}
 	{%- endfor %}
 {%- endif %}
