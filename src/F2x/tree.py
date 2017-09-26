@@ -141,6 +141,11 @@ class VarDecl(Node):
         except ValueError:
             self["intent"] = 'IN'
 
+        # No setter for PARAMETERs
+        if "setter" in self \
+        and len(full_spec.select("attr_spec /PARAMETER/")) > 0:
+            del self["setter"]
+
     def with_intent(self, intent):
         self["intent"] = intent
         return self
@@ -209,7 +214,6 @@ class Module(Node):
             VarDecl(var)
             for var in self._ast.select("module > specification_part type_declaration_stmt entity_decl")
             if len(var.parent().parent().select("access_spec /PUBLIC/")) > 0
-            and len(var.parent().parent().select("access_spec /PARAMETER/")) < 1
         ]
         self["subroutines"] = [
             SubDef(subdef)

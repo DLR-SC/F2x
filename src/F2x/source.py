@@ -157,6 +157,7 @@ class SourceFile(object):
         # st=0 -> Header (everything before CONTAINS)
         # st=1 -> Outside of FUNCTION/SUBROUTINE
         # st=2 -> In declaration part
+        # st=21 -> In declaration part : TYPE specification
         # st=3 -> In execution part
         ln, st, info = 0, 0, None
         while ln < len(lines):
@@ -175,12 +176,21 @@ class SourceFile(object):
                     elif u'SUBROUTINE' in line:
                         st = 2
                         info = u'SUBROUTINE'
-    
+
                 elif st == 2:
-                    if u'::' not in line:
+                    # TODO not very nice, only works with single space (but should be okay for now)
+                    if line.startswith(u'TYPE ::'):
+                        st = 21
+
+                    elif u'::' not in line:
                         st = 3
                         ln -= 1
-    
+
+                elif st == 21:
+                    if line.startswith(u'END') \
+                    and line.endswith(u'TYPE'):
+                        st = 2
+
                 elif st == 3:
                     if u'END' in line \
                     and info in line:
@@ -232,3 +242,4 @@ class SourceFile(object):
             grammar = load_grammar(grammar_filename)
 
         self.tree = grammar.parse(self.source)
+
