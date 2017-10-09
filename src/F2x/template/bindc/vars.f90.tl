@@ -100,8 +100,14 @@
    :param arg: A :type VarDecl: node that specifies the variable to be declared.
 #}
 {% macro declare_arg_str(arg, name) -%}
+    {%- if arg.strlen != '*' %}
         TYPE(C_PTR){%- if arg.intent %}, INTENT({{ arg.intent }}){% endif %} :: {{ name }}
         CHARACTER({{ arg.strlen }}) :: {{ name }}_INTERN
+    {%- else %}
+        CHARACTER(KIND=C_CHAR, LEN=1){%- if arg.intent %}, INTENT({{ arg.intent }}){% endif %} :: {{ name }}(*)
+        CHARACTER(:), ALLOCATABLE :: {{ name }}_INTERN
+        INTEGER :: {{ name }}_LEN
+    {%- endif %}
 {%- endmacro %}
 
 
@@ -141,6 +147,16 @@
 {% macro cast_arg(arg, name=None) -%}
     {%- if arg.dims %}
         CALL C_F_POINTER({{ name or arg.name }}, {{ name or arg.name }}_INTERN, [{{ join_dims(arg, name) }}])
+    {%- elif arg.strlen == '*' %}
+        {{ name or arg.name }}_LEN = 1
+        DO
+            IF ({{ name or arg.name }}({{ name or arg.name }}_LEN) .EQ. C_NULL_CHAR) EXIT
+            {{ name or arg.name }}_LEN = {{ name or arg.name }}_LEN + 1
+        END DO
+
+        {{ name or arg.name }}_LEN = {{ name or arg.name }}_LEN - 1
+        ALLOCATE(CHARACTER({{ name or arg.name }}_LEN) :: {{ name or arg.name }}_INTERN)
+        {{ name or arg.name }}_INTERN = TRANSFER({{ name or arg.name }}(1:{{ name or arg.name }}_LEN), {{ name or arg.name }}_INTERN)
     {%- elif arg.strlen %}
         CALL C_F_STRING({{ name or arg.name }}, {{ name or arg.name }}_INTERN)
     {%- elif arg.ftype %}

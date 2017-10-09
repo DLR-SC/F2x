@@ -97,7 +97,7 @@ def {{ method.name }}(
     {%- elif arg.strlen %}
         {%- if not arg.intent == 'OUT' %}
     {{ arg.name }}_BUFFER = ctypes.create_string_buffer(
-        {{- arg.name }}.encode("{{ config.get("parser", "encoding") }}"), {{ arg.strlen }})
+        {{- arg.name }}.encode("{{ config.get("parser", "encoding") }}"){% if arg.strlen != '*' %}, {{ arg.strlen }}{% endif %})
     {{ arg.name }}_INTERN = ctypes.cast({{ arg.name }}_BUFFER, ctypes.c_char_p)
         {%- else %}
     {{ arg.name }}_INTERN = ctypes.c_char_p()

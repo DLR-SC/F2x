@@ -9,17 +9,17 @@ class Node(dict):
         in templates. It is simply a dict which stores child nodes as values.
         This allows to simply use node.child to access the values from a
         template. E.g. to get the modules name, you can simply use
-        
+
         {{ module.name }}
     """
-    
+
     def __init__(self, ast):
         """ Node constructor stores local AST node in self._ast and calls
             self._init_children() which should be overwritten by child classes.
         """
         self._ast = ast
         self._init_children()
-    
+
     def _init_children(self):
         """ Implement this to store useful values (i.e. lists or dicts) in the properties. """
         raise NotImplementedError()
@@ -50,17 +50,17 @@ class VarDecl(Node):
         "LOGICAL": "ctypes.c_bool",
         "TYPE(C_PTR)": "ctypes.c_void_p",
     }
-    
+
     _CSTYPES = {
         "REAL": "Double",
         "INTEGER": "Int32",
         "LOGICAL": "Int32",
         "TYPE(C_PTR)": "IntPtr",
     }
-     
+
     def __init__(self, ast, prefix=""):
         """ Slightly modified constructor to allow for re-use for type-specs and var-specs.
-        
+
         For the grammar to work, component arrays have their own rule which divers from the
         variable array only in the prefix "component_" which can be passed in.
         """
@@ -88,23 +88,32 @@ class VarDecl(Node):
                 self["getter"] = "subroutine"
                 self["setter"] = "subroutine"
             except ValueError:
-                self["type"] = type_spec.select1("intrinsic_type_kind").tail[0]
-                self["getter"] = "function"
-                self["setter"] = "subroutine"
+                try:
+                    self["strlen"] = type_spec.select1("char_selector /\*/")
+                    self["intent"] = "IN"
+                    self["type"] = "TYPE(C_PTR)"
+                    self["pytype"] = "ctypes.c_char_p"
+                    self["cstype"] = "String"
+                    self["getter"] = "subroutine"
+                    self["setter"] = "subroutine"
+                except ValueError:
+                    self["type"] = type_spec.select1("intrinsic_type_kind").tail[0]
+                    self["getter"] = "function"
+                    self["setter"] = "subroutine"
 
         for attr in full_spec.select("component_attr_spec"):
             if 'ALLOCATABLE' in attr.tail:
                 self["dynamic"] = 'ALLOCATABLE'
             elif 'POINTER' in attr.tail:
                 self["dynamic"] = 'POINTER'
-                
+
         # Identify array dimensions
         for ast in (self._ast, full_spec):
             dims = ast.select(self._prefix + "array_spec int_literal_constant")
             if dims:
                 self["dims"] = [int(dim.tail[0]) for dim in dims]
                 break
-           
+
             dims = ast.select(self._prefix + "array_spec array_spec_element")
             if not dims:
                 dims = ast.select(self._prefix + "array_spec deferred_shape_spec_list")
@@ -120,7 +129,7 @@ class VarDecl(Node):
         if "pytype" not in self \
         and self["type"] in self._PYTYPES:
             self["pytype"] = self._PYTYPES[self["type"]]
-        
+
         if "cstype" not in self \
         and self["type"] in self._CSTYPES:
             self["cstype"] = self._CSTYPES[self["type"]]
@@ -134,7 +143,7 @@ class VarDecl(Node):
                 self["kind"] = kind_selector.tail[0]
             except ValueError:
                 pass
-        
+
         try:
             intent_spec = type_spec.parent().select1("intent_spec")
             self["intent"] = intent_spec.tail[0]
@@ -169,10 +178,10 @@ class TypeDef(Node):
 
 class SubDef(Node):
     _PREFIX = "subroutine"
-    
+
     def _init_children(self):
         self["name"] = self._ast.select(self._PREFIX + "_stmt name")[0].tail[0]
-        
+
         # Two-stage argument extraction:
         # First, identify all variables declared and the dummy argument list.
         dummy_args = [arg.tail[0] for arg in self._ast.select("dummy_arg name")]
@@ -180,15 +189,15 @@ class SubDef(Node):
             (argdecl.select1("name").tail[0], VarDecl(argdecl))
             for argdecl in self._ast.select("entity_decl")
         )
-        
+
         # Fill up self["args"] based on dummy argument list order.
         self["args"] = [var_specs[argname] for argname in dummy_args]
 
         return var_specs # to be re-used in child classes.
-    
+
 class FuncDef(SubDef):
     _PREFIX = "function"
-    
+
     def _init_children(self):
         var_specs = super(FuncDef, self)._init_children()
 
