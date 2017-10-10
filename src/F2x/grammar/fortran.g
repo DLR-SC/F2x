@@ -92,7 +92,7 @@ T_DEFINED_OP : '\.[a-zA-Z]+\.' (%unless
 );
 
 T_PERIOD_EXPONENT 
-    : '(\.[0-9]+[EedD][+-]?[0-9]+)|(\.[EedD][+-]?[0-9]+)|(\.[0-9]+)|([0-9]+[eEdD][+-]?[0-9]+)'
+    : '(\.[0-9]*[EedD][+-]?[0-9]+)|(\.[0-9]*)|([eEdD][+-]?[0-9]+)'
     ;
 
 T_HOLLERITH : '$no hollerith'; // shouldn't be recognized
