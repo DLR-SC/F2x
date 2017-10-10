@@ -74,21 +74,21 @@ T_UNDERSCORE    : '_'   ;
 T_SEMICOLON     : ';'   ;
 
 T_DEFINED_OP : '\.[a-zA-Z]+\.' (%unless
-    T_EQ            : '\.EQ\.' ;
-    T_NE            : '\.NE\.' ;
-    T_LT            : '\.LT\.' ;
-    T_LE            : '\.LE\.' ;
-    T_GT            : '\.GT\.' ;
-    T_GE            : '\.GE\.' ;
+    T_EQ            : '(?i)\.EQ\.' ;
+    T_NE            : '(?i)\.NE\.' ;
+    T_LT            : '(?i)\.LT\.' ;
+    T_LE            : '(?i)\.LE\.' ;
+    T_GT            : '(?i)\.GT\.' ;
+    T_GE            : '(?i)\.GE\.' ;
 
-    T_TRUE          : '\.TRUE\.'  ;
-    T_FALSE         : '\.FALSE\.' ;
+    T_TRUE          : '(?i)\.TRUE\.'  ;
+    T_FALSE         : '(?i)\.FALSE\.' ;
 
-    T_NOT           : '\.NOT\.' ;
-    T_AND           : '\.AND\.' ;
-    T_OR            : '\.OR\.'  ;
-    T_EQV           : '\.EQV\.' ;
-    T_NEQV          : '\.NEQV\.';
+    T_NOT           : '(?i)\.NOT\.' ;
+    T_AND           : '(?i)\.AND\.' ;
+    T_OR            : '(?i)\.OR\.'  ;
+    T_EQV           : '(?i)\.EQV\.' ;
+    T_NEQV          : '(?i)\.NEQV\.';
 );
 
 T_PERIOD_EXPONENT 
@@ -655,7 +655,7 @@ signed_real_literal_constant
     ;
 
 real_constant_number
-    : T_DIGIT_STRING T_PERIOD_EXPONENT
+    : T_DIGIT_STRING T_PERIOD_EXPONENT (T_UNDERSCORE kind_param)?
     ;
 
 real_literal_constant
