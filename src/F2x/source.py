@@ -78,6 +78,7 @@ PREPROCESS_RULES = (
 
 
 log = logging.getLogger(__name__)
+#log.setLevel(logging.DEBUG)
 grammar_cache = {}
 package_path, _ = os.path.split(__file__)
 
@@ -132,6 +133,7 @@ class SourceFile(object):
         with open(self.filename, 'rb') as source_file:
             self.source = source_file.read().decode(self.config.get('parser', 'encoding'))
         self.source_lines = list(map(unicode.rstrip, self.source.split('\n')))
+        #print("the first line: {}".format(self.source_lines[0]))
     
     def preprocess(self, rules=None):
         if self.source is None:
@@ -179,10 +181,13 @@ class SourceFile(object):
 
                 elif st == 2:
                     # TODO not very nice, only works with single space (but should be okay for now)
+                    # YWA -- Interface definition is not covered
+                    lineBefore = lines[ln-1].strip().upper()
                     if line.startswith(u'TYPE ::'):
                         st = 21
 
-                    elif u'::' not in line:
+                    # YWA -- cover the case for continuous line
+                    elif u'::' not in line and u'&' not in lineBefore :
                         st = 3
                         ln -= 1
 

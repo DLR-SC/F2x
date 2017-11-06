@@ -23,6 +23,7 @@ library.{{ method.export_name }}.restype =
 library.{{ method.export_name }}.argtypes = [
     {%- for arg in method.args %}
         {%- if arg.dims %}ctypes.POINTER(ctypes.POINTER({{ arg.pytype }}))
+        {%- elif arg.strlen == '*' and arg.pytype == 'ctypes.c_char_p' %} {{arg.pytype}}
         {%- else %}ctypes.POINTER({{ arg.pytype }})
         {%- endif %}, {% endfor -%}
     {%- if method.ret and method.ret.getter == 'subroutine' %}ctypes.POINTER({{ method.ret.pytype }}){% endif -%}
@@ -74,7 +75,11 @@ def {{ method.name }}(
 #}
 {% macro cast_args(method, callargs) -%}
     {%- for arg in method.args %}
-        {%- do callargs.append("ctypes.byref(" + arg.name + "_INTERN)") -%}
+        {%- if arg.strlen == '*' and arg.pytype == 'ctypes.c_char_p' -%}
+            {%- do callargs.append(arg.name + "_INTERN") -%}
+        {%- else -%}
+            {%- do callargs.append("ctypes.byref(" + arg.name + "_INTERN)") -%}
+        {%- endif -%}
         {{ cast_arg(arg) }}
     {%- endfor %}
 {%- endmacro %}

@@ -71,7 +71,7 @@ def init_logger(args):
     # Calculate and set log level: Default is logging.INFO (2*10).
     # Increase for every -q, decrease for every -v. Scale to range logging.DEBUG..logging.FATAL (0..40).
     level = max(0, min(args.quiet - args.verbose, len(LOG_LEVELS) - 1))
-    logging.basicConfig(level=LOG_LEVELS[level], format="%(levelname)-5s %(msg)s")
+    logging.basicConfig(filename=args.logfile, level=LOG_LEVELS[level], format="%(levelname)-5s %(msg)s")
 
     log = logging.getLogger(__name__)
     return log
@@ -103,6 +103,7 @@ def load_templates(log, args):
 def main():
     args = parse_args()
     log = init_logger(args)
+    #log.setLevel(logging.DEBUG)
     
     log.info(DESCRIPTION + u" Version " + VERSION)
     templates = load_templates(log, args)
@@ -166,7 +167,7 @@ def main():
                         print(prefix + space + ('^' * len(val)))
         
         access_tree = tree.Module(src.tree)
-        access_tree.export_methods(src.config)
+        access_tree.export_methods(src)
         
         if not src.config.has_section('generate'):
             src.config.add_section('generate')

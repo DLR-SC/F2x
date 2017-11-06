@@ -72,6 +72,7 @@ class VarDecl(Node):
 
         # Identify FORTRAN type and store properties accordingly
         full_spec = self._ast.parent().parent()
+        #print("full_spec: {}".format(full_spec))
         type_spec = full_spec.select1("declaration_type_spec")
         try:
             self["ftype"] = type_spec.select1("derived_type_spec name").tail[0]
@@ -102,6 +103,7 @@ class VarDecl(Node):
                     self["setter"] = "subroutine"
 
         for attr in full_spec.select("component_attr_spec"):
+            #print("attr: {}".format(attr))
             if 'ALLOCATABLE' in attr.tail:
                 self["dynamic"] = 'ALLOCATABLE'
             elif 'POINTER' in attr.tail:
@@ -197,7 +199,6 @@ class SubDef(Node):
 
 class FuncDef(SubDef):
     _PREFIX = "function"
-
     def _init_children(self):
         var_specs = super(FuncDef, self)._init_children()
 
@@ -224,30 +225,77 @@ class Module(Node):
             for var in self._ast.select("module > specification_part type_declaration_stmt entity_decl")
             if len(var.parent().parent().select("access_spec /PUBLIC/")) > 0
         ]
-        self["subroutines"] = [
-            SubDef(subdef)
-            for subdef in self._ast.select("subroutine_subprogram")
-        ]
-        self["functions"] = [
-            FuncDef(funcdef)
-            for funcdef in self._ast.select("function_subprogram")
-        ]
+#       self["subroutines"] = [
+#           SubDef(subdef)
+#           for subdef in self._ast.select("subroutine_subprogram")
+#       ]
+#       self["functions"] = [
+#           FuncDef(funcdef)
+#           for funcdef in self._ast.select("function_subprogram")
+#       ]
 
-    def export_methods(self, config):
+#   def export_methods(self, config):
+#       if not config.has_section("export"):
+#           return
+#
+#       methods = []
+#       for method in self["subroutines"] + self["functions"]:
+#           if config.has_option("export", method["name"].lower()):
+#               method["export_name"] = config.get("export", method["name"].lower())
+#               if "ret" in method:
+#                   if method["ret"]["getter"] == "subroutine":
+#                       method["ret"]["name"] = method["export_name"].upper() + '_OUT'
+#                       method["ret"]["intent"] = "OUT"
+#                   else:
+#                       method["ret"]["name"] = method["export_name"].upper()
+#                       del method["ret"]["intent"]
+#               methods.append(method)
+#
+#       self["methods"] = methods
+
+
+#    def export_methods(self, config):
+    def export_methods(self, src):
+        config = src.config
         if not config.has_section("export"):
             return
-
+            
         methods = []
-        for method in self["subroutines"] + self["functions"]:
-            if config.has_option("export", method["name"].lower()):
-                method["export_name"] = config.get("export", method["name"].lower())
-                if "ret" in method:
-                    if method["ret"]["getter"] == "subroutine":
-                        method["ret"]["name"] = method["export_name"].upper() + '_OUT'
-                        method["ret"]["intent"] = "OUT"
-                    else:
-                        method["ret"]["name"] = method["export_name"].upper()
-                        del method["ret"]["intent"]
-                methods.append(method)
+        for export in config.items("export"):
+            for funcdef in self._ast.select("function_subprogram") :
+                if funcdef.select("function_stmt name")[0].tail[0].lower() == export[0] :
+                   method = FuncDef(funcdef)
+                   method["export_name"] = config.get("export", method["name"].lower())
+                   if "ret" in method:
+                       if "dims" in method["ret"]:
+                            l_line = [line for line in src.source_lines if method["ret"]["name"] in line and "ALLOCATE" in line]
+                            if len(l_line) == 1:
+                                #ok, it is a dynamic array, find the size variable of the array
+                                l_aux_line = l_line[0][l_line[0].find(method["ret"]["name"]):-2]
+                                l_size_var = l_aux_line[len(method["ret"]["name"])+1:-1].split(',')
+                                method["ret"]["dims"] = l_size_var
+                       if method["ret"]["getter"] == "subroutine":
+                            method["ret"]["name"] = method["export_name"].upper() + '_OUT'
+                            method["ret"]["intent"] = "OUT"
+                       else:
+                           method["ret"]["name"] = method["export_name"].upper()
+                           del method["ret"]["intent"]
+                   methods.append(method)
+                   break
+            else :
+                for subdef in self._ast.select("subroutine_subprogram") :
+                    if subdef.select("subroutine_stmt name")[0].tail[0].lower() == export[0] :
+                        method = SubDef(subdef)
+                        method["export_name"] = config.get("export", method["name"].lower())
+                        if "ret" in method:
+                            method["ret"]["name"] = method["export_name"].upper() + '_OUT'
+                            method["ret"]["intent"] = "OUT"
+                        methods.append(method)
+                        break
 
         self["methods"] = methods
+
+
+
+
+
