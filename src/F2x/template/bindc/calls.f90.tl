@@ -59,11 +59,13 @@
     {{ vars.func_decl(method, True) }}
         {{- declare_args(method) }}
         {{ vars.declare_arg(method.ret) }}
-        {{ cast_args(method, callargs) }}
-        ALLOCATE({{ method.ret.name }}_INTERN({{ vars.join_dims(method.ret) }}))
-        {{ method.ret.name }}_INTERN = {{ method.name }}({{ join_list(callargs) }})
-        {{ uncast_args(method) }}
-        {{ vars.uncast_arg(method.ret) }}
+        IF (F2X_PREPARE_ERROR() == 0) THEN
+            {{ cast_args(method, callargs) }}
+            ALLOCATE({{ method.ret.name }}_INTERN({{ vars.join_dims(method.ret) }}))
+            {{ method.ret.name }}_INTERN = {{ method.name }}({{ join_list(callargs) }})
+            {{ uncast_args(method) }}
+            {{ vars.uncast_arg(method.ret) }}
+        END IF
     END FUNCTION
 {%- endmacro %}
 
@@ -79,11 +81,13 @@
     {{ vars.func_decl(method, True) }}
         {{- declare_args(method) }}
         {{ vars.declare_arg(method.ret) }}
-        {{ cast_args(method, callargs) }}
-        ALLOCATE({{ method.ret.name }}_INTERN)
-        {{ method.ret.name }}_INTERN = {{ method.name }}({{ join_list(callargs) }})
-        {{ uncast_args(method) }}
-        {{ vars.uncast_arg(method.ret) }}
+        IF (F2X_PREPARE_ERROR() == 0) THEN
+            {{ cast_args(method, callargs) }}
+            ALLOCATE({{ method.ret.name }}_INTERN)
+            {{ method.ret.name }}_INTERN = {{ method.name }}({{ join_list(callargs) }})
+            {{ uncast_args(method) }}
+            {{ vars.uncast_arg(method.ret) }}
+        END IF
     END FUNCTION
 {%- endmacro %}
 
@@ -100,10 +104,12 @@
     {{ vars.sub_decl(method, True) }}
         {{- declare_args(method) }}
         {{ vars.declare_arg(method.ret) }}
-        {{ cast_args(method, callargs) }}
-        {{ method.ret.name }}_INTERN = {{ method.name }}({{ join_list(callargs) }})
-        {{ uncast_args(method) }}
-        {{ vars.uncast_arg(method.ret) }}
+        IF (F2X_PREPARE_ERROR() == 0) THEN
+            {{ cast_args(method, callargs) }}
+            {{ method.ret.name }}_INTERN = {{ method.name }}({{ join_list(callargs) }})
+            {{ uncast_args(method) }}
+            {{ vars.uncast_arg(method.ret) }}
+        END IF
     END SUBROUTINE
 {%- endmacro %}
 
@@ -119,9 +125,11 @@
     {{ vars.func_decl(method, True) }}
         {{- declare_args(method) }}
         {{ vars.declare_arg(method.ret) }}
-        {{ cast_args(method, callargs) }}
-        {{ method.ret.name }} = {{ method.name }}({{ join_list(callargs) }})
-        {{ uncast_args(method) }}
+        IF (F2X_PREPARE_ERROR() == 0) THEN
+            {{ cast_args(method, callargs) }}
+            {{ method.ret.name }} = {{ method.name }}({{ join_list(callargs) }})
+            {{ uncast_args(method) }}
+        END IF
     END FUNCTION
 {%- endmacro %}
 
@@ -137,9 +145,11 @@
     ! SUBROUTINE {{ method.name }}
     {{ vars.sub_decl(method, True) }}
         {{- declare_args(method) }}
-        {{ cast_args(method, callargs) }}
-        CALL {{ method.name }}({{ join_list(callargs) }})
-        {{ uncast_args(method) }}
+        IF (F2X_PREPARE_ERROR() == 0) THEN
+            {{ cast_args(method, callargs) }}
+            CALL {{ method.name }}({{ join_list(callargs) }})
+            {{ uncast_args(method) }}
+        END IF
     END SUBROUTINE
 {%- endmacro %}
 

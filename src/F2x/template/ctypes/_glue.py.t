@@ -19,7 +19,8 @@ import numpy
 
 from F2x.template.ctypes.glue import FType, Field, ArrayField, Global, ArrayGlobal, \
                                      constructor, destructor, \
-                                     array_from_pointer
+                                     array_from_pointer, \
+                                     F2xError
 
 {% if config.has_section("pyimport") -%}
 	{% for imp in config.options("pyimport") %}
@@ -30,6 +31,16 @@ from {{ imp }} import {{ config.get("pyimport", imp) }}
 library_name = '{{ config.get('generate', 'dll') }}'
 library_path = os.path.join(os.path.dirname(__file__), library_name)
 library = ctypes.cdll.LoadLibrary(library_path)
+
+
+def check_error(name):
+    code = library.f2x_err_get()
+    if code != 0:
+        raise F2xError(name, code)
+
+
+library.f2x_err_get.argtypes = None
+library.f2x_err_get.rtype = ctypes.c_int
 
 {% for type in module.types if type.public %}
 {{ types.export_type(type) }}

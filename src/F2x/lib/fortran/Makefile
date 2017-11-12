@@ -2,11 +2,15 @@
 
 FC = gfortran
 TARGET = libF2x.so
-SOURCES = $(wildcard *.f90)
-OBJECTS = $(SOURCES:.f90=.o)
+SOURCES_C = $(wildcard *.c)
+SOURCES_F90 = $(wildcard *.f90)
+OBJECTS = $(SOURCES_F90:.f90=.o) $(SOURCES_C:.c=.o)
 
 %.o : %.f90
 	$(FC) -c -fPIC -shared -o $@ $<
+
+%.o : %.c
+	$(CC) -c -fPIC -shared -o $@ $<
 
 $(TARGET) : $(OBJECTS)
 	$(FC) -fPIC -shared -o $(TARGET) $(OBJECTS)

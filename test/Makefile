@@ -18,7 +18,7 @@ SOURCE_CFG = fortran/source.f90-wrap
 # Fortran shared library dependencies
 FLIB_GEN = fortran/source_glue.f90
 FLIB_SOURCE = $(SOURCE) $(FLIB_GEN)
-FLIB_LIBS = $(shell python -m F2x.lib.main -FIx)
+FLIB_LIBS = $(shell python -m F2x.lib.main -FI) ../src/F2x/lib/fortran/c_interface_module.o ../src/F2x/lib/fortran/f2x_err.o
 
 # Python does not need anything else
 PYLIB_GEN = fortran/source_glue.py

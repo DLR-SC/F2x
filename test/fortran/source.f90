@@ -1,5 +1,6 @@
 ! This module is part of the F2x test suites. It provides some types and routines that reflect the supported spectrum.
 MODULE SOURCE
+    USE C_INTERFACE_MODULE
 
     ! BASIC_TYPE has some different fields all of which are supported built-in types.
     TYPE, PUBLIC :: BASIC_TYPE
@@ -153,6 +154,29 @@ CONTAINS
         INTEGER, DIMENSION(3) :: ARRAY_RETURN_VALUE
 
         ARRAY_RETURN_VALUE = [1, 2, 3]
+    END FUNCTION
+
+    ! Error triggered in SUB
+    SUBROUTINE TRIGGER_ERROR_SUB(CODE)
+        INTEGER, INTENT(IN) :: CODE
+
+        IF (CODE == 0) THEN
+            WRITE (*,*) "Normal execution"
+        ELSE
+            CALL F2X_HANDLE_ERROR(CODE)
+        END IF
+    END SUBROUTINE
+
+    ! Error triggered in FUNC
+    FUNCTION TRIGGER_ERROR_FUNC(CODE)
+        INTEGER :: TRIGGER_ERROR_FUNC
+        INTEGER, INTENT(IN) :: CODE
+
+        IF (CODE == 0) THEN
+            CALL F2X_HANDLE_ERROR(123)
+        END IF
+
+        TRIGGER_ERROR_FUNC = CODE
     END FUNCTION
 
 END

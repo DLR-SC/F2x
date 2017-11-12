@@ -56,6 +56,7 @@ def {{ method.name }}(
         {%- endif %}
     library.{{ method.export_name }}({{ join_args(callargs) }})
     {%- endif %}
+    check_error({{ method.name }})
     {%- if method.ret %}
     {{ uncast_ret(method.ret, retargs) }}
     {%- endif %}

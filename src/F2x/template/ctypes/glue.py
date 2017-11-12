@@ -544,3 +544,9 @@ class FType(object):
         for name, field in cls.__dict__.items():
             if isinstance(field, types):
                 yield name, field
+
+
+class F2xError(Exception):
+    def __init__(self, name, code):
+        super(Exception, self).__init__("During execution of {0} an error ({1}) occured.".format(name, code))
+        self.code = code
