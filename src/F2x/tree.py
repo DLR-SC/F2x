@@ -287,6 +287,13 @@ class Module(Node):
                     if subdef.select("subroutine_stmt name")[0].tail[0].lower() == export[0] :
                         method = SubDef(subdef)
                         method["export_name"] = config.get("export", method["name"].lower())
+                        l_array_args = [ l_arg for l_arg in method["args"] if "dims" in l_arg ]
+                        if len(l_array_args) > 0:
+                            #okay, we have arguments of array type
+                            sub_start, sub_end = self._get_subroutine(method["name"], src.source_lines)
+                            for arg in l_array_args:
+                                self._find_array_size(arg, src.source_lines[sub_start: sub_end])
+
                         if "ret" in method:
                             method["ret"]["name"] = method["export_name"].upper() + '_OUT'
                             method["ret"]["intent"] = "OUT"
@@ -294,6 +301,50 @@ class Module(Node):
                         break
 
         self["methods"] = methods
+
+
+    def _find_array_size(self, a_argument, a_src):
+        for index, line in enumerate(a_src) :
+            if a_argument["name"] in line and "::" in line :
+                # this is the declaration line
+                l_aux_line = line[line.find(a_argument["name"]):]
+                l_size_var = l_aux_line[len(a_argument["name"])+1:-1].split(',')
+                if  l_size_var[0] == ':':
+                   # check if the array is dynamically allocated within the function/subroutine body 
+                   for line in a_src[index:] :
+                       if a_argument["name"] in line and "ALLOCATE" in line :
+                           l_aux_line = line[line.find(a_argument["name"]):-1].strip()
+                           l_size_var = l_aux_line[len(a_argument["name"])+1:-1].split(',')
+                           a_argument["dims"] = l_size_var
+                           break
+                   else :
+                        # okay, no size variable is found. It could be "IN" type, make sure the dimension is correctly set
+                        n = len(l_size_var)
+                        a_argument["dims"] = [ x.replace(':', str(n)) for x in l_size_var ] 
+                else :
+                    a_argument["dims"] = l_size_var
+
+
+
+    def _get_subroutine(self,a_name, a_src):
+        startIndex = 0
+        stopIndex =0
+        for i in range(len(a_src)):
+            l_str = a_src[i].strip()
+            if l_str.startswith("SUBROUTINE") and a_name in l_str :
+                startIndex = i
+                for j, line in enumerate(a_src[i:]):
+                    line = line.strip()
+                    if line.startswith("END SUBROUTINE") :
+                        stopIndex = i + j
+                        break
+                break
+        else:
+            # should not happend
+            pass
+
+        return (startIndex, stopIndex)
+
 
 
 
