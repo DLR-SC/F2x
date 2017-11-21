@@ -218,6 +218,7 @@ class SourceFile(object):
         if self.config.has_section('replace'):
             for index in self.config.options('replace'):
                 lines[int(index) - 1] = self.config.get('replace', index)
+                self.source_lines[int(index)-1] = lines[int(index)-1]
             
         self.source = u'\n'.join(lines)
 

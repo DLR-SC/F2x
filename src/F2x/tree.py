@@ -292,7 +292,7 @@ class Module(Node):
                             #okay, we have arguments of array type
                             sub_start, sub_end = self._get_subroutine(method["name"], src.source_lines)
                             for arg in l_array_args:
-                                self._find_array_size(arg, src.source_lines[sub_start: sub_end])
+                                self._set_array_size(arg, src.source_lines[sub_start: sub_end])
 
                         if "ret" in method:
                             method["ret"]["name"] = method["export_name"].upper() + '_OUT'
@@ -303,35 +303,71 @@ class Module(Node):
         self["methods"] = methods
 
 
-    def _find_array_size(self, a_argument, a_src):
+    def _set_array_size(self, a_argument, a_src):
+        l_arg = a_argument["name"]
+        l_arg_len = len(l_arg)
+        l_key_len = 8  # keyword "ALLOCATE"
+
         for index, line in enumerate(a_src) :
-            if a_argument["name"] in line and "::" in line :
-                # this is the declaration line
-                l_aux_line = line[line.find(a_argument["name"]):]
-                l_size_var = l_aux_line[len(a_argument["name"])+1:-1].split(',')
+            # to do: skip the comments
+            l_line = line[line.find("::")+2 : ].strip()
+
+            # this is the declaration line
+            if l_line.startswith(l_arg+'(') :
+                l_follow = l_line.find('!')
+                if l_follow != -1 :
+                    # removed the trailing comment
+                    l_line = l_line[:l_follow].strip()
+                l_size_var = l_line[l_arg_len+1:-1].split(',')
                 if  l_size_var[0] == ':':
                    # check if the array is dynamically allocated within the function/subroutine body 
                    for line in a_src[index:] :
-                       if a_argument["name"] in line and "ALLOCATE" in line :
-                           l_aux_line = line[line.find(a_argument["name"]):-1].strip()
-                           l_size_var = l_aux_line[len(a_argument["name"])+1:-1].split(',')
-                           a_argument["dims"] = l_size_var
-                           break
+                       line = line.strip()
+                       if line.startswith("ALLOCATE") :
+                           # skip comment
+                           l_follow = line.find('!')
+                           l_line = ''
+                           if l_follow == -1 :
+                               l_line = line[l_key_len:].strip()[1:-1]
+                           else :
+                               l_line = line[l_key_len:l_follow].strip()[1:-1] 
+                           l_alloc_list = l_line.split('),')
+                           # check if more than one variables are allocated
+                           if len(l_alloc_list) > 1 :
+                               for l_alloc in l_alloc_list :
+                                   l_alloc = l_alloc.strip()
+                                   if l_alloc.startswith(l_arg + '(') :
+                                       l_aux_line = ''
+                                       if l_alloc.endswith(')') :
+                                            l_aux_line = l_alloc[l_arg_len+1:-1].strip()
+                                       else :
+                                            l_aux_line = l_alloc[l_arg_len+1:].strip()
+                                       l_size_var = l_aux_line.split(',')
+                                       a_argument["dims"] = l_size_var
+                                       break
+                           else :
+                               l_alloc = l_alloc_list[0].strip()
+                               if l_alloc.startswith(l_arg + '(') :
+                                    l_aux_line = l_alloc[l_arg_len+1:-1].strip()
+                                    l_size_var = l_aux_line.split(',')
+                                    a_argument["dims"] = l_size_var
+
                    else :
                         # okay, no size variable is found. It could be "IN" type, make sure the dimension is correctly set
                         n = len(l_size_var)
                         a_argument["dims"] = [ x.replace(':', str(n)) for x in l_size_var ] 
                 else :
                     a_argument["dims"] = l_size_var
+                break
 
 
 
-    def _get_subroutine(self,a_name, a_src):
+    def _get_subroutine(self,a_argument, a_src):
         startIndex = 0
         stopIndex =0
         for i in range(len(a_src)):
             l_str = a_src[i].strip()
-            if l_str.startswith("SUBROUTINE") and a_name in l_str :
+            if l_str.startswith("SUBROUTINE") and a_argument in l_str :
                 startIndex = i
                 for j, line in enumerate(a_src[i:]):
                     line = line.strip()
