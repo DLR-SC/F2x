@@ -134,7 +134,7 @@ def {{ method.name }}(
     {%- if arg.dims %}
         {%- if arg.ftype or arg.strlen %}
     # pass
-        {%- else %}
+        {%- else -%}
             {%- do retargs.append(arg.name + "_ARRAY") -%}
     {{ arg.name }}_CARRAY = array_from_pointer({{ arg.pytype }}, [{% for dim in arg.dims %}{{ dim }}{% if not loop.last %} * {% endif %}{% endfor %}], {{ arg.name }})
     {{ arg.name }}_ARRAY = numpy.ndarray(({% for dim in arg.dims %}{{ dim }}, {% endfor %}), dtype={{ arg.pytype }}, buffer={{ arg.name }}_CARRAY, order='F')
@@ -158,7 +158,11 @@ def {{ method.name }}(
     # pass
         {%- else %}
             {%- do retargs.append(arg.name + '_ARRAY') -%}
-        {%- endif %}
+    {%- if arg.intent == 'OUT' %}
+    {{ arg.name }}_CARRAY = array_from_pointer({{ arg.pytype }}, [{% for dim in arg.dims %}{{ dim }}{% if not loop.last %} * {% endif %}{% endfor %}], {{ arg.name }}_INTERN)
+    {{ arg.name }}_ARRAY = numpy.ndarray(({% for dim in arg.dims %}{{ dim }}, {% endfor %}), dtype={{ arg.pytype }}, buffer={{ arg.name }}_CARRAY, order='F')
+    {%- endif %}
+        {%- endif -%}
     {%- elif arg.strlen %}
         {%- do retargs.append(arg.name + '_INTERN.value.decode("' + config.get("parser", "encoding") + '").rstrip()') -%}
     {%- elif arg.ftype %}
