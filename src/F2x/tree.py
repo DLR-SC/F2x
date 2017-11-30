@@ -314,23 +314,17 @@ class Module(Node):
 
             # this is the declaration line
             if l_line.startswith(l_arg+'(') :
-                l_follow = l_line.find('!')
-                if l_follow != -1 :
-                    # removed the trailing comment
-                    l_line = l_line[:l_follow].strip()
-                l_size_var = l_line[l_arg_len+1:-1].split(',')
+                l_declare = l_line.split('!')
+                l_array_var = l_declare[0].strip()
+                l_size_var = l_array_var[l_arg_len+1:-1].split(',')
                 if  l_size_var[0] == ':':
                    # check if the array is dynamically allocated within the function/subroutine body 
                    for line in a_src[index:] :
                        line = line.strip()
                        if line.startswith("ALLOCATE") :
                            # skip comment
-                           l_follow = line.find('!')
-                           l_line = ''
-                           if l_follow == -1 :
-                               l_line = line[l_key_len:].strip()[1:-1]
-                           else :
-                               l_line = line[l_key_len:l_follow].strip()[1:-1] 
+                           l_alloc = line.split('!')[0].strip()
+                           l_line = l_alloc[l_key_len:][1:-1]
                            l_alloc_list = l_line.split('),')
                            # check if more than one variables are allocated
                            if len(l_alloc_list) > 1 :
@@ -351,12 +345,25 @@ class Module(Node):
                                     l_aux_line = l_alloc[l_arg_len+1:-1].strip()
                                     l_size_var = l_aux_line.split(',')
                                     a_argument["dims"] = l_size_var
-
                    else :
-                        # okay, no size variable is found. It could be "IN" type, make sure the dimension is correctly set
-                        n = len(l_size_var)
-                        a_argument["dims"] = [ x.replace(':', str(n)) for x in l_size_var ] 
+                        # okay, no size variable is found. It could be "IN" or "INOUT" type, 
+                        if len(l_declare) == 2 :
+                            l_comment = l_declare[1].strip()
+                            if l_comment.startswith('@F2x') :
+                                l_vars = l_comment.split(l_arg)[1]
+                                l_size_var = l_vars[1:-1].split(',')
+                                a_argument["dims"] = l_size_var
+                            else :
+                                # Attention: no information is provided, code is not reliable !!
+                                # But at leaset make sure the dimension is correctly set
+                                n = len(l_size_var)
+                                a_argument["dims"] = [ x.replace(':', '0') for x in l_size_var ] 
+                        else :
+                            # Same problem as above !! 
+                            n = len(l_size_var)
+                            a_argument["dims"] = [ x.replace(':', '0') for x in l_size_var ] 
                 else :
+                    # size variables are set explicitly
                     a_argument["dims"] = l_size_var
                 break
 
