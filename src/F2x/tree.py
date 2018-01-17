@@ -324,7 +324,7 @@ class Module(Node):
                        if line.startswith("ALLOCATE") :
                            # skip comment
                            l_alloc = line.split('!')[0].strip()
-                           l_line = l_alloc[l_key_len:][1:-1]
+                           l_line = l_alloc[l_key_len:].strip()[1:-1]
                            l_alloc_list = l_line.split('),')
                            # check if more than one variables are allocated
                            if len(l_alloc_list) > 1 :
