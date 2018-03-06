@@ -22,6 +22,12 @@ void f2x_err_handle(int code) {
 }
 
 
+/* Set error code. */
+void f2x_err_reset() {
+    f2x_err_code = 0;
+}
+
+
 /* Read error code. */
 int f2x_err_get() {
     return f2x_err_code;
