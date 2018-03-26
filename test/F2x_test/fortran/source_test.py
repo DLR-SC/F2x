@@ -202,6 +202,7 @@ def test_string_return_value():
     assert src.STRING_RETURN_VALUE().rstrip() == "Foo Bar"
 
 
+@pytest.mark.skip
 def test_array_return_value():
     assert numpy.array_equal(src.ARRAY_RETURN_VALUE(), [1, 2, 3])
 

@@ -2,18 +2,8 @@
 #include <stdio.h>
 #include <setjmp.h>
 
-static jmp_buf f2x_err_jmp_buf;
+jmp_buf f2x_err_jmp_buf;
 static int f2x_err_code;
-
-/* Prepare error handling. Should be called in wrapper function before FORTRAN code is executed. */
-int f2x_err_prepare() {
-    if (setjmp(f2x_err_jmp_buf) == 0) {
-        f2x_err_code = 0;
-        return 0;
-    } else {
-        return f2x_err_code;
-    }
-}
 
 /* Handle error. Should be called, when an error occured. */
 void f2x_err_handle(int code) {

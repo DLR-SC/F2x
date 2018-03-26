@@ -3,7 +3,8 @@
 
 # Tool configuration
 CP = cp
-FC = gfortran-7 -fPIC -g
+FC = ifort -fPIC -g
+CC = gcc -fPIC -g
 F2X = python -m F2x.main -P
 F2X_INC = $(shell python -m F2x.lib.main -Fc)
 
@@ -16,7 +17,8 @@ SOURCE = fortran/source.f90
 SOURCE_CFG = fortran/source.f90-wrap
 
 # Fortran shared library dependencies
-FLIB_GEN = fortran/source_glue.f90 fortran/source_cerr.c
+FLIB_GEN = fortran/source_glue.f90
+FLIB_GEN_C = fortran/source_cerr.c
 FLIB_SOURCE = $(SOURCE) $(FLIB_GEN)
 FLIB_LIBS = $(shell python -m F2x.lib.main -FI) ../src/F2x/lib/fortran/c_interface_module.o ../src/F2x/lib/fortran/f2x_err.o
 
@@ -33,7 +35,8 @@ $(FLIB_GEN) $(PYLIB_GEN) $(CSLIB_GEN) : $(SOURCE) $(SOURCE_CFG)
 
 # Fortran library build
 $(FLIB) : $(FLIB_GEN) $(FLIB_SOURCE)
-	$(FC) -shared -o $(FLIB) $(FLIB_LIBS) $(FLIB_SOURCE)
+	$(CC) -c -o $(FLIB_GEN_C:.c=.o) $(FLIB_GEN_C)
+	$(FC) -shared -o $(FLIB) $(FLIB_LIBS) $(FLIB_SOURCE) $(FLIB_GEN_C:.c=.o)
 
 $(PYLIB) : $(FLIB) $(PYLIB_GEN)
 	$(CP) $(PYLIB_GEN) $(PYLIB)
@@ -41,5 +44,5 @@ $(PYLIB) : $(FLIB) $(PYLIB_GEN)
 
 	
 clean :
-	$(RM) $(PYLIB_GEN) $(CSLIB_GEN) $(FLIB_GEN) *.mod
+	$(RM) $(PYLIB_GEN) $(CSLIB_GEN) $(FLIB_GEN) $(FLIB_GEN_C) *.mod
 

@@ -93,20 +93,10 @@ module C_interface_module
 
 ! Error handling ...
   interface
-    function F2x_prepare_error() result(result) bind(C,name="f2x_err_prepare")
-      import C_int
-      integer(C_int) :: result
-    end function
-
     subroutine F2x_handle_error(code) bind(C,name="f2x_err_handle")
       import C_int
       integer(C_int), value, intent(in) :: code
     end subroutine
-
-    function F2x_get_error() result(result) bind(C,name="f2x_err_get")
-      import C_int
-      integer(C_int) :: result
-    end function
   end interface
 
 !=======================================================================

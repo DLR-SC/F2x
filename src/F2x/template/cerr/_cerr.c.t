@@ -6,6 +6,7 @@
 #include <setjmp.h>
 
 void f2x_err_reset();
+extern jmp_buf f2x_err_jmp_buf;
 
 {% macro export_function(method) -%}
     {% if method.ret.dims %}
@@ -27,9 +28,7 @@ void f2x_err_reset();
 /* Prototype for BIND(C) routine {{ method.name }} */
 void *{{ method.export_name }}({% for arg in method.args %}void *{% if not loop.last %}, {% endif %}{% endfor %});
 void *{{ method.export_name }}_cerr({% for arg in method.args %}void *arg{{ loop.index0 }}{% if not loop.last %}, {% endif %}{% endfor %}) {
-    static jmp_buf buf;
-
-    if (setjmp(buf) == 0) {
+    if (setjmp(f2x_err_jmp_buf) == 0) {
         f2x_err_reset();
         return {{ method.export_name }}({% for arg in method.args %}arg{{ loop.index0 }}{% if not loop.last %}, {% endif %}{% endfor %});
     } else {
@@ -43,9 +42,7 @@ void *{{ method.export_name }}_cerr({% for arg in method.args %}void *arg{{ loop
 /* Prototype for BIND(C) routine {{ method.name }} */
 void {{ method.export_name }}({% for arg in method.args %}void *, {% endfor %}void *);
 void {{ method.export_name }}_cerr({% for arg in method.args %}void *arg{{ loop.index0 }}, {% endfor %}, void *out) {
-    static jmp_buf buf;
-
-    if (setjmp(buf) == 0) {
+    if (setjmp(f2x_err_jmp_buf) == 0) {
         f2x_err_reset();
         {{ method.export_name }}({% for arg in method.args %}arg{{ loop.index0 }}, {% endfor %}out);
     }
@@ -59,7 +56,7 @@ void {{ method.export_name }}({% for arg in method.args %}void *{% if not loop.l
 void {{ method.export_name }}_cerr({% for arg in method.args %}void *arg{{ loop.index0 }}{% if not loop.last %}, {% endif %}{% endfor %}) {
     static jmp_buf buf;
 
-    if (setjmp(buf) == 0) {
+    if (setjmp(f2x_err_jmp_buf) == 0) {
         f2x_err_reset();
         {{ method.export_name }}({% for arg in method.args %}arg{{ loop.index0 }}{% if not loop.last %}, {% endif %}{% endfor %});
     }
