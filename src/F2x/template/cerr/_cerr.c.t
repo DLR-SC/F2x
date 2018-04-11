@@ -51,7 +51,7 @@ void *{{ method.export_name }}_cerr({% for arg in method.args %}void *arg{{ loop
 {% macro export_function_out(method) -%}
 /* Prototype for BIND(C) routine {{ method.name }} */
 void {{ method.export_name }}({% for arg in method.args %}void *, {% endfor %}void *);
-void {{ method.export_name }}_cerr({% for arg in method.args %}void *arg{{ loop.index0 }}, {% endfor %}, void *out) {
+void {{ method.export_name }}_cerr({% for arg in method.args %}void *arg{{ loop.index0 }}, {% endfor %}void *out) {
     jmp_buf *_jmp_buf = f2x_prepare_jmp_buffer();
 
     if (_jmp_buf != 0) {
