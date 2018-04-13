@@ -54,7 +54,7 @@ void {{ method.export_name }}({% for arg in method.args %}void *, {% endfor %}vo
 void {{ method.export_name }}_cerr({% for arg in method.args %}void *arg{{ loop.index0 }}, {% endfor %}void *out) {
     jmp_buf *_jmp_buf = f2x_prepare_jmp_buffer();
 
-    if (_jmp_buf != 0) {
+    if (_jmp_buf == 0) {
         return;
     }
 
