@@ -349,8 +349,9 @@ class Module(Node):
                         # okay, no size variable is found. It could be "IN" or "INOUT" type, 
                         if len(l_declare) == 2 :
                             l_comment = l_declare[1].strip()
-                            if l_comment.startswith('@F2x') :
-                                l_vars = l_comment.split(l_arg)[1]
+                            l_f2x_markup='@F2x=>'
+                            if l_comment.startswith(l_f2x_markup) :
+                                l_vars = l_comment.split(l_f2x_markup+l_arg)[1]
                                 l_size_var = l_vars[1:-1].split(',')
                                 a_argument["dims"] = l_size_var
                             else :
