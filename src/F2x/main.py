@@ -46,6 +46,9 @@ def parse_args(argv=None):
     argp_generator.add_argument(u'-t', u'--template', action=u'append',
                                 help=u"Generate wrapping code for each template given. Uset '@'-prefix for bundled templates.",
                                 required=True)
+    argp_generator.add_argument(u'-d', u'--copy-glue', action=u"store_true",
+                                help="Copy 'glue.py' (used by ctypes template) into destination folder.",
+                                default=False)
 
     argp.add_argument(u'-l', u'--logfile',
                       help=u"Write detailed log to LOGFILE.")
@@ -168,6 +171,7 @@ def main():
         
         access_tree = tree.Module(src.tree)
         access_tree.export_methods(src)
+        print(access_tree)
         
         if not src.config.has_section('generate'):
             src.config.add_section('generate')
@@ -185,6 +189,14 @@ def main():
                 u'context': { u'filename': source_filename, u'basename': os.path.basename(output_basename), u'args': args } })
             with open(output_filename, 'wb') as output_file:
                 output_file.write(output.encode(args.encoding))
+
+        if args.copy_glue:
+            from F2x.template.ctypes import glue
+            output_dir, _ = os.path.split(output_basename)
+            output_file = os.path.join(output_dir, "glue.py")
+            if os.path.exists(output_file):
+                os.unlink(output_file)
+            os.link(glue.__file__, output_file)
 
 if __name__ == '__main__':
     main()

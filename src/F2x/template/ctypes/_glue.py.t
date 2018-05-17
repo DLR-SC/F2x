@@ -17,10 +17,9 @@ import os
 
 import numpy
 
-from F2x.template.ctypes.glue import FType, Field, ArrayField, Global, ArrayGlobal, \
-                                     constructor, destructor, \
-                                     array_from_pointer, \
-                                     F2xError
+from {% if not context.args.copy_glue %}F2x.template.ctypes{% endif %}.glue import FType, Field, ArrayField, Global, ArrayGlobal, \
+                  constructor, destructor, array_from_pointer, \
+                  F2xError
 
 {% if config.has_section("pyimport") -%}
 	{% for imp in config.options("pyimport") %}

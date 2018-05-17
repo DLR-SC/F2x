@@ -1,7 +1,5 @@
 ! This module is part of the F2x test suites. It provides some types and routines that reflect the supported spectrum.
 MODULE SOURCE
-    USE C_INTERFACE_MODULE
-
     ! BASIC_TYPE has some different fields all of which are supported built-in types.
     TYPE, PUBLIC :: BASIC_TYPE
         INTEGER :: INTFIELD
@@ -28,6 +26,13 @@ MODULE SOURCE
     
     TYPE(BASIC_TYPE), PUBLIC, ALLOCATABLE, TARGET :: BASICS(:)
     LOGICAL, PUBLIC :: BASICS_READY = .FALSE.
+
+    INTERFACE
+    subroutine F2x_handle_error(code) bind(C,name="f2x_err_handle")
+      USE ISO_C_BINDING
+      integer(C_int), value, intent(in) :: code
+    end subroutine
+    END Interface
 
 CONTAINS
 
