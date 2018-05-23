@@ -170,7 +170,7 @@ def main():
                         print(prefix + space + ('^' * len(val)))
         
         access_tree = tree.Module(src.tree)
-        access_tree.export_methods(src.config)
+        access_tree.export_methods(src)
         print(access_tree)
         
         if not src.config.has_section('generate'):
