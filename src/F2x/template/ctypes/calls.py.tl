@@ -22,8 +22,8 @@ library.{{ method.export_name }}_cerr.restype =
     {%- endif %}
 library.{{ method.export_name }}_cerr.argtypes = [
     {%- for arg in method.args %}
-        {%- if arg.dims %}ctypes.POINTER(ctypes.POINTER({{ arg.pytype }}))
-        {%- elif arg.strlen == '*' and arg.pytype == 'ctypes.c_char_p' %} {{arg.pytype}}
+        {%- if arg.dims %}{% if arg.strlen == '*' %}ctypes.POINTER(ctypes.c_int), ctypes.POINTER(ctypes.c_int), ctypes.POINTER(ctypes.c_void_p){% else %}ctypes.POINTER(ctypes.POINTER({{ arg.pytype }})){% endif %}
+        {%- elif arg.strlen == '*' and arg.pytype == 'ctypes.c_char_p' %} {{ arg.pytype }}
         {%- else %}ctypes.POINTER({{ arg.pytype }})
         {%- endif %}, {% endfor -%}
     {%- if method.ret and method.ret.getter == 'subroutine' %}ctypes.POINTER({{ method.ret.pytype }}){% endif -%}
@@ -77,7 +77,13 @@ def {{ method.name }}(
 {% macro cast_args(method, callargs) -%}
     {%- for arg in method.args %}
         {%- if arg.strlen == '*' and arg.pytype == 'ctypes.c_char_p' -%}
-            {%- do callargs.append(arg.name + "_INTERN") -%}
+            {%- if arg.dims -%}
+                {%- do callargs.append("ctypes.byref(" + arg.name + "_SIZE)") -%}
+                {%- do callargs.append("ctypes.byref(" + arg.name + "_LENGTH)") -%}
+                {%- do callargs.append("ctypes.byref(" + arg.name + "_PTR)") -%}
+            {%- else -%}
+                {%- do callargs.append(arg.name + "_INTERN") -%}
+            {%- endif -%}
         {%- else -%}
             {%- do callargs.append("ctypes.byref(" + arg.name + "_INTERN)") -%}
         {%- endif -%}
@@ -90,7 +96,13 @@ def {{ method.name }}(
 #}
 {% macro cast_arg(arg) -%}
     {%- if arg.dims %}
-        {%- if arg.ftype or arg.strlen %}
+        {%- if arg.strlen %}
+    {{ arg.name }}_SIZE = ctypes.c_int(len({{ arg.name }}))
+    {{ arg.name }}_LENGTH = ctypes.c_int({% if arg.strlen == '*' %}max(map(len, {{ arg.name }})){% else %}{{ arg.strlen }}{% endif %})
+    {{ arg.name }}_INTERN = numpy.chararray(({{ arg.name }}_SIZE.value, ), itemsize={{ arg.name }}_LENGTH.value)
+    {{ arg.name }}_INTERN[:] = {{ arg.name }}
+    {{ arg.name }}_PTR = {{ arg.name }}_INTERN.ctypes.data_as(ctypes.c_void_p)
+        {%- elif arg.ftype %}
     # pass
         {%- else %}
             {%- if not arg.intent == 'OUT' %}
