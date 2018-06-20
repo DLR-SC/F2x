@@ -23,7 +23,7 @@ library.{{ method.export_name }}_cerr.restype =
 library.{{ method.export_name }}_cerr.argtypes = [
     {%- for arg in method.args %}
         {%- if arg.dims %}{% if arg.strlen == '*' %}ctypes.POINTER(ctypes.c_int), ctypes.POINTER(ctypes.c_int), ctypes.POINTER(ctypes.c_void_p){% else %}ctypes.POINTER(ctypes.POINTER({{ arg.pytype }})){% endif %}
-        {%- elif arg.strlen == '*' and arg.pytype == 'ctypes.c_char_p' %} {{ arg.pytype }}
+        {%- elif arg.strlen == '*' and arg.pytype == 'ctypes.c_char_p' %}ctypes.POINTER(ctypes.c_int), ctypes.POINTER({{ arg.pytype }})
         {%- else %}ctypes.POINTER({{ arg.pytype }})
         {%- endif %}, {% endfor -%}
     {%- if method.ret and method.ret.getter == 'subroutine' %}ctypes.POINTER({{ method.ret.pytype }}){% endif -%}
@@ -82,7 +82,8 @@ def {{ method.name }}(
                 {%- do callargs.append("ctypes.byref(" + arg.name + "_LENGTH)") -%}
                 {%- do callargs.append("ctypes.byref(" + arg.name + "_PTR)") -%}
             {%- else -%}
-                {%- do callargs.append(arg.name + "_INTERN") -%}
+                {%- do callargs.append("ctypes.byref(" + arg.name + "_LENGTH)") -%}
+                {%- do callargs.append("ctypes.byref(" + arg.name + "_INTERN)") -%}
             {%- endif -%}
         {%- else -%}
             {%- do callargs.append("ctypes.byref(" + arg.name + "_INTERN)") -%}
@@ -117,6 +118,9 @@ def {{ method.name }}(
     {{ arg.name }}_BUFFER = ctypes.create_string_buffer(
         {{- arg.name }}.encode("{{ config.get("parser", "encoding") }}"){% if arg.strlen != '*' %}, {{ arg.strlen }}{% endif %})
     {{ arg.name }}_INTERN = ctypes.cast({{ arg.name }}_BUFFER, ctypes.c_char_p)
+            {%- if arg.strlen == '*' %}
+    {{ arg.name }}_LENGTH = ctypes.c_int(len({{ arg.name }}_BUFFER))
+            {%- endif %}
         {%- else %}
     {{ arg.name }}_INTERN = ctypes.c_char_p()
         {%- endif %}

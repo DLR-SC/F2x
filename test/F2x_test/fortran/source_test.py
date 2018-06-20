@@ -8,7 +8,7 @@ import pytest
 import numpy
 
 import F2x
-from F2x.template.ctypes.glue import F2xError
+from .glue import F2xError
 from F2x_test.fortran import source_glue as src
 
 
@@ -170,7 +170,6 @@ def test_ndarray_args():
     assert numpy.array_equal([[3, 2], [9, 0]], d)
 
 
-@pytest.mark.skipif("F2x.VERSION < 0x10")
 def test_string_args():
     outstr, inoutstr = src.STRING_ARGS("in", "inout")
     assert outstr == "inout"

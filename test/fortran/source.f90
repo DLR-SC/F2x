@@ -101,7 +101,8 @@ CONTAINS
         CHARACTER(32), INTENT(OUT) :: OUTSTR
         CHARACTER(32), INTENT(INOUT) :: INOUTSTR
 
-        WRITE (*,*) INSTR, INOUTSTR
+        WRITE (*,*) 'IN', LEN(INSTR), INSTR
+        WRITE (*,*) 'INOUT', INOUTSTR
         OUTSTR = INOUTSTR
         INOUTSTR = INSTR
     END SUBROUTINE
@@ -109,10 +110,13 @@ CONTAINS
     ! TODO implement support for this kind of dummy arguments
     SUBROUTINE STRING_ARGS_ARRAY(INARRAY, OUTARRAY, INOUTARRAY)
         CHARACTER(*), INTENT(IN) :: INARRAY(:)
-        CHARACTER(32), INTENT(OUT) :: OUTARRAY(:)
+        CHARACTER(32), INTENT(OUT), POINTER :: OUTARRAY(:)
         CHARACTER(32), INTENT(INOUT) :: INOUTARRAY(:)
 
-        WRITE (*,*) INARRAY
+        aLLOCATE(OUTARRAY(2))
+        OUTARRAY = ["Hello ", "world!"]
+        INOUTARRAY(1) = INARRAY(1)
+        WRITE (*,*) SIZE(INARRAY), INARRAY(1)
     END SUBROUTINE
 
     ! Derived types as arguments.

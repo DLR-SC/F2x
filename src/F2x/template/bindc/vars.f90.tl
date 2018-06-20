@@ -44,9 +44,8 @@
 #}
 {% macro dummy_args(args) -%}
     {%- for arg in args -%}
-        {%- if arg.strlen == '*' -%}
-            {%- if arg.dims %}{{ arg.name }}_SIZE, {% endif -%}
-            {{ arg.name }}_LENGTH, {% endif -%}
+        {%- if arg.dims and arg.dims.0 == '0' %}{{ arg.name }}_SIZE, {% endif -%}
+        {%- if arg.strlen == '*' -%}{{ arg.name }}_LENGTH, {% endif -%}
         {{ arg.name }}
         {%- if not loop.last %}, {% endif -%}
     {%- endfor -%}
@@ -85,10 +84,11 @@
 {% macro declare_arg_array(arg, name) -%}
         TYPE(C_PTR){%- if arg.intent %}, INTENT({{ arg.intent }}){% endif %} :: {{ name }}
     {%- if arg.strlen == '*' %}
-        INTEGER, INTENT(IN) :: {{ name }}_SIZE, {{ name }}_LENGTH
+        INTEGER, INTENT({{ arg.intent }}) :: {{ name }}_SIZE, {{ name }}_LENGTH
         CHARACTER({{ name }}_LENGTH), DIMENSION({{ join_dims(arg, ':') }}), POINTER :: {{ name }}_INTERN
     {%- elif arg.strlen %}
-        CHARACTER({{ arg.strlen }}), DIMENSION({{ join_dims(arg) }}) :: {{ name }}_INTERN
+        INTEGER, INTENT({{ arg.intent }}) :: {{ name }}_SIZE
+        CHARACTER({{ arg.strlen }}), DIMENSION({{ join_dims(arg, ':') }}), POINTER :: {{ name }}_INTERN
     {%- elif arg.ftype %}
         TYPE({{ arg.ftype }}), DIMENSION({{ join_dims(arg, ':') }}), POINTER :: {{ name }}_INTERN
     {%- else %}
@@ -106,13 +106,12 @@
    :param arg: A :type VarDecl: node that specifies the variable to be declared.
 #}
 {% macro declare_arg_str(arg, name) -%}
-    {%- if arg.strlen != '*' %}
         TYPE(C_PTR){%- if arg.intent %}, INTENT({{ arg.intent }}){% endif %} :: {{ name }}
+    {%- if arg.strlen != '*' %}
         CHARACTER({{ arg.strlen }}) :: {{ name }}_INTERN
     {%- else %}
-        CHARACTER(KIND=C_CHAR, LEN=1){%- if arg.intent %}, INTENT({{ arg.intent }}){% endif %} :: {{ name }}(*)
-        CHARACTER(:), ALLOCATABLE :: {{ name }}_INTERN
-        INTEGER :: {{ name }}_LEN
+        INTEGER{%- if arg.intent %}, INTENT({{ arg.intent }}){% endif %} :: {{ name }}_LENGTH
+        CHARACTER({{ name }}_LENGTH), POINTER :: {{ name }}_INTERN
     {%- endif %}
 {%- endmacro %}
 
@@ -158,15 +157,7 @@
         CALL C_F_POINTER({{ name or arg.name }}, {{ name or arg.name }}_INTERN, [{{ join_dims(arg) }}])
         {%- endif %}
     {%- elif arg.strlen == '*' %}
-        {{ name or arg.name }}_LEN = 1
-        DO
-            IF ({{ name or arg.name }}({{ name or arg.name }}_LEN) .EQ. C_NULL_CHAR) EXIT
-            {{ name or arg.name }}_LEN = {{ name or arg.name }}_LEN + 1
-        END DO
-
-        {{ name or arg.name }}_LEN = {{ name or arg.name }}_LEN - 1
-        ALLOCATE(CHARACTER({{ name or arg.name }}_LEN) :: {{ name or arg.name }}_INTERN)
-        {{ name or arg.name }}_INTERN = TRANSFER({{ name or arg.name }}(1:{{ name or arg.name }}_LEN), {{ name or arg.name }}_INTERN)
+        CALL C_F_POINTER({{ name or arg.name }}, {{ name or arg.name }}_INTERN)
     {%- elif arg.strlen %}
         CALL C_F_STRING({{ name or arg.name }}, {{ name or arg.name }}_INTERN)
     {%- elif arg.ftype %}
@@ -183,6 +174,9 @@
 #}
 {% macro uncast_arg(arg, name=None) -%}
     {%- if arg.dims %}
+        {%- if arg.intent == 'OUT' and arg.dims.0 == '0' %}
+        {{ name or arg.name }}_SIZE = SIZE({{ name or arg.name }}_INTERN)
+        {%- endif %}
         {{ name or arg.name }} = C_LOC({{ name or arg.name }}_INTERN)
     {%- elif arg.strlen %}
         {%- if arg.intent == 'OUT' %}
