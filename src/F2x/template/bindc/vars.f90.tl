@@ -151,9 +151,9 @@
 #}
 {% macro cast_arg(arg, name=None) -%}
     {%- if arg.dims %}
-        {%- if arg.strlen %}
+        {%- if arg.strlen and not arg.intent == 'OUT' %}
         CALL C_F_POINTER({{ name or arg.name }}, {{ name or arg.name }}_INTERN, [{{ name or arg.name }}_SIZE])
-        {%- else %}
+        {%- elif not arg.strlen %}
         CALL C_F_POINTER({{ name or arg.name }}, {{ name or arg.name }}_INTERN, [{{ join_dims(arg) }}])
         {%- endif %}
     {%- elif arg.strlen == '*' %}

@@ -22,7 +22,10 @@ library.{{ method.export_name }}_cerr.restype =
     {%- endif %}
 library.{{ method.export_name }}_cerr.argtypes = [
     {%- for arg in method.args %}
-        {%- if arg.dims %}{% if arg.strlen == '*' %}ctypes.POINTER(ctypes.c_int), ctypes.POINTER(ctypes.c_int), ctypes.POINTER(ctypes.c_void_p){% else %}ctypes.POINTER(ctypes.POINTER({{ arg.pytype }})){% endif %}
+        {%- if arg.dims %}
+            {%- if arg.strlen == '*' %}ctypes.POINTER(ctypes.c_int), ctypes.POINTER(ctypes.c_int), ctypes.POINTER(ctypes.c_void_p)
+            {%- elif arg.strlen %}ctypes.POINTER(ctypes.c_int), ctypes.POINTER(ctypes.c_void_p)
+            {%- else %}ctypes.POINTER(ctypes.POINTER({{ arg.pytype }})){% endif %}
         {%- elif arg.strlen == '*' and arg.pytype == 'ctypes.c_char_p' %}ctypes.POINTER(ctypes.c_int), ctypes.POINTER({{ arg.pytype }})
         {%- else %}ctypes.POINTER({{ arg.pytype }})
         {%- endif %}, {% endfor -%}
@@ -85,6 +88,13 @@ def {{ method.name }}(
                 {%- do callargs.append("ctypes.byref(" + arg.name + "_LENGTH)") -%}
                 {%- do callargs.append("ctypes.byref(" + arg.name + "_INTERN)") -%}
             {%- endif -%}
+        {%- elif arg.strlen and arg.pytype == 'ctypes.c_char_p' -%}
+            {%- if arg.dims -%}
+                {%- do callargs.append("ctypes.byref(" + arg.name + "_SIZE)") -%}
+                {%- do callargs.append("ctypes.byref(" + arg.name + "_PTR)") -%}
+            {%- else %}
+                {%- do callargs.append("ctypes.byref(" + arg.name + "_INTERN)") -%}
+            {%- endif %}
         {%- else -%}
             {%- do callargs.append("ctypes.byref(" + arg.name + "_INTERN)") -%}
         {%- endif -%}
@@ -98,11 +108,15 @@ def {{ method.name }}(
 {% macro cast_arg(arg) -%}
     {%- if arg.dims %}
         {%- if arg.strlen %}
-    {{ arg.name }}_SIZE = ctypes.c_int(len({{ arg.name }}))
+    {{ arg.name }}_SIZE = ctypes.c_int({% if not arg.intent == 'OUT' %}len({{ arg.name }}){% endif %})
     {{ arg.name }}_LENGTH = ctypes.c_int({% if arg.strlen == '*' %}max(map(len, {{ arg.name }})){% else %}{{ arg.strlen }}{% endif %})
+            {% if not arg.intent == 'OUT' %}
     {{ arg.name }}_INTERN = numpy.chararray(({{ arg.name }}_SIZE.value, ), itemsize={{ arg.name }}_LENGTH.value)
     {{ arg.name }}_INTERN[:] = {{ arg.name }}
     {{ arg.name }}_PTR = {{ arg.name }}_INTERN.ctypes.data_as(ctypes.c_void_p)
+            {% else %}
+    {{ arg.name }}_PTR = ctypes.c_void_p()
+            {% endif %}
         {%- elif arg.ftype %}
     # pass
         {%- else %}
@@ -170,7 +184,14 @@ def {{ method.name }}(
 #}
 {% macro uncast_arg(arg, retargs) -%}
     {%- if arg.dims %}
-        {%- if arg.ftype or arg.strlen %}
+        {%- if arg.strlen and arg.intent == 'INOUT' %}
+    {{ arg.name }} = [v.decode("{{ config.get("parser", "encoding") }}") for v in {{ arg.name }}_INTERN.tolist()]
+            {%- do retargs.append(arg.name) -%}
+        {%- elif arg.strlen and arg.intent == 'OUT' %}
+    {{ arg.name }}_CPTR = ctypes.cast({{ arg.name }}_PTR, ctypes.c_char_p)
+    {{ arg.name }} = [{{ arg.name }}_CPTR.value[i * {{ arg.name }}_LENGTH.value:(i + 1) * {{ arg.name }}_LENGTH.value].decode("{{ config.get("parser", "encoding") }}") for i in range({{ arg.name }}_SIZE.value)]
+            {%- do retargs.append(arg.name) -%}
+        {%- elif arg.ftype %}
     # pass
         {%- else %}
             {%- do retargs.append(arg.name + '_ARRAY') -%}
