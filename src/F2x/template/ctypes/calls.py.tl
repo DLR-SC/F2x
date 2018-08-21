@@ -109,7 +109,7 @@ def {{ method.name }}(
     {%- if arg.dims %}
         {%- if arg.strlen %}
     {{ arg.name }}_SIZE = ctypes.c_int({% if not arg.intent == 'OUT' %}len({{ arg.name }}){% endif %})
-    {{ arg.name }}_LENGTH = ctypes.c_int({% if arg.strlen == '*' %}max(map(len, {{ arg.name }})){% else %}{{ arg.strlen }}{% endif %})
+    {{ arg.name }}_LENGTH = ctypes.c_int({% if arg.strlen == '*' %}max(map(len, {{ arg.name }})) - 1{% else %}{{ arg.strlen }}{% endif %})
             {% if not arg.intent == 'OUT' %}
     {{ arg.name }}_INTERN = numpy.chararray(({{ arg.name }}_SIZE.value, ), itemsize={{ arg.name }}_LENGTH.value)
     {{ arg.name }}_INTERN[:] = {{ arg.name }}
@@ -129,11 +129,16 @@ def {{ method.name }}(
         {%- endif %}
     {%- elif arg.strlen %}
         {%- if not arg.intent == 'OUT' %}
-    {{ arg.name }}_BUFFER = ctypes.create_string_buffer(
-        {{- arg.name }}.encode("{{ config.get("parser", "encoding") }}"){% if arg.strlen != '*' %}, {{ arg.strlen }}{% endif %})
-    {{ arg.name }}_INTERN = ctypes.cast({{ arg.name }}_BUFFER, ctypes.c_char_p)
             {%- if arg.strlen == '*' %}
-    {{ arg.name }}_LENGTH = ctypes.c_int(len({{ arg.name }}_BUFFER))
+    {{ arg.name }}_BUFFER = ctypes.create_string_buffer(
+        {{- arg.name }}.encode("{{ config.get("parser", "encoding") }}"))
+    {{ arg.name }}_INTERN = ctypes.cast({{ arg.name }}_BUFFER, ctypes.c_char_p)
+    {{ arg.name }}_LENGTH = ctypes.c_int(len({{ arg.name }}_BUFFER) - 1)
+            {%- else %}
+    {{ arg.name }}_PADDED = {{ arg.name }}.ljust({{ arg.strlen }})
+    {{ arg.name }}_BUFFER = ctypes.create_string_buffer(
+        {{- arg.name }}_PADDED.encode("{{ config.get("parser", "encoding") }}"), {{ arg.strlen }})
+    {{ arg.name }}_INTERN = ctypes.cast({{ arg.name }}_BUFFER, ctypes.c_char_p)
             {%- endif %}
         {%- else %}
     {{ arg.name }}_INTERN = ctypes.c_char_p()
