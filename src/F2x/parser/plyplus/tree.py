@@ -183,7 +183,21 @@ class FuncDef(SubDef):
             except KeyError:
                 self["ret"] = var_specs[self["name"]]
 
+
 class Module(tree.Module):
+    def _init_children(self):
+        self["name"] = self._ast.select1("module_stmt name").tail[0]
+        self["uses"] = [use.tail[0] for use in self._ast.select("use_stmt name")]
+        self["types"] = [
+            TypeDef(typedef)
+            for typedef in self._ast.select("derived_type_def")
+        ]
+        self["globals"] = [
+            VarDecl(var)
+            for var in self._ast.select("module > specification_part type_declaration_stmt entity_decl")
+            if len(var.parent().parent().select("access_spec /PUBLIC/")) > 0
+        ]
+
     def export_methods(self, config):
         if not config.has_section("export"):
             return

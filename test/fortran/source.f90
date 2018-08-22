@@ -110,8 +110,8 @@ CONTAINS
     ! TODO implement support for this kind of dummy arguments
     SUBROUTINE STRING_ARGS_ARRAY(INARRAY, OUTARRAY, INOUTARRAY)
         CHARACTER(*), INTENT(IN) :: INARRAY(:)
-        CHARACTER(32), INTENT(OUT), POINTER :: OUTARRAY(:)
-        CHARACTER(32), INTENT(INOUT) :: INOUTARRAY(:)
+        CHARACTER(6), INTENT(OUT), POINTER :: OUTARRAY(:)
+        CHARACTER(*), INTENT(INOUT) :: INOUTARRAY(:)
 
         aLLOCATE(OUTARRAY(2))
         OUTARRAY = ["Hello ", "world!"]
@@ -163,29 +163,6 @@ CONTAINS
         INTEGER, DIMENSION(3) :: ARRAY_RETURN_VALUE
 
         ARRAY_RETURN_VALUE = [1, 2, 3]
-    END FUNCTION
-
-    ! Error triggered in SUB
-    SUBROUTINE TRIGGER_ERROR_SUB(CODE)
-        INTEGER, INTENT(IN) :: CODE
-
-        IF (CODE == 0) THEN
-            WRITE (*,*) "Normal execution"
-        ELSE
-            CALL F2X_HANDLE_ERROR(CODE)
-        END IF
-    END SUBROUTINE
-
-    ! Error triggered in FUNC
-    FUNCTION TRIGGER_ERROR_FUNC(CODE)
-        INTEGER :: TRIGGER_ERROR_FUNC
-        INTEGER, INTENT(IN) :: CODE
-
-        IF (CODE == 0) THEN
-            CALL F2X_HANDLE_ERROR(123)
-        END IF
-
-        TRIGGER_ERROR_FUNC = CODE
     END FUNCTION
 
 END

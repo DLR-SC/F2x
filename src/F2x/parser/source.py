@@ -198,7 +198,8 @@ class SourceFile(object):
         if self.config.getboolean('parser', 'output_pre'):
             pre_source_filename = self.filename + '.pre'
             log.info("Writing preprocessed source to {0}...".format(pre_source_filename))
-            open(pre_source_filename, 'wb').write(self.source.encode(self.config.get('parser', 'encoding')))
+            with open(pre_source_filename, 'wb') as pre_source_file:
+                pre_source_file.write(self.source.encode(self.config.get('parser', 'encoding')))
 
         self.pre_source_lines = list(map(unicode.rstrip, self.source.split('\n')))
     

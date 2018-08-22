@@ -1,7 +1,5 @@
 ! This module is part of the F2x test suites. It provides some types and routines that reflect the supported spectrum.
 MODULE SOURCE
-    USE C_INTERFACE_MODULE
-
     ! BASIC_TYPE has some different fields all of which are supported built-in types.
     TYPE, PUBLIC :: BASIC_TYPE
         INTEGER :: INTFIELD
@@ -28,6 +26,13 @@ REAL(8), ALLOCATABLE :: REALARRAY(2)
     
     TYPE(BASIC_TYPE), PUBLIC, ALLOCATABLE, TARGET :: BASICS(:)
     LOGICAL, PUBLIC :: BASICS_READY = .FALSE.
+
+    INTERFACE
+    subroutine F2x_handle_error(code) bind(C,name="f2x_err_handle")
+      USE ISO_C_BINDING
+      integer(C_int), value, intent(in) :: code
+    ENDSUBROUTINE
+    ENDINTERFACE
 
 CONTAINS
 
@@ -96,7 +101,8 @@ INTEGER, INTENT(INOUT) :: INOUTARRAY(3)
         CHARACTER(32), INTENT(OUT) :: OUTSTR
         CHARACTER(32), INTENT(INOUT) :: INOUTSTR
 
-!F2x-exe        WRITE (*,*) INSTR, INOUTSTR
+!F2x-exe        WRITE (*,*) 'IN', LEN(INSTR), INSTR
+!F2x-exe        WRITE (*,*) 'INOUT', INOUTSTR
 !F2x-exe        OUTSTR = INOUTSTR
 !F2x-exe        INOUTSTR = INSTR
     ENDSUBROUTINE
@@ -104,10 +110,13 @@ INTEGER, INTENT(INOUT) :: INOUTARRAY(3)
     ! TODO implement support for this kind of dummy arguments
     SUBROUTINE STRING_ARGS_ARRAY(INARRAY, OUTARRAY, INOUTARRAY)
         CHARACTER(*), INTENT(IN) :: INARRAY(:)
-        CHARACTER(32), INTENT(OUT) :: OUTARRAY(:)
-        CHARACTER(32), INTENT(INOUT) :: INOUTARRAY(:)
+        CHARACTER(6), INTENT(OUT), POINTER :: OUTARRAY(:)
+        CHARACTER(*), INTENT(INOUT) :: INOUTARRAY(:)
 
-!F2x-exe        WRITE (*,*) INARRAY
+!F2x-exe        aLLOCATE(OUTARRAY(2))
+!F2x-exe        OUTARRAY = ["Hello ", "world!"]
+!F2x-exe        INOUTARRAY(1) = INARRAY(1)
+!F2x-exe        WRITE (*,*) SIZE(INARRAY), INARRAY(1)
     ENDSUBROUTINE
 
     ! Derived types as arguments.
@@ -154,29 +163,6 @@ CHARACTER(29), INTENT(OUT) :: RETURN_VALUE
         INTEGER, DIMENSION(3) :: ARRAY_RETURN_VALUE
 
 !F2x-exe        ARRAY_RETURN_VALUE = [1, 2, 3]
-    ENDFUNCTION
-
-    ! Error triggered in SUB
-    SUBROUTINE TRIGGER_ERROR_SUB(CODE)
-        INTEGER, INTENT(IN) :: CODE
-
-!F2x-exe        IF (CODE == 0) THEN
-!F2x-exe            WRITE (*,*) "Normal execution"
-!F2x-exe        ELSE
-!F2x-exe            CALL F2X_HANDLE_ERROR(CODE)
-!F2x-exe        END IF
-    ENDSUBROUTINE
-
-    ! Error triggered in FUNC
-    FUNCTION TRIGGER_ERROR_FUNC(CODE)
-        INTEGER :: TRIGGER_ERROR_FUNC
-        INTEGER, INTENT(IN) :: CODE
-
-!F2x-exe        IF (CODE == 0) THEN
-!F2x-exe            CALL F2X_HANDLE_ERROR(123)
-!F2x-exe        END IF
-
-!F2x-exe        TRIGGER_ERROR_FUNC = CODE
     ENDFUNCTION
 
 END

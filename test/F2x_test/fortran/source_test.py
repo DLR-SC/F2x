@@ -222,17 +222,3 @@ def test_global_array():
     src.globals.BASICS[1].REALFIELD = 2.3
     assert src.globals.BASICS[0].INTFIELD == 1
     assert abs(src.globals.BASICS[1].REALFIELD - 2.3) < 0.01
-
-
-def test_error_routine():
-    src.TRIGGER_ERROR_SUB(0)
-
-    with pytest.raises(F2xError):
-        src.TRIGGER_ERROR_SUB(1)
-
-
-def test_error_function():
-    assert src.TRIGGER_ERROR_FUNC(2) == 2
-
-    with pytest.raises(F2xError):
-        src.TRIGGER_ERROR_FUNC(0)
