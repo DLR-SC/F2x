@@ -13,14 +13,14 @@
    :param method: The :type SubDef: or :type FuncDef: node that describes the exported method.
 #}
 {% macro import_method(method) -%}
-library.{{ method.export_name }}_cerr.restype =
+library.{{ method.export_name }}.restype =
     {%- if method.ret and method.ret.getter == 'function' %}
         {%- if method.ret.dims %} ctypes.POINTER({{ method.ret.pytype }})
         {%- else %} {{ method.ret.pytype }}
         {%- endif %}
     {%- else %} None
     {%- endif %}
-library.{{ method.export_name }}_cerr.argtypes = [
+library.{{ method.export_name }}.argtypes = [
     {%- for arg in method.args %}
         {%- if arg.dims %}
             {%- if arg.strlen == '*' %}ctypes.POINTER(ctypes.c_int), ctypes.POINTER(ctypes.c_int), ctypes.POINTER(ctypes.c_void_p)
@@ -51,15 +51,14 @@ def {{ method.name }}(
     {%- endfor -%}):
     {{ cast_args(method, callargs) }}
     {%- if method.ret and method.ret.getter == 'function' %}
-    {{ method.ret.name }} = library.{{ method.export_name }}_cerr({{ join_args(callargs) }})
+    {{ method.ret.name }} = library.{{ method.export_name }}({{ join_args(callargs) }})
     {%- else %}
         {%- if method.ret %}
             {%- do callargs.append("ctypes.byref(" + method.ret.name + "_INTERN)") %}
     {{ cast_arg(method.ret) }}
         {%- endif %}
-    library.{{ method.export_name }}_cerr({{ join_args(callargs) }})
+    library.{{ method.export_name }}({{ join_args(callargs) }})
     {%- endif %}
-    check_error({{ method.name }})
     {%- if method.ret %}
     {{ uncast_ret(method.ret, retargs) }}
     {%- endif %}

@@ -32,15 +32,6 @@ library_path = os.path.join(os.path.dirname(__file__), library_name)
 library = ctypes.cdll.LoadLibrary(library_path)
 
 
-def check_error(name):
-    code = library.f2x_err_get()
-    if code != 0:
-        raise F2xError(name, code)
-
-
-library.f2x_err_get.argtypes = None
-library.f2x_err_get.rtype = ctypes.c_int
-
 {% for type in module.types if type.public %}
 {{ types.export_type(type) }}
 {% endfor %}
