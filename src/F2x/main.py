@@ -12,7 +12,7 @@ import time
 import jinja2
 import plyplus
 
-from F2x import source, tree
+from F2x.parser.plyplus import source
 from F2x.template.ctypes import glue
 
 VERSION = u"0.1"
@@ -21,6 +21,7 @@ DESCRIPTION = u"F2x - A versatile FORTRAN wrapper."
 IGNORE_DELTA = 3
 
 package_path, _ = os.path.split(__file__)
+
 
 def parse_args(argv=None):
     argp = argparse.ArgumentParser(description=DESCRIPTION)
@@ -63,6 +64,7 @@ def parse_args(argv=None):
     args = argp.parse_args(argv)
     return args
 
+
 LOG_LEVELS = [
     logging.DEBUG,
     logging.INFO,
@@ -70,6 +72,8 @@ LOG_LEVELS = [
     logging.ERROR,
     logging.FATAL
 ]
+
+
 def init_logger(args):
     # Calculate and set log level: Default is logging.INFO (2*10).
     # Increase for every -q, decrease for every -v. Scale to range logging.DEBUG..logging.FATAL (0..40).
@@ -78,6 +82,7 @@ def init_logger(args):
 
     log = logging.getLogger(__name__)
     return log
+
 
 def load_templates(log, args):
     log.info(u"Loading {0} templates...".format(len(args.template)))
@@ -106,8 +111,7 @@ def load_templates(log, args):
 def main():
     args = parse_args()
     log = init_logger(args)
-    #log.setLevel(logging.DEBUG)
-    
+
     log.info(DESCRIPTION + u" Version " + VERSION)
     templates = load_templates(log, args)
     
@@ -168,23 +172,21 @@ def main():
                         space = ''.join([(c if c == '\t' else ' ') for c in src.pre_source_lines[line - 1][:col - 1]])
                         print(prefix + src.pre_source_lines[line - 1])
                         print(prefix + space + ('^' * len(val)))
-        
-        access_tree = tree.Module(src.tree)
-        access_tree.export_methods(src)
-        print(access_tree)
-        
+
+        module = src.get_gtree()
+
         if not src.config.has_section('generate'):
             src.config.add_section('generate')
         
         if not src.config.has_option('generate', 'dll'):
-            src.config.set('generate', 'dll', 'lib' + access_tree['name'] + '.so')
+            src.config.set('generate', 'dll', 'lib' + module['name'] + '.so')
         
         output_basename, _ = os.path.splitext(source_filename)
         for template, suffix in templates:
             output_filename = output_basename + suffix
             log.debug(u"* Generating {0}...".format(output_filename))
             output = template.render({
-                u'ast': src.tree, u'module': access_tree,
+                u'ast': src.tree, u'module': module,
                 u'config': src.config, u'ifort_dll': True,
                 u'context': { u'filename': source_filename, u'basename': os.path.basename(output_basename), u'args': args } })
             with open(output_filename, 'wb') as output_file:
@@ -196,6 +198,7 @@ def main():
             if os.path.exists(output_file):
                 os.unlink(output_file)
             shutil.copy(glue.__file__, output_file)
+
 
 if __name__ == '__main__':
     main()
