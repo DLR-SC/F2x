@@ -111,7 +111,8 @@ So if you want to wrap a file called `foo.f90` to Python using the bundled templ
 
 The generated files will be named just like the input file but without the original extension and with the name of the template appended (again, without the `.t`). So `foo.f90` will produce a Fortran glue module called `foo_glue.f90` and a Python module called `foo_glue.py`.
 
-Note that **F2x** currently does not care about compiling your Fortran (wrapper) code to a library. However, there is a second tool called `F2x-lib` that provides helpful features for building/ running the generated wrapper.
+Note that **F2x** currently does not care about compiling your Fortran (wrapper) code to a library. However, there is a second tool called `F2x-lib` that provides helpful features for building/ running the generated wrapper. Alternatively you can add the `c_interface_module.f90`
+to your library which is currently recommended. You will find this module in the package `F2x.library.fortran`.
 
 
 ## Wrapper configuration
