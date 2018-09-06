@@ -208,6 +208,11 @@ def {{ method.name }}(
         {%- elif arg.strlen and arg.intent == 'OUT' %}
     {{ arg.name }}_CPTR = ctypes.cast({{ arg.name }}_PTR, ctypes.c_char_p)
     {{ arg.name }} = [{{ arg.name }}_CPTR.value[i * {{ arg.name }}_LENGTH.value:(i + 1) * {{ arg.name }}_LENGTH.value].decode("{{ config.get("parser", "encoding") }}") for i in range({{ arg.name }}_SIZE.value)]
+
+    {%- if arg.free %}
+    library.{{ arg.free }}(ctypes.byref({{ arg.name }}_SIZE), ctypes.byref({{ arg.name }}_PTR))
+    {%- endif %}
+
             {%- do retargs.append(arg.name) -%}
         {%- elif arg.ftype %}
     # pass

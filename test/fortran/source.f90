@@ -12,7 +12,7 @@
 ! distributed under the License is distributed on an "AS IS" BASIS,
 ! WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 ! See the License for the specific language governing permissions and
-1 limitations under the License.
+! limitations under the License.
 MODULE SOURCE
     ! BASIC_TYPE has some different fields all of which are supported built-in types.
     TYPE, PUBLIC :: BASIC_TYPE
@@ -178,5 +178,25 @@ CONTAINS
 
         ARRAY_RETURN_VALUE = [1, 2, 3]
     END FUNCTION
+
+    ! String array foo.
+    SUBROUTINE ALLOC_ARRAY_RETURN(N_ITEMS, ARRAY)
+        INTEGER, INTENT(IN) :: N_ITEMS
+        CHARACTER(60), DIMENSION(:), POINTER, INTENT(OUT) :: ARRAY
+        INTEGER :: I
+
+        ALLOCATE(ARRAY(N_ITEMS))
+
+        DO I = 1, N_ITEMS
+            WRITE (ARRAY(I), "(I8)") I
+        END DO
+    END SUBROUTINE
+
+    ! Cleanup array foo.
+    SUBROUTINE DEALLOC_ARRAY(ARRAY)
+        CHARACTER(60), DIMENSION(:), POINTER :: ARRAY
+
+        IF (ASSOCIATED(ARRAY)) DEALLOCATE(ARRAY)
+    END SUBROUTINE
 
 END

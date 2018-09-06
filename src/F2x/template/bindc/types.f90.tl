@@ -269,7 +269,7 @@
 #}
 {% macro getter_array(type, field) -%}
 {% if type %}{% set  name  = field.name %}{% else %}{% set name = "VALUE" %}{% endif %}
-    SUBROUTINE {% if type %}{{ type.name }}_{% endif %}GET_{{ field.name }}({% if type %}PTR, {% endif %}{{ name }}) BIND(C, name="{% if type %}{{ type.name }}_{% endif %}get_{{ field.name }}")
+    SUBROUTINE {% if type %}{{ type.name }}_{% endif %}GET_{{ field.name }}({% if type %}PTR, {% endif %}{% if field.dims.0 == 0 %}{{ name }}_SIZE, {% endif %}{{ name }}) BIND(C, name="{% if type %}{{ type.name }}_{% endif %}get_{{ field.name }}")
     {%- if ifort_dll %}
 !DEC$ ATTRIBUTES DLLEXPORT :: {% if type %}{{ type.name }}_{% endif %}get_{{ field.name }}
     {%- endif %}

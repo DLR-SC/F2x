@@ -58,7 +58,7 @@
 #}
 {% macro dummy_args(args) -%}
     {%- for arg in args -%}
-        {%- if arg.dims and arg.dims.0 == '0' %}{{ arg.name }}_SIZE, {% endif -%}
+        {%- if arg.dims and arg.dims.0 == 0 %}{{ arg.name }}_SIZE, {% endif -%}
         {%- if arg.strlen == '*' -%}{{ arg.name }}_LENGTH, {% endif -%}
         {{ arg.name }}
         {%- if not loop.last %}, {% endif -%}
@@ -108,6 +108,9 @@
     {%- else %}
         {{ arg.type }}
         {%- if arg.kind %}(KIND={{ arg.kind }}){% endif %}, DIMENSION({{ join_dims(arg, ':') }}), POINTER :: {{ name }}_INTERN
+        {%- if arg.intent == 'OUT' and arg.dims.0 == 0 %}
+        INTEGER, INTENT(OUT) :: {{ name }}_SIZE
+        {%- endif %}
     {%- endif %}
 {%- endmacro %}
 
@@ -188,7 +191,7 @@
 #}
 {% macro uncast_arg(arg, name=None) -%}
     {%- if arg.dims %}
-        {%- if arg.intent == 'OUT' and arg.dims.0 == '0' %}
+        {%- if arg.intent == 'OUT' and arg.dims.0 == 0 %}
         {{ name or arg.name }}_SIZE = SIZE({{ name or arg.name }}_INTERN)
         {%- endif %}
         {{ name or arg.name }} = C_LOC({{ name or arg.name }}_INTERN)

@@ -243,3 +243,14 @@ class Module(tree.Module):
                         break
 
         self["methods"] = methods
+
+        for method in methods:
+            section_key = "{0}:Cleanup".format(method["name"])
+
+            if config.has_section(section_key):
+                if "ret" in method and config.has_option(section_key, method["ret"]["name"]):
+                    method["ret"]["free"] = config.get(section_key, method["ret"]["name"])
+
+                for var in method["args"]:
+                    if config.has_option(section_key, var["name"]):
+                        var["free"] = config.get(section_key, var["name"])

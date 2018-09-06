@@ -236,3 +236,7 @@ def test_global_array():
     src.globals.BASICS[1].REALFIELD = 2.3
     assert src.globals.BASICS[0].INTFIELD == 1
     assert abs(src.globals.BASICS[1].REALFIELD - 2.3) < 0.01
+
+def test_alloc_str_array():
+    a = src.ALLOC_ARRAY_RETURN(5)
+    assert all((str(i + 1) == v.strip() for i, v in enumerate(a)))
