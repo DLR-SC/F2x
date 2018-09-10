@@ -3,6 +3,20 @@
 {#-                                                                                                                  -#}
 {#- This library provides macros to generate Python methods that handle parameter conversion and calling of ctypes   -#}
 {#- function as exported by the 'bindc' template.                                                                    -#}
+{#-                                                                                                                  -#}
+{#- Copyright 2018 German Aerospace Center (DLR)                                                                     -#}
+{#-                                                                                                                  -#}
+{#- Licensed under the Apache License, Version 2.0 (the "License");                                                  -#}
+{#- you may not use this file except in compliance with the License.                                                 -#}
+{#- You may obtain a copy of the License at                                                                          -#}
+{#-                                                                                                                  -#}
+{#-     http://www.apache.org/licenses/LICENSE-2.0                                                                   -#}
+{#-                                                                                                                  -#}
+{#- Unless required by applicable law or agreed to in writing, software                                              -#}
+{#- distributed under the License is distributed on an "AS IS" BASIS,                                                -#}
+{#- WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.                                         -#}
+{#- See the License for the specific language governing permissions and                                              -#}
+{#- limitations under the License.                                                                                   -#}
 {#-##################################################################################################################-#}
 
 
@@ -13,14 +27,14 @@
    :param method: The :type SubDef: or :type FuncDef: node that describes the exported method.
 #}
 {% macro import_method(method) -%}
-library.{{ method.export_name }}_cerr.restype =
+library.{{ method.export_name }}.restype =
     {%- if method.ret and method.ret.getter == 'function' %}
         {%- if method.ret.dims %} ctypes.POINTER({{ method.ret.pytype }})
         {%- else %} {{ method.ret.pytype }}
         {%- endif %}
     {%- else %} None
     {%- endif %}
-library.{{ method.export_name }}_cerr.argtypes = [
+library.{{ method.export_name }}.argtypes = [
     {%- for arg in method.args %}
         {%- if arg.dims %}
             {%- if arg.strlen == '*' %}ctypes.POINTER(ctypes.c_int), ctypes.POINTER(ctypes.c_int), ctypes.POINTER(ctypes.c_void_p)
@@ -51,15 +65,14 @@ def {{ method.name }}(
     {%- endfor -%}):
     {{ cast_args(method, callargs) }}
     {%- if method.ret and method.ret.getter == 'function' %}
-    {{ method.ret.name }} = library.{{ method.export_name }}_cerr({{ join_args(callargs) }})
+    {{ method.ret.name }} = library.{{ method.export_name }}({{ join_args(callargs) }})
     {%- else %}
         {%- if method.ret %}
             {%- do callargs.append("ctypes.byref(" + method.ret.name + "_INTERN)") %}
     {{ cast_arg(method.ret) }}
         {%- endif %}
-    library.{{ method.export_name }}_cerr({{ join_args(callargs) }})
+    library.{{ method.export_name }}({{ join_args(callargs) }})
     {%- endif %}
-    check_error({{ method.name }})
     {%- if method.ret %}
     {{ uncast_ret(method.ret, retargs) }}
     {%- endif %}
@@ -195,6 +208,11 @@ def {{ method.name }}(
         {%- elif arg.strlen and arg.intent == 'OUT' %}
     {{ arg.name }}_CPTR = ctypes.cast({{ arg.name }}_PTR, ctypes.c_char_p)
     {{ arg.name }} = [{{ arg.name }}_CPTR.value[i * {{ arg.name }}_LENGTH.value:(i + 1) * {{ arg.name }}_LENGTH.value].decode("{{ config.get("parser", "encoding") }}") for i in range({{ arg.name }}_SIZE.value)]
+
+    {%- if arg.free %}
+    library.{{ arg.free }}(ctypes.byref({{ arg.name }}_SIZE), ctypes.byref({{ arg.name }}_PTR))
+    {%- endif %}
+
             {%- do retargs.append(arg.name) -%}
         {%- elif arg.ftype %}
     # pass

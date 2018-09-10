@@ -1,3 +1,16 @@
+# Copyright 2018 German Aerospace Center (DLR)
+# 
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+# 
+#     http://www.apache.org/licenses/LICENSE-2.0
+# 
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 '''
 Created on 12.02.2016
 
@@ -20,65 +33,29 @@ import plyplus
 
 PREPROCESS_RULES = (
     # Disambiguate END statements by joining them into single keyword
-#    (u'end/associate',  r'(?i)END[ \t\u000C]+ASSOCIATE',    r'ENDASSOCIATE'),
-#    (u'end/block',      r'(?i)END[ \t\u000C]+BLOCK',        r'ENDBLOCK'),
-#    (u'end/block data', r'(?i)END[ \t\u000C]+BLOCK\s*DATA', r'ENDBLOCKDATA'),
-#    (u'end/critical',   r'(?i)END[ \t\u000C]+CRITICAL',     r'ENDCRITICAL'),
-#    (u'end/do',         r'(?i)END[ \t\u000C]+DO',           r'ENDDO'),
-#    (u'end/enum',       r'(?i)END[ \t\u000C]+ENUM',         r'ENDENUM'),
-#    (u'end/file',       r'(?i)END[ \t\u000C]+FILE',         r'ENDFILE'),
-#    (u'end/for',        r'(?i)END[ \t\u000C]+FOR\s*ALL',    r'ENDFORALL'),
     (u'end/function',   r'(?i)END[ \t\u000C]+FUNCTION',     r'ENDFUNCTION'),
-#    (u'end/if',         r'(?i)END[ \t\u000C]+IF',           r'ENDIF'),
     (u'end/interface',  r'(?i)END[ \t\u000C]+INTERFACE',    r'ENDINTERFACE'),
     (u'end/module',     r'(?i)END[ \t\u000C]+MODULE',       r'ENDMODULE'),
     (u'end/procedure',  r'(?i)END[ \t\u000C]+PROCEDURE',    r'ENDPROCEDURE'),
     (u'end/program',    r'(?i)END[ \t\u000C]+PROGRAM',      r'ENDPROGRAM'),
-#    (u'end/select',     r'(?i)END[ \t\u000C]+SELECT',       r'ENDSELECT'),
     (u'end/submodule',  r'(?i)END[ \t\u000C]+SUBMODULE',    r'ENDSUBMODULE'),
     (u'end/subroutine', r'(?i)END[ \t\u000C]+SUBROUTINE',   r'ENDSUBROUTINE'),
     (u'end/type',       r'(?i)END[ \t\u000C]+TYPE',         r'ENDTYPE'),
-#    (u'end/where',      r'(?i)END[ \t\u000C]+WHERE',        r'ENDWHERE'),
-    
+
     # Remove spaces from data types
     (u'type/double precision', r'(?i)DOUBLE\s+PRECISION', r'DOUBLEPRECISION'),
     (u'type/double complex',   r'(?i)DOUBLE\s+COMPLEX',   r'DOUBLECOMPLEX'),
-    
-    # Remove empty function arguments
-#    (u'empty args',
-#        r'([(.=]\s*([a-zA-Z][a-zA-Z0-9_]*)(%[a-zA-Z][a-zA-Z0-9_]*)*)\(\s*\)',
-#        r'\1'),
 
     # Replace (/ ... /) array constructs with [ ... ]
     (u'array/left',  r'\(/', '['),
     (u'array/right', r'/\)', ']'),
-                    
-    # DDT in Array
-#    (u'array/ddt', r'\)(%[a-zA-Z0-9_]+)+', ')'),
-    
-    # Remove substring range on LHS comparison
-#    (u'substring/lhs',
-#        r'([\n\(,]\s*[a-zA-Z][a-zA-Z0-9_]*)\((\d+|[a-zA-Z][a-zA-Z0-9_]*)([:,](\d+|[a-zA-Z][a-zA-Z0-9_]*))*\)(\s*=)',
-#        r'\1\5'),
-    
-    # Convert substring range to arguments on RHS
-    #(u'substring/rhs',
-    #    r'\(\s*(\d+|[a-zA-Z][a-zA-Z0-9_]*)(\s*[:,]\s*(\d+|[a-zA-Z][a-zA-Z0-9_]*))+\s*\)(?!\s*=)',
-    #    r'(\1,\3)'),
-#    (u'substring/rhs',
-#        r'\(\s*(\d+|[a-zA-Z][a-zA-Z0-9_]*)(\s*[:]\s*(\d+|[a-zA-Z][a-zA-Z0-9_]*)(,(\d+|[a-zA-Z][a-zA-Z0-9_]*))?)+\s*\)(?!\s*=)',
-#        r'(\1,\3)'),
-    
-    # Prefix Type-Casts
-#    (u'cast', r'(?i)([-+*/(.=][ \t\u000C]*REAL)\s*\(', r'\1_CAST('),
-    
+
     # Kind of numeric constant
     (u'kind', r'(\d+)_(\d+|LF)', r'\1'),
 )
 
 
 log = logging.getLogger(__name__)
-#log.setLevel(logging.DEBUG)
 grammar_cache = {}
 package_path, _ = os.path.split(__file__)
 
@@ -100,7 +77,7 @@ def load_grammar(grammar_filename):
     grammar_cache[grammar_filename] = grammar
     timer = time.time() - start
     
-    log.debug(u"* Loaded grammar in {0}.".format(timer))
+    log.debug(u"Loaded grammar in {0}.".format(timer))
     sys.setrecursionlimit(old_recursionlimit)
 
     return grammar
@@ -133,8 +110,7 @@ class SourceFile(object):
         with open(self.filename, 'rb') as source_file:
             self.source = source_file.read().decode(self.config.get('parser', 'encoding'))
         self.source_lines = list(map(unicode.rstrip, self.source.split('\n')))
-        #print("the first line: {}".format(self.source_lines[0]))
-    
+
     def preprocess(self, rules=None):
         if self.source is None:
             self.read()
@@ -235,17 +211,13 @@ class SourceFile(object):
         if self.config.getboolean('parser', 'output_pre'):
             pre_source_filename = self.filename + '.pre'
             log.info("Writing preprocessed source to {0}...".format(pre_source_filename))
-            open(pre_source_filename, 'wb').write(self.source.encode(self.config.get('parser', 'encoding')))
+            with open(pre_source_filename, 'wb') as pre_source_file:
+                pre_source_file.write(self.source.encode(self.config.get('parser', 'encoding')))
 
         self.pre_source_lines = list(map(unicode.rstrip, self.source.split('\n')))
     
     def parse(self):
-        grammar_filename = self.config.get('parser', 'grammar')
+        raise NotImplementedError()
 
-        if grammar_filename in grammar_cache:
-            grammar = grammar_cache[grammar_filename]
-        else:
-            grammar = load_grammar(grammar_filename)
-
-        self.tree = grammar.parse(self.source)
-
+    def get_gtree(self):
+        raise NotImplementedError()

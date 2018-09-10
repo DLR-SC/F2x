@@ -5,6 +5,20 @@
 {#- with `BIND(C)` interface.                                                                                        -#}
 {#-                                                                                                                  -#}
 {#- For applied naming conventions, please refer to :ref templates/bindc/naming.adoc:.                               -#}
+{#-                                                                                                                  -#}
+{#- Copyright 2018 German Aerospace Center (DLR)                                                                     -#}
+{#-                                                                                                                  -#}
+{#- Licensed under the Apache License, Version 2.0 (the "License");                                                  -#}
+{#- you may not use this file except in compliance with the License.                                                 -#}
+{#- You may obtain a copy of the License at                                                                          -#}
+{#-                                                                                                                  -#}
+{#-     http://www.apache.org/licenses/LICENSE-2.0                                                                   -#}
+{#-                                                                                                                  -#}
+{#- Unless required by applicable law or agreed to in writing, software                                              -#}
+{#- distributed under the License is distributed on an "AS IS" BASIS,                                                -#}
+{#- WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.                                         -#}
+{#- See the License for the specific language governing permissions and                                              -#}
+{#- limitations under the License.                                                                                   -#}
 {#-##################################################################################################################-#}
 
 
@@ -255,7 +269,7 @@
 #}
 {% macro getter_array(type, field) -%}
 {% if type %}{% set  name  = field.name %}{% else %}{% set name = "VALUE" %}{% endif %}
-    SUBROUTINE {% if type %}{{ type.name }}_{% endif %}GET_{{ field.name }}({% if type %}PTR, {% endif %}{{ name }}) BIND(C, name="{% if type %}{{ type.name }}_{% endif %}get_{{ field.name }}")
+    SUBROUTINE {% if type %}{{ type.name }}_{% endif %}GET_{{ field.name }}({% if type %}PTR, {% endif %}{% if field.dims.0 == 0 %}{{ name }}_SIZE, {% endif %}{{ name }}) BIND(C, name="{% if type %}{{ type.name }}_{% endif %}get_{{ field.name }}")
     {%- if ifort_dll %}
 !DEC$ ATTRIBUTES DLLEXPORT :: {% if type %}{{ type.name }}_{% endif %}get_{{ field.name }}
     {%- endif %}

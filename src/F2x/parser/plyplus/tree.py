@@ -1,11 +1,11 @@
 # Copyright 2018 German Aerospace Center (DLR)
-# 
+#
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
-# 
+#
 #     http://www.apache.org/licenses/LICENSE-2.0
-# 
+#
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -211,7 +211,10 @@ class Module(tree.Module):
             if len(var.parent().parent().select("access_spec /PUBLIC/")) > 0
         ]
 
-    def export_methods(self, config):
+
+#    def export_methods(self, config):
+    def export_methods(self, src):
+        config = src.config
         if not config.has_section("export"):
             return
             
@@ -283,7 +286,7 @@ class Module(tree.Module):
                 l_array_var = l_declare[0].strip()
                 l_size_var = l_array_var[l_arg_len+1:-1].split(',')
                 if  l_size_var[0] == ':':
-                   # check if the array is dynamically allocated within the function/subroutine body
+                   # check if the array is dynamically allocated within the function/subroutine body 
                    for line in a_src[index:] :
                        line = line.strip()
                        if line.startswith("ALLOCATE") :
@@ -311,7 +314,7 @@ class Module(tree.Module):
                                     l_size_var = l_aux_line.split(',')
                                     a_argument["dims"] = l_size_var
                    else :
-                        # okay, no size variable is found. It could be "IN" or "INOUT" type,
+                        # okay, no size variable is found. It could be "IN" or "INOUT" type, 
                         if len(l_declare) == 2 :
                             l_comment = l_declare[1].strip()
                             l_f2x_markup='@F2x=>'
@@ -323,11 +326,11 @@ class Module(tree.Module):
                                 # Attention: no information is provided, code is not reliable !!
                                 # But at leaset make sure the dimension is correctly set
                                 n = len(l_size_var)
-                                a_argument["dims"] = [ x.replace(':', '0') for x in l_size_var ]
+                                a_argument["dims"] = [ x.replace(':', '0') for x in l_size_var ] 
                         else :
-                            # Same problem as above !!
+                            # Same problem as above !! 
                             n = len(l_size_var)
-                            a_argument["dims"] = [ x.replace(':', '0') for x in l_size_var ]
+                            a_argument["dims"] = [ x.replace(':', '0') for x in l_size_var ] 
                 else :
                     # size variables are set explicitly
                     a_argument["dims"] = l_size_var

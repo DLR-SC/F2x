@@ -1,4 +1,18 @@
 ! This module is part of the F2x test suites. It provides some types and routines that reflect the supported spectrum.
+!
+! Copyright 2018 German Aerospace Center (DLR)
+! 
+! Licensed under the Apache License, Version 2.0 (the "License");
+! you may not use this file except in compliance with the License.
+! You may obtain a copy of the License at
+! 
+!     http://www.apache.org/licenses/LICENSE-2.0
+! 
+! Unless required by applicable law or agreed to in writing, software
+! distributed under the License is distributed on an "AS IS" BASIS,
+! WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+! See the License for the specific language governing permissions and
+! limitations under the License.
 MODULE SOURCE
     ! BASIC_TYPE has some different fields all of which are supported built-in types.
     TYPE, PUBLIC :: BASIC_TYPE
@@ -110,8 +124,8 @@ CONTAINS
     ! TODO implement support for this kind of dummy arguments
     SUBROUTINE STRING_ARGS_ARRAY(INARRAY, OUTARRAY, INOUTARRAY)
         CHARACTER(*), INTENT(IN) :: INARRAY(:)
-        CHARACTER(32), INTENT(OUT), POINTER :: OUTARRAY(:)
-        CHARACTER(32), INTENT(INOUT) :: INOUTARRAY(:)
+        CHARACTER(6), INTENT(OUT), POINTER :: OUTARRAY(:)
+        CHARACTER(*), INTENT(INOUT) :: INOUTARRAY(:)
 
         aLLOCATE(OUTARRAY(2))
         OUTARRAY = ["Hello ", "world!"]
@@ -165,27 +179,24 @@ CONTAINS
         ARRAY_RETURN_VALUE = [1, 2, 3]
     END FUNCTION
 
-    ! Error triggered in SUB
-    SUBROUTINE TRIGGER_ERROR_SUB(CODE)
-        INTEGER, INTENT(IN) :: CODE
+    ! String array foo.
+    SUBROUTINE ALLOC_ARRAY_RETURN(N_ITEMS, ARRAY)
+        INTEGER, INTENT(IN) :: N_ITEMS
+        CHARACTER(60), DIMENSION(:), POINTER, INTENT(OUT) :: ARRAY
+        INTEGER :: I
 
-        IF (CODE == 0) THEN
-            WRITE (*,*) "Normal execution"
-        ELSE
-            CALL F2X_HANDLE_ERROR(CODE)
-        END IF
+        ALLOCATE(ARRAY(N_ITEMS))
+
+        DO I = 1, N_ITEMS
+            WRITE (ARRAY(I), "(I8)") I
+        END DO
     END SUBROUTINE
 
-    ! Error triggered in FUNC
-    FUNCTION TRIGGER_ERROR_FUNC(CODE)
-        INTEGER :: TRIGGER_ERROR_FUNC
-        INTEGER, INTENT(IN) :: CODE
+    ! Cleanup array foo.
+    SUBROUTINE DEALLOC_ARRAY(ARRAY)
+        CHARACTER(60), DIMENSION(:), POINTER :: ARRAY
 
-        IF (CODE == 0) THEN
-            CALL F2X_HANDLE_ERROR(123)
-        END IF
-
-        TRIGGER_ERROR_FUNC = CODE
-    END FUNCTION
+        IF (ASSOCIATED(ARRAY)) DEALLOCATE(ARRAY)
+    END SUBROUTINE
 
 END
