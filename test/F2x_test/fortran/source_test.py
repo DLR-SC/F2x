@@ -22,7 +22,7 @@ import pytest
 import numpy
 
 import F2x
-from .glue import F2xError
+from F2x.template.ctypes.glue import F2xError
 from F2x_test.fortran import source_glue as src
 
 

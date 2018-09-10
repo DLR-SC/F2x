@@ -63,7 +63,7 @@ def parse_args(argv=None):
                                 required=True)
     argp_generator.add_argument(u'-d', u'--copy-glue', action=u"store", nargs='?',
                                 help="Copy 'glue.py' (used by ctypes template) into destination folder.",
-                                default=True)
+                                default=False)
 
     argp.add_argument(u'-l', u'--logfile',
                       help=u"Write detailed log to LOGFILE.")
@@ -76,6 +76,9 @@ def parse_args(argv=None):
     argp.add_argument(u'source', nargs=u'*', metavar=u"SOURCE")
 
     args = argp.parse_args(argv)
+
+    print(args)
+
     return args
 
 

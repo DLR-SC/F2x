@@ -35,12 +35,12 @@ core.setup(
     packages=setuptools.find_packages('src'),
     package_dir={ '': 'src' },
     package_data={
-        'F2x.grammar': ["*.g"],
+        'F2x.parser.plyplus.grammar': ["*.g"],
         'F2x.template': ["*/*.t", "*/*.tl"],
         'F2x.lib': [
             "*/Makefile",
             "fortran/libF2x.so", "fortran/*.f90", "fortran/*.mod",
-            "dotnet/F2x.Glue.dll", "dotnet/F2x.Glue/*.cs", "dotnet/F2x.Glue/Properties/AssemblyInfo.cs"]
+            ]
     },
 
     setup_requires=[

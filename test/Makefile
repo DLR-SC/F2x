@@ -16,6 +16,7 @@
 
 # Tool configuration
 CP = cp
+MKDIR = mkdir -p
 FC = gfortran -fPIC -g -ffree-line-length-none
 #FC = ifort -fPIC -g
 CC = gcc -fPIC -g
@@ -48,6 +49,7 @@ $(FLIB_GEN) $(PYLIB_GEN) $(CSLIB_GEN) : $(SOURCE) $(SOURCE_CFG)
 
 # Fortran library build
 $(FLIB) : $(FLIB_GEN) $(FLIB_SOURCE)
+	$(MKDIR) lib
 	$(FC) -shared -o $(FLIB) $(FLIB_LIBS) $(FLIB_SOURCE)
 
 $(PYLIB) : $(FLIB) $(PYLIB_GEN)
