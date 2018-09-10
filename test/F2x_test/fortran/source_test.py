@@ -1,4 +1,18 @@
 # -*- encoding: utf-8 -*-
+#
+# Copyright 2018 German Aerospace Center (DLR)
+# 
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+# 
+#     http://www.apache.org/licenses/LICENSE-2.0
+# 
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 """
 These tests use the generated interfaces for 'source.f90'. To see details on the exported types and routines, please
 see the base source file itself.
@@ -222,6 +236,10 @@ def test_global_array():
     src.globals.BASICS[1].REALFIELD = 2.3
     assert src.globals.BASICS[0].INTFIELD == 1
     assert abs(src.globals.BASICS[1].REALFIELD - 2.3) < 0.01
+
+def test_alloc_str_array():
+    a = src.ALLOC_ARRAY_RETURN(5)
+    assert all((str(i + 1) == v.strip() for i, v in enumerate(a)))
 
 
 def test_error_routine():

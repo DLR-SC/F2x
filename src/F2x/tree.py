@@ -1,30 +1,25 @@
+# Copyright 2018 German Aerospace Center (DLR)
+# 
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+# 
+#     http://www.apache.org/licenses/LICENSE-2.0
+# 
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 '''
 Created on 08.04.2016
 
 @author: meinel
 '''
+from F2x.parser import tree
 
-class Node(dict):
-    """ This is the base class for the simplified AST that can easily be used
-        in templates. It is simply a dict which stores child nodes as values.
-        This allows to simply use node.child to access the values from a
-        template. E.g. to get the modules name, you can simply use
 
-        {{ module.name }}
-    """
-
-    def __init__(self, ast):
-        """ Node constructor stores local AST node in self._ast and calls
-            self._init_children() which should be overwritten by child classes.
-        """
-        self._ast = ast
-        self._init_children()
-
-    def _init_children(self):
-        """ Implement this to store useful values (i.e. lists or dicts) in the properties. """
-        raise NotImplementedError()
-
-class VarDecl(Node):
+class VarDecl(tree.VarDecl):
     """
     A variable declaration.
 
@@ -58,21 +53,11 @@ class VarDecl(Node):
         "TYPE(C_PTR)": "IntPtr",
     }
 
-    def __init__(self, ast, prefix=""):
-        """ Slightly modified constructor to allow for re-use for type-specs and var-specs.
-
-        For the grammar to work, component arrays have their own rule which divers from the
-        variable array only in the prefix "component_" which can be passed in.
-        """
-        self._prefix = prefix
-        super(VarDecl, self).__init__(ast)
-
     def _init_children(self):
         self["name"] = self._ast.select1("name").tail[0]
 
         # Identify FORTRAN type and store properties accordingly
         full_spec = self._ast.parent().parent()
-        #print("full_spec: {}".format(full_spec))
         type_spec = full_spec.select1("declaration_type_spec")
         try:
             self["ftype"] = type_spec.select1("derived_type_spec name").tail[0]
@@ -103,7 +88,6 @@ class VarDecl(Node):
                     self["setter"] = "subroutine"
 
         for attr in full_spec.select("component_attr_spec"):
-            #print("attr: {}".format(attr))
             if 'ALLOCATABLE' in attr.tail:
                 self["dynamic"] = 'ALLOCATABLE'
             elif 'POINTER' in attr.tail:
@@ -162,7 +146,7 @@ class VarDecl(Node):
         return self
 
 
-class TypeDef(Node):
+class TypeDef(tree.TypeDef):
     def _init_children(self):
         self["name"] = self._ast.select1("derived_type_stmt name").tail[0]
         try:
@@ -178,7 +162,7 @@ class TypeDef(Node):
             del field["intent"]
 
 
-class SubDef(Node):
+class SubDef(tree.SubDef):
     _PREFIX = "subroutine"
 
     def _init_children(self):
@@ -212,7 +196,8 @@ class FuncDef(SubDef):
             except KeyError:
                 self["ret"] = var_specs[self["name"]]
 
-class Module(Node):
+
+class Module(tree.Module):
     def _init_children(self):
         self["name"] = self._ast.select1("module_stmt name").tail[0]
         self["uses"] = [use.tail[0] for use in self._ast.select("use_stmt name")]
@@ -225,38 +210,8 @@ class Module(Node):
             for var in self._ast.select("module > specification_part type_declaration_stmt entity_decl")
             if len(var.parent().parent().select("access_spec /PUBLIC/")) > 0
         ]
-#       self["subroutines"] = [
-#           SubDef(subdef)
-#           for subdef in self._ast.select("subroutine_subprogram")
-#       ]
-#       self["functions"] = [
-#           FuncDef(funcdef)
-#           for funcdef in self._ast.select("function_subprogram")
-#       ]
 
-#   def export_methods(self, config):
-#       if not config.has_section("export"):
-#           return
-#
-#       methods = []
-#       for method in self["subroutines"] + self["functions"]:
-#           if config.has_option("export", method["name"].lower()):
-#               method["export_name"] = config.get("export", method["name"].lower())
-#               if "ret" in method:
-#                   if method["ret"]["getter"] == "subroutine":
-#                       method["ret"]["name"] = method["export_name"].upper() + '_OUT'
-#                       method["ret"]["intent"] = "OUT"
-#                   else:
-#                       method["ret"]["name"] = method["export_name"].upper()
-#                       del method["ret"]["intent"]
-#               methods.append(method)
-#
-#       self["methods"] = methods
-
-
-#    def export_methods(self, config):
-    def export_methods(self, src):
-        config = src.config
+    def export_methods(self, config):
         if not config.has_section("export"):
             return
             
@@ -302,6 +257,16 @@ class Module(Node):
 
         self["methods"] = methods
 
+        for method in methods:
+            section_key = "{0}:Cleanup".format(method["name"])
+
+            if config.has_section(section_key):
+                if "ret" in method and config.has_option(section_key, method["ret"]["name"]):
+                    method["ret"]["free"] = config.get(section_key, method["ret"]["name"])
+
+                for var in method["args"]:
+                    if config.has_option(section_key, var["name"]):
+                        var["free"] = config.get(section_key, var["name"])
 
     def _set_array_size(self, a_argument, a_src):
         l_arg = a_argument["name"]
@@ -318,7 +283,7 @@ class Module(Node):
                 l_array_var = l_declare[0].strip()
                 l_size_var = l_array_var[l_arg_len+1:-1].split(',')
                 if  l_size_var[0] == ':':
-                   # check if the array is dynamically allocated within the function/subroutine body 
+                   # check if the array is dynamically allocated within the function/subroutine body
                    for line in a_src[index:] :
                        line = line.strip()
                        if line.startswith("ALLOCATE") :
@@ -346,7 +311,7 @@ class Module(Node):
                                     l_size_var = l_aux_line.split(',')
                                     a_argument["dims"] = l_size_var
                    else :
-                        # okay, no size variable is found. It could be "IN" or "INOUT" type, 
+                        # okay, no size variable is found. It could be "IN" or "INOUT" type,
                         if len(l_declare) == 2 :
                             l_comment = l_declare[1].strip()
                             l_f2x_markup='@F2x=>'
@@ -358,11 +323,11 @@ class Module(Node):
                                 # Attention: no information is provided, code is not reliable !!
                                 # But at leaset make sure the dimension is correctly set
                                 n = len(l_size_var)
-                                a_argument["dims"] = [ x.replace(':', '0') for x in l_size_var ] 
+                                a_argument["dims"] = [ x.replace(':', '0') for x in l_size_var ]
                         else :
-                            # Same problem as above !! 
+                            # Same problem as above !!
                             n = len(l_size_var)
-                            a_argument["dims"] = [ x.replace(':', '0') for x in l_size_var ] 
+                            a_argument["dims"] = [ x.replace(':', '0') for x in l_size_var ]
                 else :
                     # size variables are set explicitly
                     a_argument["dims"] = l_size_var
