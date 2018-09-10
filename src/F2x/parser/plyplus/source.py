@@ -69,5 +69,5 @@ class SourceFile(source.SourceFile):
 
     def get_gtree(self):
         module = tree.Module(self.tree)
-        module.export_methods(self.config)
+        module.export_methods(self)
         return module

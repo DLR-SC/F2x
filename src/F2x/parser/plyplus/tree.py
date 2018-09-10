@@ -326,11 +326,11 @@ class Module(tree.Module):
                                 # Attention: no information is provided, code is not reliable !!
                                 # But at leaset make sure the dimension is correctly set
                                 n = len(l_size_var)
-                                a_argument["dims"] = [ x.replace(':', '0') for x in l_size_var ] 
+                                a_argument["dims"] = [ 0 if x == ':' else x for x in l_size_var ]
                         else :
                             # Same problem as above !! 
                             n = len(l_size_var)
-                            a_argument["dims"] = [ x.replace(':', '0') for x in l_size_var ] 
+                            a_argument["dims"] = [ 0 if x == ':' else x for x in l_size_var ]
                 else :
                     # size variables are set explicitly
                     a_argument["dims"] = l_size_var
