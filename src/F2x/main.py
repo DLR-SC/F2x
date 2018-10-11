@@ -61,8 +61,11 @@ def parse_args(argv=None):
     argp_generator.add_argument(u'-t', u'--template', action=u'append',
                                 help=u"Generate wrapping code for each template given. Uset '@'-prefix for bundled templates.",
                                 required=True)
-    argp_generator.add_argument(u'-d', u'--copy-glue', action=u"store", nargs='?',
-                                help="Copy 'glue.py' (used by ctypes template) into destination folder.",
+    argp_generator.add_argument(u'-d', u'--copy-glue', action=u"store_true",
+                                help=u"Copy 'glue.py' (used by ctypes template) into destination folder.",
+                                default=False)
+    argp_generator.add_argument(u'--py-absolute-import', action=u"store_true",
+                                help=u"Use absolute import for Python helper modules (e.g. F2x.template.ctypes.glue).",
                                 default=False)
 
     argp.add_argument(u'-l', u'--logfile',
@@ -76,8 +79,6 @@ def parse_args(argv=None):
     argp.add_argument(u'source', nargs=u'*', metavar=u"SOURCE")
 
     args = argp.parse_args(argv)
-
-    print(args)
 
     return args
 
@@ -121,7 +122,7 @@ def load_templates(log, args):
     
     timer = time.time() - start
     log.debug(u"* Loaded {0} templates in {1}.".format(len(templates), timer))
-    
+
     return templates
 
 
@@ -209,7 +210,7 @@ def main():
             with open(output_filename, 'wb') as output_file:
                 output_file.write(output.encode(args.encoding))
 
-        if args.copy_glue == 'auto':
+        if args.copy_glue and not args.py_absolute_import:
             output_dir, _ = os.path.split(output_basename)
             output_file = os.path.join(output_dir, "glue.py")
             if os.path.exists(output_file):

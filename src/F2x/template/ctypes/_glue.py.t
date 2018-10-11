@@ -31,7 +31,7 @@ import os
 
 import numpy
 
-from {% if not context.args.copy_glue %}F2x.template.ctypes{% endif %}.glue import FType, Field, ArrayField, Global, ArrayGlobal, \
+from {% if context.args.py_absolute_import %}F2x.template.ctypes{% endif %}.glue import FType, Field, ArrayField, Global, ArrayGlobal, \
                   constructor, destructor, array_from_pointer, \
                   F2xError
 

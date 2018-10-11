@@ -7,7 +7,7 @@ MKDIR = mkdir -p
 FC = gfortran -fPIC -g -ffree-line-length-none
 #FC = ifort -fPIC -g
 CC = gcc -fPIC -g
-F2X = python -m F2x.main -P
+F2X = python -m F2x.main -P --py-absolute-import
 F2X_INC = $(shell python -m F2x.lib.main -Fc)
 
 # Output targets
