@@ -39,7 +39,10 @@ library.{{ method.export_name }}_cerr.argtypes = [
         {%- if arg.dims %}
             {%- if arg.strlen == '*' %}ctypes.POINTER(ctypes.c_int), ctypes.POINTER(ctypes.c_int), ctypes.POINTER(ctypes.c_void_p)
             {%- elif arg.strlen %}ctypes.POINTER(ctypes.c_int), ctypes.POINTER(ctypes.c_void_p)
-            {%- else %}ctypes.POINTER(ctypes.POINTER({{ arg.pytype }})){% endif %}
+            {%- else %}
+                {%- if arg.dims.0 == 0 %}ctypes.POINTER(ctypes.c_int), {% endif -%}
+                ctypes.POINTER(ctypes.POINTER({{ arg.pytype }}))
+            {%- endif %}
         {%- elif arg.strlen == '*' and arg.pytype == 'ctypes.c_char_p' %}ctypes.POINTER(ctypes.c_int), ctypes.POINTER({{ arg.pytype }})
         {%- else %}ctypes.POINTER({{ arg.pytype }})
         {%- endif %}, {% endfor -%}
@@ -109,6 +112,9 @@ def {{ method.name }}(
             {%- else %}
                 {%- do callargs.append("ctypes.byref(" + arg.name + "_INTERN)") -%}
             {%- endif %}
+        {%- elif arg.dims and arg.dims.0 == 0 %}
+            {%- do callargs.append("ctypes.byref(" + arg.name + "_SIZE)") %}
+            {%- do callargs.append("ctypes.byref(" + arg.name + "_INTERN)") -%}
         {%- else -%}
             {%- do callargs.append("ctypes.byref(" + arg.name + "_INTERN)") -%}
         {%- endif -%}
@@ -134,6 +140,9 @@ def {{ method.name }}(
         {%- elif arg.ftype %}
     # pass
         {%- else %}
+            {%- if arg.dims.0 == 0 %}
+    {{ arg.name }}_SIZE = ctypes.c_int({% if not arg.intent == 'OUT' %}len({{ arg.name }}){% endif %})
+            {%- endif %}
             {%- if not arg.intent == 'OUT' %}
     {{ arg.name }}_ARRAY = numpy.array({{ arg.name }}, {{ arg.pytype }}, order='F')
             {%- else %}

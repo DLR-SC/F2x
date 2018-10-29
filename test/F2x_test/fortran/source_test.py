@@ -254,3 +254,7 @@ def test_error_function():
 
     with pytest.raises(F2xError):
         src.TRIGGER_ERROR_FUNC(0)
+
+
+def test_array_pointer():
+    src.ARRAY_POINTER([1, 2, 3])

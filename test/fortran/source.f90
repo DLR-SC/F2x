@@ -24,7 +24,7 @@ MODULE SOURCE
 
         INTEGER                        :: INTARRAY(3)
         REAL(8), ALLOCATABLE           :: REALARRAY(:)
-        LOGICAL, POINTER, DIMENSION(:) :: LOGICALARRAY => NULL()
+        LOGICAL, POINTER, DIMENSION(:) :: LOGICALARRAY
         
         CHARACTER(32), DIMENSION(:), ALLOCATABLE :: STRINGARRAY
     END TYPE
@@ -42,11 +42,11 @@ MODULE SOURCE
     LOGICAL, PUBLIC :: BASICS_READY = .FALSE.
 
     INTERFACE
-    subroutine F2x_handle_error(code) bind(C,name="f2x_err_handle")
-      USE ISO_C_BINDING
-      integer(C_int), value, intent(in) :: code
-    end subroutine
-    END Interface
+        SUBROUTINE F2X_HANDLE_ERROR(CODE) BIND(C, NAME="f2x_err_handle")
+            USE ISO_C_BINDING
+            INTEGER(C_INT), VALUE, INTENT(IN) :: CODE
+        END SUBROUTINE
+    END INTERFACE
 
 CONTAINS
 
@@ -115,7 +115,7 @@ CONTAINS
         CHARACTER(32), INTENT(OUT) :: OUTSTR
         CHARACTER(32), INTENT(INOUT) :: INOUTSTR
 
-        WRITE (*,*) 'IN', LEN(INSTR), INSTR
+!        WRITE (*,*) 'IN', LEN(INSTR), INSTR
         WRITE (*,*) 'INOUT', INOUTSTR
         OUTSTR = INOUTSTR
         INOUTSTR = INSTR
@@ -197,6 +197,12 @@ CONTAINS
         CHARACTER(60), DIMENSION(:), POINTER :: ARRAY
 
         IF (ASSOCIATED(ARRAY)) DEALLOCATE(ARRAY)
+    END SUBROUTINE
+
+    SUBROUTINE ARRAY_POINTER(ARRAY)
+        INTEGER, INTENT(IN), POINTER :: ARRAY(:)
+
+        PRINT *, SIZE(ARRAY)
     END SUBROUTINE
 
 END

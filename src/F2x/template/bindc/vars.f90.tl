@@ -108,8 +108,8 @@
     {%- else %}
         {{ arg.type }}
         {%- if arg.kind %}(KIND={{ arg.kind }}){% endif %}, DIMENSION({{ join_dims(arg, ':') }}), POINTER :: {{ name }}_INTERN
-        {%- if arg.intent == 'OUT' and arg.dims.0 == 0 %}
-        INTEGER, INTENT(OUT) :: {{ name }}_SIZE
+        {%- if arg.dims.0 == 0 %}
+        INTEGER, INTENT({{ arg.intent }}) :: {{ name }}_SIZE
         {%- endif %}
     {%- endif %}
 {%- endmacro %}
@@ -171,7 +171,7 @@
         {%- if arg.strlen and not arg.intent == 'OUT' %}
         CALL C_F_POINTER({{ name or arg.name }}, {{ name or arg.name }}_INTERN, [{{ name or arg.name }}_SIZE])
         {%- elif not arg.strlen %}
-        CALL C_F_POINTER({{ name or arg.name }}, {{ name or arg.name }}_INTERN, [{{ join_dims(arg) }}])
+        CALL C_F_POINTER({{ name or arg.name }}, {{ name or arg.name }}_INTERN, [{% if arg.dims.0 == 0 %}{{ name or arg.name }}_SIZE{% else %}{{ join_dims(arg) }}{% endif %}])
         {%- endif %}
     {%- elif arg.strlen == '*' %}
         CALL C_F_POINTER({{ name or arg.name }}, {{ name or arg.name }}_INTERN)
