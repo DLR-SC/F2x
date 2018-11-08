@@ -1,0 +1,52 @@
+; Wrapper configuration for "source.f09"
+;
+; Copyright 2018 German Aerospace Center (DLR)
+; 
+; Licensed under the Apache License, Version 2.0 (the "License");
+; you may not use this file except in compliance with the License.
+; You may obtain a copy of the License at
+; 
+;     http://www.apache.org/licenses/LICENSE-2.0
+; 
+; Unless required by applicable law or agreed to in writing, software
+; distributed under the License is distributed on an "AS IS" BASIS,
+; WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+; See the License for the specific language governing permissions and
+; limitations under the License.
+
+[replace]
+26 =        REAL(8), ALLOCATABLE :: REALARRAY(2)
+86 =        INTEGER, INTENT(IN) :: INARRAY(3)
+87 =        INTEGER, INTENT(OUT) :: OUTARRAY(3)
+88 =        INTEGER, INTENT(INOUT) :: INOUTARRAY(3)
+167 =       CHARACTER(29), INTENT(OUT) :: RETURN_VALUE
+
+
+[export]
+BASIC_ARGS_IN = SRC_BAI
+BASIC_ARGS_OUT = SRC_BAO
+BASIC_ARGS_INOUT = SRC_BAIO
+BASIC_ARGS_ARRAY = SRC_BAA
+BASIC_ARGS_NDARRAY = SRC_BAN
+STRING_ARGS = SRC_BSA
+STRING_ARGS_ARRAY = SRC_SAA
+DERIVED_TYPE_ARGS = SRC_DTA
+BASIC_RETURN_VALUE = SRC_BRV
+DERIVED_TYPE_RETURN_VALUE = SRC_DTRV
+STRING_RETURN_VALUE = SRC_SRV
+ARRAY_RETURN_VALUE = SRC_ARV
+DARRAY_RETURN_VALUE = SRC_DARV
+ALLOC_ARRAY_RETURN = SRC_AAR
+DEALLOC_ARRAY = SRC_DA
+TRIGGER_ERROR_FUNC = TEF
+TRIGGER_ERROR_SUB = TES
+ARRAY_POINTER = ARRPTR
+
+[generate]
+namespace = SOURCE
+
+[parser]
+encoding = latin-1
+
+[ALLOC_ARRAY_RETURN:Cleanup]
+ARRAY = SRC_DA
