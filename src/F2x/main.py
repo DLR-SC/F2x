@@ -29,10 +29,12 @@ import plyplus
 from F2x.parser.plyplus import source
 from F2x.template.ctypes import glue
 
+
 VERSION = u"0.1"
 DESCRIPTION = u"F2x - A versatile FORTRAN wrapper."
 
 IGNORE_DELTA = 3
+
 
 package_path, _ = os.path.split(__file__)
 
@@ -126,8 +128,8 @@ def load_templates(log, args):
     return templates
 
 
-def main():
-    args = parse_args()
+def main(argv=None):
+    args = parse_args(argv)
     log = init_logger(args)
 
     log.info(DESCRIPTION + u" Version " + VERSION)

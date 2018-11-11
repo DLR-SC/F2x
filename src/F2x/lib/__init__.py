@@ -26,3 +26,7 @@ def find_library_path(lang, item=None):
         return lang_dir
     
     raise FileNotFoundError("Could not find {0}/{1}. Maybe you need to build it?".format(lang, item))
+
+def get_internal_lib():
+    basedir = os.path.join(os.path.dirname(__file__), 'fortran')
+    return [os.path.join(basedir, file) for file in ('c_interface_module.f90', 'f2x_err.c')]
