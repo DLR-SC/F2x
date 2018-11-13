@@ -12,4 +12,5 @@
 ; See the License for the specific language governing permissions and
 ; limitations under the License.
 [export]
-SUBR_BOOLARRAY_IN = BOOLARRARY_SBI
+TRIGGER_ERROR_SUB = ERR_TSUB
+TRIGGER_ERROR_FUNC = ERR_TFUNC

@@ -22,7 +22,7 @@ import pytest
 import numpy
 
 import F2x
-from basic.common import source_glue as src
+from basic.err import source_glue as src, errors_glue as err
 
 
 def test_basic_type_intfield():
@@ -239,6 +239,20 @@ def test_global_array():
 def test_alloc_str_array():
     a = src.ALLOC_ARRAY_RETURN(5)
     assert all((str(i + 1) == v.strip() for i, v in enumerate(a)))
+
+
+def test_error_routine():
+    err.TRIGGER_ERROR_SUB(0)
+
+    with pytest.raises(src.F2xError):
+        err.TRIGGER_ERROR_SUB(1)
+
+
+def test_error_function():
+    assert err.TRIGGER_ERROR_FUNC(2) == 2
+
+    with pytest.raises(src.F2xError):
+        err.TRIGGER_ERROR_FUNC(0)
 
 
 def test_array_pointer():
