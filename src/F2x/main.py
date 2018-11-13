@@ -15,7 +15,8 @@
 # limitations under the License.
 u""" Main program for F2x - A versatile, template based FORTRAN wrapper.
 """
-from __future__ import print_function
+import warnings
+warnings.simplefilter('ignore', ResourceWarning)
 
 import argparse
 import logging

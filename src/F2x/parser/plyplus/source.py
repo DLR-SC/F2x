@@ -45,9 +45,9 @@ def load_grammar(grammar_filename):
     log.info(u"Loading grammar from {0}. This may take some time...".format(grammar_filename))
 
     start = time.time()
-    grammar_file = open(grammar_filename, 'r')
-    grammar = plyplus.Grammar(grammar_file)
-    grammar_cache[grammar_filename] = grammar
+    with open(grammar_filename, 'r') as grammar_file:
+        grammar = plyplus.Grammar(grammar_file)
+        grammar_cache[grammar_filename] = grammar
     timer = time.time() - start
     
     log.debug(u"* Loaded grammar in {0}.".format(timer))
