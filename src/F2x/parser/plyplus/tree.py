@@ -225,7 +225,7 @@ class Module(tree.Module):
         for funcdef in self._ast.select("function_subprogram") :
             if export_items is None or funcdef.select("function_stmt name")[0].tail[0].lower() in export_items:
                 method = FuncDef(funcdef)
-                method["export_name"] = config.get("export", method["name"].lower(), fallback=None)
+                method["export_name"] = config.get("export", method["name"].lower(), fallback=f'{self["name"]}_{method["name"]}')
                 if "ret" in method:
                     if "dims" in method["ret"]:
                         l_line = [line for line in src.source_lines if method["ret"]["name"] in line and "ALLOCATE" in line]
@@ -246,7 +246,7 @@ class Module(tree.Module):
         for subdef in self._ast.select("subroutine_subprogram") :
             if export_items is None or subdef.select("subroutine_stmt name")[0].tail[0].lower() in export_items:
                 method = SubDef(subdef)
-                method["export_name"] = config.get("export", method["name"].lower(), fallback=None)
+                method["export_name"] = config.get("export", method["name"].lower(), fallback=f'{self["name"]}_{method["name"]}')
                 l_array_args = [ l_arg for l_arg in method["args"] if "dims" in l_arg ]
                 if len(l_array_args) > 0:
                     #okay, we have arguments of array type
