@@ -215,48 +215,49 @@ class Module(tree.Module):
 #    def export_methods(self, config):
     def export_methods(self, src):
         config = src.config
-        if not config.has_section("export"):
-            return
+        if config.has_section("export"):
+            export_items = [key for key, _ in config.items("export")]
+
+        else:
+            export_items = None
             
         methods = []
-        for export in config.items("export"):
-            for funcdef in self._ast.select("function_subprogram") :
-                if funcdef.select("function_stmt name")[0].tail[0].lower() == export[0] :
-                   method = FuncDef(funcdef)
-                   method["export_name"] = config.get("export", method["name"].lower())
-                   if "ret" in method:
-                       if "dims" in method["ret"]:
-                            l_line = [line for line in src.source_lines if method["ret"]["name"] in line and "ALLOCATE" in line]
-                            if len(l_line) == 1:
-                                #ok, it is a dynamic array, find the size variable of the array
-                                l_aux_line = l_line[0][l_line[0].find(method["ret"]["name"]):-2]
-                                l_size_var = l_aux_line[len(method["ret"]["name"])+1:-1].split(',')
-                                method["ret"]["dims"] = l_size_var
-                       if method["ret"]["getter"] == "subroutine":
-                            method["ret"]["name"] = method["export_name"].upper() + '_OUT'
-                            method["ret"]["intent"] = "OUT"
-                       else:
-                           method["ret"]["name"] = method["export_name"].upper()
-                           del method["ret"]["intent"]
-                   methods.append(method)
-                   break
-            else :
-                for subdef in self._ast.select("subroutine_subprogram") :
-                    if subdef.select("subroutine_stmt name")[0].tail[0].lower() == export[0] :
-                        method = SubDef(subdef)
-                        method["export_name"] = config.get("export", method["name"].lower())
-                        l_array_args = [ l_arg for l_arg in method["args"] if "dims" in l_arg ]
-                        if len(l_array_args) > 0:
-                            #okay, we have arguments of array type
-                            sub_start, sub_end = self._get_subroutine(method["name"], src.source_lines)
-                            for arg in l_array_args:
-                                self._set_array_size(arg, src.source_lines[sub_start: sub_end])
+        for funcdef in self._ast.select("function_subprogram") :
+            if export_items is None or funcdef.select("function_stmt name")[0].tail[0].lower() in export_items:
+                method = FuncDef(funcdef)
+                method["export_name"] = config.get("export", method["name"].lower(), fallback=None)
+                if "ret" in method:
+                    if "dims" in method["ret"]:
+                        l_line = [line for line in src.source_lines if method["ret"]["name"] in line and "ALLOCATE" in line]
+                        if len(l_line) == 1:
+                            #ok, it is a dynamic array, find the size variable of the array
+                            l_aux_line = l_line[0][l_line[0].find(method["ret"]["name"]):-2]
+                            l_size_var = l_aux_line[len(method["ret"]["name"])+1:-1].split(',')
+                            method["ret"]["dims"] = l_size_var
+                    if method["ret"]["getter"] == "subroutine":
+                        method["ret"]["name"] = method["export_name"].upper() + '_OUT'
+                        method["ret"]["intent"] = "OUT"
+                    else:
+                        method["ret"]["name"] = method["export_name"].upper()
+                        del method["ret"]["intent"]
+                methods.append(method)
 
-                        if "ret" in method:
-                            method["ret"]["name"] = method["export_name"].upper() + '_OUT'
-                            method["ret"]["intent"] = "OUT"
-                        methods.append(method)
-                        break
+
+        for subdef in self._ast.select("subroutine_subprogram") :
+            if export_items is None or subdef.select("subroutine_stmt name")[0].tail[0].lower() in export_items:
+                method = SubDef(subdef)
+                method["export_name"] = config.get("export", method["name"].lower(), fallback=None)
+                l_array_args = [ l_arg for l_arg in method["args"] if "dims" in l_arg ]
+                if len(l_array_args) > 0:
+                    #okay, we have arguments of array type
+                    sub_start, sub_end = self._get_subroutine(method["name"], src.source_lines)
+                    for arg in l_array_args:
+                        self._set_array_size(arg, src.source_lines[sub_start: sub_end])
+
+                if "ret" in method:
+                    method["ret"]["name"] = method["export_name"].upper() + '_OUT'
+                    method["ret"]["intent"] = "OUT"
+                methods.append(method)
 
         self["methods"] = methods
 

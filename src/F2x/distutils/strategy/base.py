@@ -35,15 +35,18 @@ class BuildStrategy(object):
 
             for template_file in template_mod.templates or []:
                 if template_file.startswith('@'):
-                    self.template_files.append(template_file)
-
+                    template_file = os.path.join(os.path.dirname(template.__file__), template_file[1:])
+                    package_dir = os.path.dirname(template_file)
                 else:
-                    self.template_files.append(os.path.join(template_mod.package_dir, template_file))
+                    package_dir = template_mod.package_dir
+                    template_file = os.path.join(package_dir, template_file)
+
+                self.template_files.append((template_file, package_dir))
 
     def get_template_files(self):
         template_dir = os.path.dirname(template.__file__)
         return [os.path.join(template_dir, filename[1:]) if filename.startswith('@') else filename
-                for filename in self.template_files]
+                for filename, _ in self.template_files]
 
     def finish_extension(self, extension):
         pass

@@ -97,14 +97,19 @@ class SourceFile(object):
         if os.path.exists(self.config_filename):
             log.debug("Reading config for {0} from {1}...".format(self.filename, self.config_filename))
             self.config.read(self.config_filename)
-        
-        if not self.config.has_section('parser'):
-            self.config.add_section('parser')
-        
+
+        for section in ('parser', 'generate'):
+            if not self.config.has_section(section):
+                self.config.add_section(section)
+
         for opt in ('grammar', 'output_pre', 'encoding'):
             if not self.config.has_option('parser', opt):
                 self.config.set('parser', opt, unicode(getattr(args, opt)))
-    
+
+        for opt in ('encoding', ):
+            if not self.config.has_option('generate', opt):
+                self.config.set('generate', opt, unicode(getattr(args, opt)))
+
     def read(self):
         log.debug("Reading source from {0}...".format(self.filename))
         with open(self.filename, 'rb') as source_file:

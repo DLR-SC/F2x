@@ -79,7 +79,7 @@ class build_src(numpy_build_src):
         self.py_modules_dict = {}
 
         if self.f2x_templates is not None:
-            self.f2x_templates = shlex.split(self.f2x_templates)
+            self.f2x_templates = [(filename, os.path.dirname(filename)) for filename in shlex.split(self.f2x_templates)]
 
         if self.f2x_opts is None:
             self.f2x_opts = []
@@ -113,14 +113,17 @@ class build_src(numpy_build_src):
 
     def scan_f_sources(self, extension):
         templates = self.f2x_templates or extension.f2x_target.template_files
-        template_suffixes = [os.path.splitext(os.path.basename(path))[0] for path in templates]
+        template_suffixes = [os.path.splitext(os.path.basename(path))[0] for path, _ in templates]
 
         target_dir = os.path.join(self.build_src, *self.get_ext_fullname(extension.name).split('.')[:-1])
         f2x_sources = []
 
         for source, module in extension.find_modules():
-            target_file = os.path.join(target_dir, os.path.basename(source))
-            base, ext = os.path.splitext(target_file)
+            if self.inplace:
+                target_file = source
+            else:
+                target_file = os.path.join(target_dir, os.path.basename(source))
+            base, _ = os.path.splitext(target_file)
 
             f2x_info = {
                 'source': source,
@@ -132,8 +135,11 @@ class build_src(numpy_build_src):
             if os.path.isfile(source_wrap):
                 config = configparser.RawConfigParser()
                 config.read(source_wrap)
-                f2x_info['wrapper'] = os.path.join(target_dir, os.path.basename(source_wrap))
                 f2x_info['config'] = config
+                if self.inplace:
+                    f2x_info['wrapper'] = source_wrap
+                else:
+                    f2x_info['wrapper'] = os.path.join(target_dir, os.path.basename(source_wrap))
 
                 if config.has_option('generate', 'library'):
                     f2x_info['library'] = config.get('generate', 'library')
@@ -143,45 +149,53 @@ class build_src(numpy_build_src):
         return f2x_sources
 
     def populate_target(self, extension):
-        fullname = self.get_ext_fullname(extension.name)
-        fullname_parts = fullname.split('.')
-        package_name = '.'.join(fullname_parts[:-1])
-        package_dir = os.path.join(self.build_src, *fullname_parts[:-1])
+        build_py = self.get_finalized_command('build_py')
         sources = list(extension.sources)
         new_sources = []
 
-        if package_name in self.distribution.packages:
-            build_py = self.get_finalized_command('build_py')
-            modules = build_py.find_package_modules(package_name, build_py.get_package_dir(package_name))
-            sources += [source for _, _, source in modules if source not in sources]
+        package_path = self.get_ext_fullname(extension.name).split('.')[:-1]
 
-        self.mkpath(package_dir)
+        package_name = '.'.join(package_path[:-1])
+        if self.inplace:
+            package_dir = build_py.get_package_dir(package_name)
+
+        else:
+            package_dir = os.path.join(self.build_src, *package_path)
+            self.mkpath(package_dir)
+
         package_init = os.path.join(package_dir, '__init__.py')
         if not os.path.isfile(package_init):
             with open(package_init, 'w'):
                 pass
-        new_sources.append(package_init)
+        sources.append(package_init)
+
+        if package_name in self.distribution.packages:
+            modules = build_py.find_package_modules(package_name, build_py.get_package_dir(package_name))
+            sources += [source for (_, _, source) in modules if source not in sources]
 
         for target_file, f2x_info in extension.f2x_sources:
             source = f2x_info['source']
             sources.remove(source)
 
-            if not os.path.isfile(target_file) or newer(source, target_file):
-                self.copy_file(source, target_file)
+            if not self.inplace:
+                if not os.path.isfile(target_file) or newer(source, target_file):
+                    self.copy_file(source, target_file)
 
-            wrapper = f2x_info.get('wrapper')
-            if wrapper is not None:
-                source_wrapper = f2x_info['source'] + '-wrap'
+                wrapper = f2x_info.get('wrapper')
+                if wrapper is not None:
+                    source_wrapper = f2x_info['source'] + '-wrap'
 
-                if not os.path.isfile(wrapper) or newer(source_wrapper, wrapper):
-                    self.copy_file(source_wrapper, wrapper)
+                    if not os.path.isfile(wrapper) or newer(source_wrapper, wrapper):
+                        self.copy_file(source_wrapper, wrapper)
 
-        for source in sources:
-            target_file = os.path.join(package_dir, os.path.basename(source))
-            new_sources.append(target_file)
-
-            if not os.path.isfile(target_file) or newer(source, target_file):
-                self.copy_file(source, target_file)
+            for source in sources:
+                if self.inplace:
+                    target_file = source
+                else:
+                    target_file = os.path.join(package_dir, os.path.basename(source))
+                    if not os.path.isfile(target_file) or newer(source, target_file):
+                        self.copy_file(source, target_file)
+                new_sources.append(target_file)
 
         if package_name not in self.py_modules_dict:
             self.py_modules_dict[package_name] = []
@@ -190,11 +204,12 @@ class build_src(numpy_build_src):
         if package_name not in self.distribution.packages:
             self.distribution.packages.append(package_name)
 
-        if self.distribution.package_dir is None:
-            self.distribution.package_dir = dict()
+        if not self.inplace:
+            if self.distribution.package_dir is None:
+                self.distribution.package_dir = dict()
 
-        if package_name not in self.distribution.package_dir:
-            self.distribution.package_dir[package_name] = self.build_src
+            if package_name not in self.distribution.package_dir:
+                self.distribution.package_dir[package_name] = self.build_src
 
         extension.sources[:] = new_sources
 
@@ -215,7 +230,11 @@ class build_src(numpy_build_src):
             log.info('generating wrappers for %s', ', '.join([i[0] for i in f2x_input]))
 
             argv = self.f2x_opts + extension.f2x_options
-            for template in extension.f2x_target.template_files:
+            path = []
+            for template, template_path in extension.f2x_target.template_files:
+                if template_path and template_path not in path:
+                    argv += ['-T', template_path]
+                    path.append(template_path)
                 argv += ['-t', template]
 
             for target_file, f2x_info, extension in f2x_input:
@@ -227,7 +246,6 @@ class build_src(numpy_build_src):
         for lib_name, build_info in self.distribution.libraries or []:
             if lib_name == name:
                 return lib_name, build_info
-
         return name, None
 
     def find_library_name(self, extension):
@@ -251,9 +269,6 @@ class build_src(numpy_build_src):
                                                   f'{library_name}, {extension.library_name}')
 
         return library_name
-
-    def build_extension_sources_module(self, extension):
-        pass
 
     def find_extension(self, ext_name):
         for extension in self.distribution.ext_modules:

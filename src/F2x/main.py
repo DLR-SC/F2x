@@ -64,6 +64,7 @@ def parse_args(argv=None):
     argp_generator.add_argument(u'-t', u'--template', action=u'append',
                                 help=u"Generate wrapping code for each template given. Uset '@'-prefix for bundled templates.",
                                 required=True)
+    argp_generator.add_argument(u'-T', u'--template-path', action='append')
     argp_generator.add_argument(u'-d', u'--copy-glue', action=u"store_true",
                                 help=u"Copy 'glue.py' (used by ctypes template) into destination folder.",
                                 default=False)
@@ -109,13 +110,14 @@ def load_templates(log, args):
     log.info(u"Loading {0} templates...".format(len(args.template)))
     templates = []
     start = time.time()
+    template_path = args.template_path[:]
     
     for template_filename in args.template:
         if template_filename[0] == u'@':
             template_filename = os.path.join(package_path, u'template', template_filename[1:])
+            template_path.append(os.path.dirname(template_filename))
         
         log.debug(u"* Loading template from {0}...".format(template_filename))
-        template_path = os.path.dirname(template_filename)
         template_loader = jinja2.FileSystemLoader(template_path)
         template_env = jinja2.Environment(loader=template_loader, extensions=['jinja2.ext.do'])
         with open(template_filename, 'r') as template_file:
