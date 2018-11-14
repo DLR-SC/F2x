@@ -119,6 +119,10 @@ class ExtensionBuildStrategy(BuildStrategy):
 
         package_name = '.'.join(build_src.get_ext_fullname(extension.name).split('.')[:-1])
         ext_sources, py_sources = build_src.filter_py_files(sources)
+
+        if py_sources and package_name not in build_src.py_modules_dict:
+            build_src.py_modules_dict[package_name] = []
+
         for source in py_sources:
             module_base = os.path.splitext(os.path.basename(source))[0]
             build_src.py_modules_dict[package_name].append((package_name, module_base, source))

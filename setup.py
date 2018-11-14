@@ -19,11 +19,9 @@ import sys
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "src"))
 
 import setuptools
-from distutils import core
+from distutils.core import setup
 
-from F2x.lib import setup
-
-core.setup(
+setup(
     name='F2x',
     version='0.1.dev0',
 
@@ -37,10 +35,6 @@ core.setup(
     package_data={
         'F2x.parser.plyplus.grammar': ["*.g"],
         'F2x.template': ["*/*.t", "*/*.tl"],
-        'F2x.lib': [
-            "*/Makefile",
-            "fortran/libF2x.so", "fortran/*.f90", "fortran/*.mod",
-            ]
     },
 
     setup_requires=[
@@ -58,12 +52,6 @@ core.setup(
     entry_points={
         'console_scripts': [
             'F2x=F2x.main:main',
-            'F2x-lib=F2x.lib.main:main',
         ],
     },
-
-    cmdclass={
-        'build': setup.Build,
-        'build_glue': setup.BuildGlue,
-    }
 )
