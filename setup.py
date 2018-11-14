@@ -48,6 +48,9 @@ setup(
         'jinja2',
         'numpy',
     ],
+    extras_require={
+        'cython': ['Cython', ],
+    },
 
     entry_points={
         'console_scripts': [
