@@ -1,9 +1,9 @@
 stages:
-  - setup
+  - build
   - test
 
 setup-python-36:
-  stage: setup
+  stage: build
   script:
     - python36 -m venv env
     - source env/bin/activate
@@ -11,7 +11,7 @@ setup-python-36:
     - pip install -e .[cython]
 
 test-build-python-36:
-  stage: test:build
+  stage: test
   script:
     - python36 -m venv env
     - source env/bin/activate
