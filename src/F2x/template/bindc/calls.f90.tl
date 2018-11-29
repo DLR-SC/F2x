@@ -70,15 +70,14 @@
 #}
 {% macro export_function_array(method) -%}
     {%- set callargs = [] -%}
-    {{ vars.func_decl(method, True) }}
+    {{ vars.sub_decl(method, True) }}
         {{- declare_args(method) }}
         {{ vars.declare_arg(method.ret) }}
         {{ cast_args(method, callargs) }}
-        ALLOCATE({{ method.ret.name }}_INTERN({{ vars.join_dims(method.ret) }}))
-        {{ method.ret.name }}_INTERN = {{ method.name }}({{ join_list(callargs) }})
+        {{ method.ret.name }}_INTERN {% if method.ret.dynamic == 'POINTER' %}=>{% else %}={% endif %} {{ method.name }}({{ join_list(callargs) }})
         {{ uncast_args(method) }}
         {{ vars.uncast_arg(method.ret) }}
-    END FUNCTION
+    END SUBROUTINE
 {%- endmacro %}
 
 
@@ -92,7 +91,7 @@
     {%- set callargs = [] -%}
     {{ vars.func_decl(method, True) }}
         {{- declare_args(method) }}
-        {{ vars.declare_arg(method.ret) }}
+        {{ vars.declare_arg(method.ret, ret=True) }}
         {{ cast_args(method, callargs) }}
         ALLOCATE({{ method.ret.name }}_INTERN)
         {{ method.ret.name }}_INTERN = {{ method.name }}({{ join_list(callargs) }})
@@ -132,7 +131,7 @@
     {%- set callargs = [] -%}
     {{ vars.func_decl(method, True) }}
         {{- declare_args(method) }}
-        {{ vars.declare_arg(method.ret) }}
+        {{ vars.declare_arg(method.ret, ret=True) }}
         {{ cast_args(method, callargs) }}
         {{ method.ret.name }} = {{ method.name }}({{ join_list(callargs) }})
         {{ uncast_args(method) }}

@@ -43,7 +43,7 @@
 {% macro sub_decl(method, ifort_dll=False) -%}
     SUBROUTINE {{ method.export_name.upper() }}(
             {%- if method.args %}{{ dummy_args(method.args) }}{% if method.ret %}, {% endif %}{% endif -%}
-            {% if method.ret %}{{ method.ret.name }}{% endif %}) BIND(C, name="{{ method.export_name }}")
+            {% if method.ret %}{{ dummy_args([method.ret]) }}{% endif %}) BIND(C, name="{{ method.export_name }}")
 	{%- if ifort_dll %}
 !DEC$ ATTRIBUTES DLLEXPORT :: {{ method.export_name }}
 	{%- endif %}
@@ -58,8 +58,8 @@
 #}
 {% macro dummy_args(args) -%}
     {%- for arg in args -%}
-        {%- if arg.dims and arg.dims.0 == 0 %}{{ arg.name }}_SIZE, {% endif -%}
-        {%- if arg.strlen == '*' -%}{{ arg.name }}_LENGTH, {% endif -%}
+        {%- if arg.dims and 0 in arg.dims %}{{ arg.name }}_SIZE, {% endif -%}
+        {%- if arg.strlen in ('*', ':') -%}{{ arg.name }}_LENGTH, {% endif -%}
         {{ arg.name }}
         {%- if not loop.last %}, {% endif -%}
     {%- endfor -%}
@@ -75,10 +75,11 @@
 
    :param arg: A :type VarDecl: node that should be declared.
 #}
-{% macro declare_arg(arg, name=None) -%}
+{% macro declare_arg(arg, name=None, ret=False) -%}
     {%- if not name %}{% set name=arg.name %}{% endif %}
-    {%- if arg.dims -%}
-        {{ declare_arg_array(arg, name) }}
+    ! {{ name }} {{ arg.name }} {{ arg.dims }}
+    {% if arg.dims -%}
+        {{ declare_arg_array(arg, name, ret) }}
     {%- elif arg.strlen -%}
         {{ declare_arg_str(arg, name) }}
     {%- elif arg.ftype -%}
@@ -95,22 +96,22 @@
 
    :param arg: A :type VarDecl: node specifiying the variable to be declared.
 #}
-{% macro declare_arg_array(arg, name) -%}
-        TYPE(C_PTR){%- if arg.intent %}, INTENT({{ arg.intent }}){% endif %} :: {{ name }}
-    {%- if arg.strlen == '*' %}
-        INTEGER, INTENT({{ arg.intent }}) :: {{ name }}_SIZE, {{ name }}_LENGTH
-        CHARACTER({{ name }}_LENGTH), DIMENSION({{ join_dims(arg, ':') }}), POINTER :: {{ name }}_INTERN
+{% macro declare_arg_array(arg, name, ret=False) -%}
+        TYPE(C_PTR){%- if arg.intent %}, INTENT({{ arg.intent or 'IN' }}){% endif %} :: {{ name }}
+    {%- if arg.strlen in ('*', ':') %}
+        INTEGER, INTENT({{ arg.intent or 'IN' }}) :: {% if 0 in arg.dims %}{{ name }}_SIZE, {% endif -%}{{ name }}_LENGTH
+        CHARACTER({%- if arg.intent == 'OUT' %}:{% else %}{{ name }}_LENGTH{% endif %}), DIMENSION({{ join_dims(arg, ':') }}), POINTER :: {{ name }}_INTERN
     {%- elif arg.strlen %}
-        INTEGER, INTENT({{ arg.intent }}) :: {{ name }}_SIZE
+        INTEGER, INTENT({{ arg.intent or 'IN'}}) :: {{ name }}_SIZE
         CHARACTER({{ arg.strlen }}), DIMENSION({{ join_dims(arg, ':') }}), POINTER :: {{ name }}_INTERN
     {%- elif arg.ftype %}
         TYPE({{ arg.ftype }}), DIMENSION({{ join_dims(arg, ':') }}), POINTER :: {{ name }}_INTERN
     {%- else %}
+        {%- if not ret and 0 in arg.dims %}
+        INTEGER, INTENT({{ arg.intent or 'IN' }}) :: {{ name }}_SIZE
+        {%- endif %}
         {{ arg.type }}
         {%- if arg.kind %}(KIND={{ arg.kind }}){% endif %}, DIMENSION({{ join_dims(arg, ':') }}), POINTER :: {{ name }}_INTERN
-        {%- if arg.dims.0 == 0 %}
-        INTEGER, INTENT({{ arg.intent }}) :: {{ name }}_SIZE
-        {%- endif %}
     {%- endif %}
 {%- endmacro %}
 
@@ -123,12 +124,12 @@
    :param arg: A :type VarDecl: node that specifies the variable to be declared.
 #}
 {% macro declare_arg_str(arg, name) -%}
-        TYPE(C_PTR){%- if arg.intent %}, INTENT({{ arg.intent }}){% endif %} :: {{ name }}
-    {%- if arg.strlen != '*' %}
-        CHARACTER({{ arg.strlen }}) :: {{ name }}_INTERN
+        TYPE(C_PTR){%- if arg.intent %}, INTENT({{ arg.intent or 'IN' }}){% endif %} :: {{ name }}
+    {%- if arg.strlen in ('*', ':') %}
+        INTEGER{%- if arg.intent %}, INTENT({{ arg.intent or 'IN' }}){% endif %} :: {{ name }}_LENGTH
+        CHARACTER({%- if arg.intent == 'OUT' %}:{% else %}{{ name }}_LENGTH{% endif %}), POINTER :: {{ name }}_INTERN
     {%- else %}
-        INTEGER{%- if arg.intent %}, INTENT({{ arg.intent }}){% endif %} :: {{ name }}_LENGTH
-        CHARACTER({{ name }}_LENGTH), POINTER :: {{ name }}_INTERN
+        CHARACTER({{ arg.strlen }}) :: {{ name }}_INTERN
     {%- endif %}
 {%- endmacro %}
 
@@ -141,7 +142,7 @@
    :param arg: The :type VarDecl: node specifiying the derived type variable.
 #}
 {% macro declare_arg_dtype(arg, name) -%}
-        TYPE(C_PTR){%- if arg.intent %}, INTENT({{ arg.intent }}){% endif %} :: {{ name }}
+        TYPE(C_PTR){%- if arg.intent or 'IN' %}, INTENT({{ arg.intent }}){% endif %} :: {{ name }}
         TYPE({{ arg.ftype }}), POINTER :: {{ name }}_INTERN
 {%- endmacro %}
 
@@ -155,7 +156,7 @@
 {% macro declare_arg_basic(arg, name) -%}
         {{ arg.type }}
     {%- if arg.kind %}(KIND={{ arg.kind }}){% endif %}
-    {%- if arg.intent %}, INTENT({{ arg.intent }}){% endif %} :: {{ name }}
+    {%- if arg.intent %}, INTENT({{ arg.intent or 'IN' }}){% endif %} :: {{ name }}
 {%- endmacro %}
 
 
@@ -167,18 +168,18 @@
    :param arg: The :type VarDecl: node that should be casted.
 #}
 {% macro cast_arg(arg, name=None) -%}
-    {%- if arg.dims %}
-        {%- if arg.strlen and not arg.intent == 'OUT' %}
-        CALL C_F_POINTER({{ name or arg.name }}, {{ name or arg.name }}_INTERN, [{{ name or arg.name }}_SIZE])
-        {%- elif not arg.strlen %}
-        CALL C_F_POINTER({{ name or arg.name }}, {{ name or arg.name }}_INTERN, [{% if arg.dims.0 == 0 %}{{ name or arg.name }}_SIZE{% else %}{{ join_dims(arg) }}{% endif %}])
-        {%- endif %}
-    {%- elif arg.strlen == '*' %}
-        CALL C_F_POINTER({{ name or arg.name }}, {{ name or arg.name }}_INTERN)
-    {%- elif arg.strlen %}
+    {%- if arg.intent != 'OUT' %}
+        {%- if arg.dims %}
+            {%- if arg.strlen %}
+        CALL C_F_POINTER({{ name or arg.name }}, {{ name or arg.name }}_INTERN, {% if 0 in arg.dims %}{{ name or arg.name }}_SIZE{% else %}{{ join_dims(arg) }}{% endif %}])
+            {%- elif not arg.strlen %}
+        CALL C_F_POINTER({{ name or arg.name }}, {{ name or arg.name }}_INTERN, [{% if 0 in arg.dims %}{{ name or arg.name }}_SIZE{% else %}{{ join_dims(arg) }}{% endif %}])
+           {%- endif %}
+        {%- elif arg.strlen %}
         CALL C_F_STRING({{ name or arg.name }}, {{ name or arg.name }}_INTERN)
-    {%- elif arg.ftype %}
+        {%- elif arg.ftype %}
         CALL C_F_POINTER({{ name or arg.name }}, {{ name or arg.name }}_INTERN)
+        {%- endif %}
     {%- endif %}
 {%- endmacro %}
 
@@ -190,19 +191,21 @@
    :param arg: A :type VarDecl: node that defines the output variable to be uncasted.
 #}
 {% macro uncast_arg(arg, name=None) -%}
-    {%- if arg.dims %}
-        {%- if arg.intent == 'OUT' and arg.dims.0 == 0 %}
+    {%- if arg.intent != 'IN' %}
+        {%- if arg.dims %}
+            {%- if arg.intent == 'OUT' and 0 in arg.dims %}
         {{ name or arg.name }}_SIZE = SIZE({{ name or arg.name }}_INTERN)
-        {%- endif %}
+            {%- endif %}
         {{ name or arg.name }} = C_LOC({{ name or arg.name }}_INTERN)
-    {%- elif arg.strlen %}
-        {%- if arg.intent == 'OUT' %}
+        {%- elif arg.strlen %}
+            {%- if arg.intent == 'OUT' %}
         {{ name or arg.name }} = C_MALLOC({{ arg.strlen }}_C_SIZE_T + 1)
-        {%- endif %}
+            {%- endif %}
         CALL F_C_STRING({{ name or arg.name }}_INTERN, {{ name or arg.name }})
-    {%- elif arg.ftype %}
+        {%- elif arg.ftype %}
         {{ name or arg.name }} = C_LOC({{ name or arg.name }}_INTERN)
-    {%- endif %}
+        {%- endif %}
+    {%- endif -%}
 {%- endmacro %}
 
 

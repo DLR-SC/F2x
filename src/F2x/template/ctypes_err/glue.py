@@ -55,7 +55,7 @@ def destructor(cfunc):
     return staticmethod(cfunc)
 
 
-def array_from_pointer(ctype, dims, ptr):
+def array_from_pointer(ctype, dims, ptr, strlen=None, dealloc=None):
     """
     Helper that converts a pointer to a ctypes array.
 
@@ -66,13 +66,32 @@ def array_from_pointer(ctype, dims, ptr):
     :param ptr: Address of array memory.
     :return: A ctypes array that points to the referred data.
     """
+
+    class ManagedArray(numpy.ndarray):
+        def __array_finalize__(self, obj):
+            if isinstance(obj, ManagedArray):
+                self.f2x_parent = obj
+
+        def __del__(self):
+            if hasattr(self, 'f2x_ptr'):
+                array_size = ctypes.c_int(len(self))
+                self.f2x_dealloc(ctypes.byref(array_size), ctypes.byref(self.f2x_ptr))
+
     array_size = 1
     for size in dims:
         array_size *= size
 
     array_type = ctype * array_size
-    return array_type.from_address(ctypes.addressof(ptr.contents))
-
+    c_array = array_type.from_address(ctypes.addressof(ptr.contents))
+    if strlen is None:
+        array = numpy.ctypeslib.as_array(c_array, dims)
+    else:
+        array = numpy.char.array(c_array, itemsize=strlen, copy=False, order='F')
+    if dealloc is not None:
+        array = array.view(ManagedArray)
+        array.f2x_dealloc = dealloc
+        array.f2x_ptr = ptr
+    return array
 
 class NullPointerError(BaseException):
     """

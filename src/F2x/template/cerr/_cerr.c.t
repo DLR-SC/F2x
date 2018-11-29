@@ -26,7 +26,7 @@ void f2x_clear_jmp_buffer();
 {% macro export_function(method) -%}
     {% if method.ret.dims %}
         {#- Array results are casted to C pointers. -#}
-        {{ export_function_ret(method) }}
+        {{ export_function_out(method) }}
     {%- elif method.ret.ftype -%}
         {#- TYPE(...) results need to be passed via OUT argument. -#}
         {{ export_function_ret(method) }}
@@ -39,10 +39,24 @@ void f2x_clear_jmp_buffer();
 {%- endmacro %}
 
 
-{% macro export_function_ret(method) -%}
+{%- macro export_function_ret(method) -%}
 /* Prototype for BIND(C) routine {{ method.name }} */
-void *{{ method.export_name }}({% for arg in method.args %}{% if arg.dims %}void *, {% endif %}{% if arg.strlen == '*' %}void *, {% endif %}void *{% if not loop.last %}, {% endif %}{% endfor %});
-void *{{ method.export_name }}_cerr({% for arg in method.args %}{% if arg.dims %}void *arg{{ loop.index0 }}_size, {% endif %}{% if arg.strlen == '*' %}void *arg{{ loop.index0 }}_length, {% endif %}void *arg{{ loop.index0 }}{% if not loop.last %}, {% endif %}{% endfor %}) {
+void *{{ method.export_name }}(
+    {%- for arg in method.args -%}
+        {%- if 0 in arg.dims %}void *, {% endif -%}
+        {%- if arg.strlen in ('*', ':') %}void *, {% endif -%}
+        void *
+        {%- if not loop.last %}, {% endif -%}
+    {%- endfor -%}
+);
+void *{{ method.export_name }}_cerr(
+    {%- for arg in method.args -%}
+        {%- if 0 in arg.dims %}void *arg{{ loop.index0 }}_size, {% endif -%}
+        {%- if arg.strlen in ('*', ':') %}void *arg{{ loop.index0 }}_length, {% endif -%}
+        void *arg{{ loop.index0 }}
+        {%- if not loop.last %}, {% endif -%}
+    {%- endfor -%}
+) {
     jmp_buf *_jmp_buf = f2x_prepare_jmp_buffer();
     void *result = 0;
 
@@ -52,20 +66,41 @@ void *{{ method.export_name }}_cerr({% for arg in method.args %}{% if arg.dims %
 
     if (setjmp(*_jmp_buf) == 0) {
         f2x_err_reset();
-        result = {{ method.export_name }}({% for arg in method.args %}{% if arg.dims %}arg{{ loop.index0 }}_size, {% endif %}{% if arg.strlen == '*' %}arg{{ loop.index0 }}_length, {% endif %}arg{{ loop.index0 }}{% if not loop.last %}, {% endif %}{% endfor %});
+        result = {{ method.export_name }}(
+    {%- for arg in method.args -%}
+        {%- if arg.dims %}arg{{ loop.index0 }}_size, {% endif -%}
+        {%- if arg.strlen == '*' %}arg{{ loop.index0 }}_length, {% endif -%}
+        arg{{ loop.index0 }}
+        {%- if not loop.last %}, {% endif -%}
+    {%- endfor -%}
+        );
         f2x_clear_jmp_buffer();
     }
 
     f2x_clear_jmp_buffer();
     return result;
 }
-{%- endmacro %}
+{%- endmacro -%}
 
 
 {% macro export_function_out(method) -%}
 /* Prototype for BIND(C) routine {{ method.name }} */
-void {{ method.export_name }}({% for arg in method.args %}{% if arg.dims %}void *, {% endif %}{% if arg.strlen == '*' %}void *, {% endif %}void *, {% endfor %}void *);
-void {{ method.export_name }}_cerr({% for arg in method.args %}{% if arg.dims %}void *arg{{ loop.index0 }}_size, {% endif %}{% if arg.strlen == '*' %}void *arg{{ loop.index0 }}_length, {% endif %}void *arg{{ loop.index0 }}, {% endfor %}void *out) {
+void {{ method.export_name }}(
+    {%- for arg in method.args -%}
+        {%- if 0 in arg.dims %}void *, {% endif -%}
+        {%- if arg.strlen in ('*', ':') %}void *, {% endif -%}
+        void *, {% endfor -%}
+    {%- if 0 in method.ret.dims %}void *, {% endif -%}
+    {%- if method.ret.strlen in ('*', ':') %}void *, {% endif -%}
+    void *);
+void {{ method.export_name }}_cerr(
+    {%- for arg in method.args -%}
+        {%- if 0 in arg.dims %}void *arg{{ loop.index0 }}_size, {% endif -%}
+        {%- if arg.strlen in ('*', ':') %}void *arg{{ loop.index0 }}_length, {% endif -%}
+        void *arg{{ loop.index0 }}, {% endfor -%}
+    {%- if 0 in method.ret.dims %}void *out_size, {% endif -%}
+    {%- if method.ret.strlen in ('*', ':') %}void *out_length, {% endif -%}
+    void *out) {
     jmp_buf *_jmp_buf = f2x_prepare_jmp_buffer();
 
     if (_jmp_buf == 0) {
@@ -74,7 +109,14 @@ void {{ method.export_name }}_cerr({% for arg in method.args %}{% if arg.dims %}
 
     if (setjmp(*_jmp_buf) == 0) {
         f2x_err_reset();
-        {{ method.export_name }}({% for arg in method.args %}{% if arg.dims %}arg{{ loop.index0 }}_size, {% endif %}{% if arg.strlen == '*' %}arg{{ loop.index0 }}_length, {% endif %}arg{{ loop.index0 }}, {% endfor %}out);
+        {{ method.export_name }}(
+    {%- for arg in method.args -%}
+        {%- if arg.dims %}arg{{ loop.index0 }}_size, {% endif -%}
+        {%- if arg.strlen == '*' %}arg{{ loop.index0 }}_length, {% endif -%}
+        arg{{ loop.index0 }}, {% endfor -%}
+    {%- if 0 in method.ret.dims %}out_size, {% endif -%}
+    {%- if method.ret.strlen in ('*', ':') %}out_length, {% endif -%}
+        out);
     }
 
     f2x_clear_jmp_buffer();
@@ -95,7 +137,14 @@ void {{ method.export_name }}_cerr({% for arg in method.args %}{% if arg.dims %}
 
     if (setjmp(*_jmp_buf) == 0) {
         f2x_err_reset();
-        {{ method.export_name }}({% for arg in method.args %}{% if arg.dims %}arg{{ loop.index0 }}_size, {% endif %}{% if arg.strlen == '*' %}arg{{ loop.index0 }}_length, {% endif %}arg{{ loop.index0 }}{% if not loop.last %}, {% endif %}{% endfor %});
+        {{ method.export_name }}(
+    {%- for arg in method.args -%}
+        {%- if 0 in arg.dims %}arg{{ loop.index0 }}_size, {% endif -%}
+        {%- if arg.strlen in ('*', ':') %}arg{{ loop.index0 }}_length, {% endif -%}
+        arg{{ loop.index0 }}
+        {%- if not loop.last %}, {% endif -%}
+    {%- endfor -%}
+        );
     }
 
     f2x_clear_jmp_buffer();
