@@ -128,7 +128,7 @@
         INTEGER{%- if arg.intent %}, INTENT({{ arg.intent or 'IN' }}){% endif %} :: {{ name }}_LENGTH
         CHARACTER({%- if arg.intent == 'OUT' %}:{% else %}{{ name }}_LENGTH{% endif %}), POINTER :: {{ name }}_INTERN
     {%- else %}
-        CHARACTER({{ arg.strlen }}) :: {{ name }}_INTERN
+        CHARACTER({{ arg.strlen }}), POINTER :: {{ name }}_INTERN
     {%- endif %}
 {%- endmacro %}
 
@@ -175,7 +175,7 @@
         CALL C_F_POINTER({{ name or arg.name }}, {{ name or arg.name }}_INTERN, [{{ join_dims(arg) }}])
             {%- endif %}
         {%- elif arg.strlen %}
-        CALL C_F_STRING({{ name or arg.name }}, {{ name or arg.name }}_INTERN)
+        CALL C_F_POINTER({{ name or arg.name }}, {{ name or arg.name }}_INTERN)
         {%- elif arg.ftype %}
         CALL C_F_POINTER({{ name or arg.name }}, {{ name or arg.name }}_INTERN)
         {%- endif %}
@@ -202,7 +202,7 @@
             {%- if arg.intent == 'OUT' %}
         {{ name or arg.name }} = C_MALLOC({{ arg.strlen }}_C_SIZE_T + 1)
             {%- endif %}
-        CALL F_C_STRING({{ name or arg.name }}_INTERN, {{ name or arg.name }})
+!        CALL F_C_STRING({{ name or arg.name }}_INTERN, {{ name or arg.name }})
         {%- elif arg.ftype %}
         {{ name or arg.name }} = C_LOC({{ name or arg.name }}_INTERN)
         {%- endif %}
