@@ -58,7 +58,7 @@
 #}
 {% macro dummy_args(args) -%}
     {%- for arg in args -%}
-        {%- if arg.dims and 0 in arg.dims %}{{ arg.name }}_SIZE, {% endif -%}
+        {%- if 0 in arg.dims %}{{ arg.name }}_SIZE, {% endif -%}
         {%- if arg.strlen in ('*', ':') -%}{{ arg.name }}_LENGTH, {% endif -%}
         {{ arg.name }}
         {%- if not loop.last %}, {% endif -%}
@@ -98,18 +98,17 @@
 #}
 {% macro declare_arg_array(arg, name, ret=False) -%}
         TYPE(C_PTR){%- if arg.intent %}, INTENT({{ arg.intent or 'IN' }}){% endif %} :: {{ name }}
+    {%- if not ret and 0 in arg.dims %}
+        INTEGER, INTENT({{ arg.intent or 'IN' }}), DIMENSION({{ arg.dims|length }}) :: {{ name }}_SIZE
+    {%- endif %}
     {%- if arg.strlen in ('*', ':') %}
-        INTEGER, INTENT({{ arg.intent or 'IN' }}) :: {% if 0 in arg.dims %}{{ name }}_SIZE, {% endif -%}{{ name }}_LENGTH
+        INTEGER, INTENT({{ arg.intent or 'IN' }}) :: {{ name }}_LENGTH
         CHARACTER({%- if arg.intent == 'OUT' %}:{% else %}{{ name }}_LENGTH{% endif %}), DIMENSION({{ join_dims(arg, ':') }}), POINTER :: {{ name }}_INTERN
     {%- elif arg.strlen %}
-        INTEGER, INTENT({{ arg.intent or 'IN'}}) :: {{ name }}_SIZE
         CHARACTER({{ arg.strlen }}), DIMENSION({{ join_dims(arg, ':') }}), POINTER :: {{ name }}_INTERN
     {%- elif arg.ftype %}
         TYPE({{ arg.ftype }}), DIMENSION({{ join_dims(arg, ':') }}), POINTER :: {{ name }}_INTERN
     {%- else %}
-        {%- if not ret and 0 in arg.dims %}
-        INTEGER, INTENT({{ arg.intent or 'IN' }}) :: {{ name }}_SIZE
-        {%- endif %}
         {{ arg.type }}
         {%- if arg.kind %}(KIND={{ arg.kind }}){% endif %}, DIMENSION({{ join_dims(arg, ':') }}), POINTER :: {{ name }}_INTERN
     {%- endif %}
@@ -171,10 +170,10 @@
     {%- if arg.intent != 'OUT' %}
         {%- if arg.dims %}
             {%- if arg.strlen %}
-        CALL C_F_POINTER({{ name or arg.name }}, {{ name or arg.name }}_INTERN, {% if 0 in arg.dims %}{{ name or arg.name }}_SIZE{% else %}{{ join_dims(arg) }}{% endif %}])
+        CALL C_F_POINTER({{ name or arg.name }}, {{ name or arg.name }}_INTERN, [{{ join_dims(arg) }}])
             {%- elif not arg.strlen %}
-        CALL C_F_POINTER({{ name or arg.name }}, {{ name or arg.name }}_INTERN, [{% if 0 in arg.dims %}{{ name or arg.name }}_SIZE{% else %}{{ join_dims(arg) }}{% endif %}])
-           {%- endif %}
+        CALL C_F_POINTER({{ name or arg.name }}, {{ name or arg.name }}_INTERN, [{{ join_dims(arg) }}])
+            {%- endif %}
         {%- elif arg.strlen %}
         CALL C_F_STRING({{ name or arg.name }}, {{ name or arg.name }}_INTERN)
         {%- elif arg.ftype %}
@@ -194,7 +193,9 @@
     {%- if arg.intent != 'IN' %}
         {%- if arg.dims %}
             {%- if arg.intent == 'OUT' and 0 in arg.dims %}
-        {{ name or arg.name }}_SIZE = SIZE({{ name or arg.name }}_INTERN)
+                {%- for  _ in arg.dims %}
+        {{ name or arg.name }}_SIZE({{ loop.index }}) = SIZE({{ name or arg.name }}_INTERN, {{ loop.index }})
+                {%- endfor -%}
             {%- endif %}
         {{ name or arg.name }} = C_LOC({{ name or arg.name }}_INTERN)
         {%- elif arg.strlen %}
@@ -219,7 +220,11 @@
 #}
 {% macro join_dims(arg, c=None) -%}
     {%- for dim in arg.dims -%}
-        {{ c or dim }}
+        {%- if not c and dim == 0 -%}
+            {{ arg.name }}_SIZE({{ loop.index }})
+        {%- else -%}
+            {{ c or dim }}
+        {%- endif -%}
         {%- if not loop.last %}, {% endif -%}
     {%- endfor -%}
 {%- endmacro %}

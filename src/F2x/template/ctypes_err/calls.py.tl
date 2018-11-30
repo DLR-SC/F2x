@@ -145,13 +145,16 @@ def {{ method.name }}(
         {%- endif %}
 
         {%- if arg.strlen %}
-    {{ arg.name }}_LENGTH = ctypes.c_int({% if arg.intent != 'OUT' %}{% if arg.strlen in ('*', ':') %}max(map(len, {{ arg.name }})){% else %}{{ arg.strlen }}{% endif %}{% endif %})
             {% if not arg.intent == 'OUT' %}
-    {{ arg.name }}_ARRAY = numpy.chararray(({{ arg.name }}_SIZE.value, ), itemsize={{ arg.name }}_LENGTH.value)
-    {{ arg.name }}_ARRAY[:] = {{ arg.name }}
-    {{ arg.name }}_INTERN = {{ arg.name }}_ARRAY.ctypes.data_as(ctypes.c_void_p)
+    if isinstance({{ arg.name }}, numpy.ndarray) and {{ arg.name }}.flags.f_contiguous:
+        {{ arg.name }}_ARRAY = {{ arg.name }}
+    else:
+        {{ arg.name }}_ARRAY = numpy.char.array({{ arg.name }},
+                {%- if arg.strlen not in ('*', ':') %} itemsize={{ arg.strlen }},{% endif %} order='F').encode("{{ config.get("parser", "encoding") }}")
+    {{ arg.name }}_LENGTH = ctypes.c_int({{ arg.name }}_ARRAY.itemsize)
+    {{ arg.name }}_INTERN = {{ arg.name }}_ARRAY.ctypes.data_as(ctypes.POINTER(ctypes.c_char))
             {% else %}
-    {{ arg.name }}_INTERN = ctypes.c_void_p()
+    {{ arg.name }}_INTERN = ctypes.POINTER(ctypes.c_char)
             {% endif %}
         {%- elif arg.ftype %}
     # pass
@@ -168,17 +171,17 @@ def {{ method.name }}(
     {%- elif arg.strlen %}
         {%- if not arg.intent == 'OUT' %}
             {%- if arg.strlen in ('*', ':') %}
-    {{ arg.name }}_BYTES = {{ arg.name }}.encode("{{ config.get("parser", "encoding") }}")
-    {{ arg.name }}_LENGTH = ctypes.c_int(len({{ arg.name }}_BYTES))
-    {{ arg.name }}_BUFFER = ctypes.create_string_buffer({{ arg.name }}_BYTES, size={{ arg.name }}_LENGTH.value)
-    {{ arg.name }}_INTERN = ctypes.cast({{ arg.name }}_BUFFER, ctypes.c_char_p)
+    {{ arg.name }}_ARRAY = numpy.char.array({{ arg.name }}, order='F').encode("{{ config.get("parser", "encoding") }}")
+    {{ arg.name }}_LENGTH = ctypes.c_int({{ arg.name }}_ARRAY.itemsize)
+    {{ arg.name }}_INTERN = {{ arg.name }}_ARRAY.ctypes.data_as(ctypes.POINTER(ctypes.c_char))
             {%- else %}
-    {{ arg.name }}_BYTES = {{ arg.name }}.encode("{{ config.get("parser", "encoding") }}").ljust({{ arg.strlen }})
-    {{ arg.name }}_BUFFER = ctypes.create_string_buffer({{ arg.name }}_BYTES, size={{ arg.strlen }})
-    {{ arg.name }}_INTERN = ctypes.cast({{ arg.name }}_BUFFER, ctypes.c_char_p)
+    {{ arg.name }}_LENGTH = ctypes.c_int({{ arg.strlen }})
+    {{ arg.name }}_ARRAY = numpy.char.array({{ arg.name }}, itemsize={{ arg.strlen }}, order='F').encode("{{ config.get("parser", "encoding") }}")
+    {{ arg.name }}_INTERN = {{ arg.name }}_ARRAY.ctypes.data_as(ctypes.POINTER(ctypes.c_char))
             {%- endif %}
         {%- else %}
-    {{ arg.name }}_INTERN = ctypes.c_char_p()
+    {{ arg.name }}_LENGTH = ctypes.c_int()
+    {{ arg.name }}_INTERN = ctypes.POINTER(ctypes.c_char)
         {%- endif %}
     {%- elif arg.ftype %}
         {%- if arg.intent == 'OUT' %}

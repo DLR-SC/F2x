@@ -74,6 +74,7 @@
         {{- declare_args(method) }}
         {{ vars.declare_arg(method.ret) }}
         {{ cast_args(method, callargs) }}
+        {% if not method.ret.dynamic == 'POINTER' %}ALLOCATE({{ method.ret.name }}_INTERN({{ vars.join_dims(method.ret) }})){% endif %}
         {{ method.ret.name }}_INTERN {% if method.ret.dynamic == 'POINTER' %}=>{% else %}={% endif %} {{ method.name }}({{ join_list(callargs) }})
         {{ uncast_args(method) }}
         {{ vars.uncast_arg(method.ret) }}
