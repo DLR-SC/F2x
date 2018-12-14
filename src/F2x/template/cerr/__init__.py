@@ -14,12 +14,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-cerr
-
 Generates a thin C layer that is used as clean stack snapshot for longjmp error handling.
 """
+name = 'cerr'
 templates = ['@cerr/_cerr.c.t']
-depends = ['bindc']
+requires = ['bindc']
 modules = None
 libraries = [
     ('cerr_f2x', {

@@ -38,6 +38,10 @@ def load_grammar(grammar_filename):
         # Replace '@'-prefix with path to F2x.grammar.
         grammar_filename = os.path.join(package_path, u'grammar', grammar_filename[1:])
 
+    # Check if we have a cached version
+    if grammar_filename in grammar_cache:
+        return grammar_cache[grammar_filename]
+
     # Need to adjust recursion limit as plyplus is very recusive and FORTRAN grammars are complex.
     old_recursionlimit = sys.getrecursionlimit()
     sys.setrecursionlimit(3000)
@@ -59,12 +63,7 @@ def load_grammar(grammar_filename):
 class SourceFile(source.SourceFile):
     def parse(self):
         grammar_filename = self.config.get('parser', 'grammar')
-
-        if grammar_filename in grammar_cache:
-            grammar = grammar_cache[grammar_filename]
-        else:
-            grammar = load_grammar(grammar_filename)
-
+        grammar = load_grammar(grammar_filename)
         self.tree = grammar.parse(self.source)
 
     def get_gtree(self):

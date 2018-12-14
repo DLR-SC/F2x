@@ -12,24 +12,24 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 '''
-Created on 08.04.2016
-
-@author: meinel
+This module contains the base classes for the *Abtract Generation Tree* that
+is built by the parser form the Fortran sources.
 '''
 
 class Node(dict):
-    """ This is the base class for the simplified AST that can easily be used
-        in templates. It is simply a dict which stores child nodes as values.
-        This allows to simply use node.child to access the values from a
-        template. E.g. to get the modules name, you can simply use
+    """
+    Node constructor stores local AST node in :py:attr:`_ast` and calls
+    :py:meth:`_init_children()` which should be overwritten by child classes.
 
-        {{ module.name }}
+    This is the base class for the simplified AST that can easily be used
+    in templates. It is simply a dict which stores child nodes as values.
+    This allows to simply use :code:`node.child` to access the values from a
+    template. E.g. to get the modules name, you can simply use
+
+        :code:`{{ module.name }}`
     """
 
     def __init__(self, ast):
-        """ Node constructor stores local AST node in self._ast and calls
-            self._init_children() which should be overwritten by child classes.
-        """
         self._ast = ast
         self._init_children()
 
@@ -43,18 +43,20 @@ class VarDecl(Node):
 
     The following properties are available:
 
-    - name: The symbolic name of the variable.
-    - type: The C type of this variable. This might be a basic type (REAL, INTEGER, LOGICAL) or TYPE(C) for any
-            other type like arrays, derived types or strings.
-    - pytype, cstype: The type to be used by Python or C# respectively.
-    - intent: May be 'IN', 'OUT' or 'INOUT'.
-    - getter: This indicates whether the generated getter should be a 'function' or 'subroutine'.
-    - setter (opt): This indicates whether a 'subroutine' should be generated as setter.
-    - ftype (opt): The name of the derived type.
-    - strlen (opt): The length of the string.
-    - kind (opt): The kind specifier if available.
-    - dynamic (opt): Indicates whether the variable is 'ALLOCATABLE' or a 'POINTER'.
-    - dims (opt): For an array contains a list with the sizes per dimension.
+    ================ ======= ============================================================================================
+    :code:`name`             The symbolic name of the variable.
+    :code:`type`             The C type of this variable. This might be a basic type (REAL, INTEGER, LOGICAL) or TYPE(C)
+                             for any other type like arrays, derived types or strings.
+    :code:`intent`           May be :code:`'IN'`, :code:`'OUT'`, or :code:`'INOUT'`.
+    :code:`getter`           This indicates whether the generated getter should be a :code:`FUNCTIN` or
+                             :code:`SUBROUTINE`'.
+    :code:`setter`    (opt)  This indicates whether a :code:`SUBROUTINE` should be generated as setter.
+    :code:`ftype`     (opt)  The name of the derived type.
+    :code:`strlen`    (opt)  The length of the string.
+    :code:`kind`      (opt)  The :code:`KIND` specifier if available.
+    :code:`dynamic`   (opt)  Indicates whether the variable is :code:`ALLOCATABLE` or a :code:`POINTER`.
+    :code:`dims`      (opt)  For an array contains a list with the sizes per dimension.
+    ================ ======= ============================================================================================
     """
 
     def __init__(self, ast, prefix=""):

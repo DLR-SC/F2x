@@ -14,32 +14,36 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 from F2x.template import register_template
-from F2x.distutils import setup, Extension, strategy
+from F2x.distutils import strategy
+from F2x.distutils.core import setup
+from F2x.distutils.extension import Extension
 
-from cython_ex import template as cython_template
-from cython_ex.template.strategy import CythonExtBuildStrategy
+from F2x_test.template import cython as cython_template
+from F2x_test.template.cython.strategy import CythonExtBuildStrategy
 
 register_template(cython_template)
-strategy.register_strategy('cython', CythonExtBuildStrategy(['bindc', 'cython']))
+strategy.register_strategy('cython', CythonExtBuildStrategy(['cython']))
 
 
 setup(
     name="F2x tests",
 
-    packages=['basic', 'boolarray', 'cython_ex'],
+    packages=['F2x_test'],
 
     ext_modules=[
-        Extension('basic.common.ext', ['basic/source.f90', 'basic/boolarray.f90'],
-                  f2x_target='lib',
-                  extra_f90_compile_args=['-ffree-line-length-none']),
+        Extension('F2x_test.interface.lib.*', ['F2x_test/interface/src/*.f90'],
+                  library_name='flib_bindc',
+                  strategy='lib',
+                  inline_sources=False),
 
-        Extension('basic.err.ext', ['basic/source.f90', 'basic/boolarray.f90', 'basic/errors.f90'],
-                  f2x_target='lib_err',
-                  define_macros=[('INCLUDE_ERR_TESTS', None)],
-                  extra_f90_compile_args=['-ffree-line-length-none']),
+        Extension('F2x_test.interface.bindc_new.*', ['F2x_test/interface/src/*.f90', 'cython_ex/*.f90'],
+                  library_name='flib_bindc_new',
+                  strategy='lib',
+                  inline_sources=False,
+                  templates=['bindc_new', 'ctypes_new']),
 
-        Extension('cython_ex.ext', ['cython_ex/simple.f90', 'cython_ex/second.f90'],
-                  f2x_autosplit_ext=True,
-                  f2x_target='cython'),
+        Extension('F2x_test.doc.interface.*', ['F2x_test/interface/src/*.f90'],
+                  autosplit=True,
+                  strategy='sphinx_docs'),
     ],
 )

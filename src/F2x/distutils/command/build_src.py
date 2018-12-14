@@ -112,7 +112,7 @@ class build_src(numpy_build_src):
         build_clib.libraries = self.distribution.libraries
 
     def scan_f_sources(self, extension):
-        templates = self.f2x_templates or extension.f2x_target.template_files
+        templates = self.f2x_templates or extension.templates or extension.f2x_target.template_files
         template_suffixes = [os.path.splitext(os.path.basename(path))[0] for path, _ in templates]
 
         target_dir = os.path.join(self.build_src, *self.get_ext_fullname(extension.name).split('.')[:-1])
@@ -231,7 +231,9 @@ class build_src(numpy_build_src):
 
             argv = self.f2x_opts + extension.f2x_options
             path = []
-            for template, template_path in extension.f2x_target.template_files:
+            templates = self.f2x_templates or extension.templates or extension.f2x_target.template_files
+
+            for template, template_path in templates:
                 if template_path and template_path not in path:
                     argv += ['-T', template_path]
                     path.append(template_path)

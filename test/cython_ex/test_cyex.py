@@ -13,9 +13,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from cython_ex import simple, second
+from cython_ex import simple_glue as simple, second_glue as second
 
 
 def test_calls():
-    simple.SIMPLE_CALL()
+    simple.SIMPLE_CALL(123)
     second.OTHER_CALL()

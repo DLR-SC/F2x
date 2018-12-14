@@ -15,36 +15,70 @@
 # limitations under the License.
 import configparser
 import os
-from distutils.sysconfig import get_config_vars as distuils_get_config_vars
 
+from distutils.sysconfig import get_config_vars as distuils_get_config_vars
+from numpy.distutils import log
+
+from F2x import template as F2x_template
 from F2x.distutils.strategy.extension import ExtensionBuildStrategy
 
 
 class ExtensionLibBuildStrategy(ExtensionBuildStrategy):
-    def get_ext_filename(self, build_src, extension):
-        library_name = build_src.find_library_name(extension)
-        suffix = distuils_get_config_vars('SHLIB_SUFFIX')[0]
-        package_path = build_src.get_ext_fullname(extension.name).split('.')[:-1]
+    def prepare_extension(self, build_src, extension):
+        *package_path, ext_name = extension.name.split('.')
+        if ext_name == '*':
+            if extension.library_name:
+                extension.name = '.'.join(package_path + [extension.library_name])
+            elif len(extension.ext_modules) == 1:
+                filename, _ = extension.ext_modules[0]
+                extension.name = '.'.join(package_path + [os.path.splitext(os.path.basename(filename))])
+            elif not extension.autosplit:
+                log.warn(f'forcing autosplit for extension "{extension.name}"')
+                extension.autosplit = True
 
-        return os.path.join(*package_path, f'lib{library_name}{suffix}')
+        super(ExtensionLibBuildStrategy, self).prepare_extension(build_src, extension)
 
-    def finish_wrapper_input(self, build_src, extension, f2x_input):
-        build_ext = build_src.get_finalized_command('build_ext')
-        f2x_input = super(ExtensionLibBuildStrategy, self).finish_wrapper_input(build_ext, extension, f2x_input)
+    def prepare_wrap_sources(self, build_src, extension, target_dir):
+        for source, ext_info in extension.ext_modules:
+            if not 'config' in ext_info:
+                ext_info['config'] = configparser.RawConfigParser()
+                ext_info['wrapper'] = os.path.join(target_dir, os.path.basename(source) + '-wrap')
 
-        # Ensure to load the correct library.
-        for target_file, f2x_info, extensions in f2x_input:
-            if 'config' not in f2x_info:
-                f2x_info['config'] = configparser.RawConfigParser()
-
-            library_file_name = build_ext.get_ext_filename(build_ext.get_ext_fullname(extension.name))
-
-            config = f2x_info.get('config')
+            config = ext_info['config']
             if not config.has_section('generate'):
                 config.add_section('generate')
+            config.set('generate', 'dll', self.get_ext_filename(build_src, extension.library_name or extension.name))
 
-            config.set('generate', 'dll', os.path.basename(library_file_name))
-            with open(target_file + '-wrap', 'w') as wrapper_file:
-                config.write(wrapper_file)
+    def select_wrap_sources(self, build_src, extension, target_dir):
+        wrap_sources = super(ExtensionLibBuildStrategy, self).select_wrap_sources(build_src, extension, target_dir)
+        ext_infos = dict(extension.ext_modules)
 
-        return f2x_input
+        for source, *_ in wrap_sources:
+            ext_info = ext_infos.get(source)
+
+            if not ext_info:
+                log.warn(f'no wrap info for "{source}"')
+                continue
+
+            config = ext_info.get('config')
+            target_wrap = ext_info['wrapper']
+            with open(target_wrap, 'w') as wrap_file:
+                config.write(wrap_file)
+
+        return wrap_sources
+
+    def prepare_build_extension(self, build_ext, extension):
+        super(ExtensionLibBuildStrategy, self).prepare_build_extension(build_ext, extension)
+        if extension.library_name:
+            library_name = '.'.join(extension.name.split('.')[:-1] + [extension.library_name])
+            extension.name, extension.library_name = library_name, extension.name
+
+    def finish_build_extension(self, build_ext, extension):
+        super(ExtensionLibBuildStrategy, self).finish_build_extension(build_ext, extension)
+        if extension.library_name:
+            extension.name, extension.library_name = extension.library_name, extension.name.split('.')[-1]
+
+    def get_ext_filename(self, build_src, ext_name):
+        suffix = distuils_get_config_vars('SHLIB_SUFFIX')[0]
+        *_, ext_name = build_src.get_ext_fullname(ext_name).split('.')
+        return f'lib{ext_name}{suffix}'

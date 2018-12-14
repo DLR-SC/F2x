@@ -15,7 +15,13 @@
 This file provides information about the version of F2x you are using.
 """
 
-# The high nibble is major version, the low nibble is minor version
-VERSION = 0x01
-PATCHLEVEL = 0
+program_name = 'F2x - a versatile Fortran wrapper'
+__version__ = (0, 2, 'dev1')
 
+
+def get_version_string(full=False):
+    major, minor, patch = __version__
+    if full:
+        return f'{major}.{minor}.{patch}'
+    else:
+        return f'{major}.{minor}'

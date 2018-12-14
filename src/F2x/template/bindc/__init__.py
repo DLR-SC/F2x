@@ -14,12 +14,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-bindc
-
 Generate a ISO C compliant interface to a Fortran module using BIND(C).
 """
+name = 'bindc'
 templates = ['@bindc/_glue.f90.t']
-depends = None
+requires = None
 modules = None
 libraries = [
     ('bindc_f2x', {

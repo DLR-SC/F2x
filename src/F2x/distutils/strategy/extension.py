@@ -31,7 +31,7 @@ class ExtensionBuildStrategy(BuildStrategy):
         super(ExtensionBuildStrategy, self).finish_extension(extension)
 
         for template_name in self.templates:
-            template_mod = template.get(template_name)
+            template_mod = template.get_template(template_name)
             if template_mod is None:
                 continue
 

@@ -16,18 +16,19 @@
 from F2x.distutils.strategy.library import ExtensionLibBuildStrategy
 from F2x.distutils.strategy.base import BuildStrategy
 
-builtin_strategies = {
-    'lib': ExtensionLibBuildStrategy(['bindc', 'ctypes']),
-    'lib_err': ExtensionLibBuildStrategy(['bindc', 'cerr', 'ctypes_err']),
+_strategies = {
+    'lib': ExtensionLibBuildStrategy(['bindc', 'cerr', 'ctypes']),
+    'lib_noerr': ExtensionLibBuildStrategy(['bindc_new', 'ctypes_new']),
+    'sphinx_docs': BuildStrategy(['sphinx']),
 }
 
 
+get_strategy = _strategies.get
+
+
 def register_strategy(name, strategy):
-    builtin_strategies[name] = strategy
+    _strategies[name] = strategy
 
 
-def get_target_strategy(target_name):
-    if target_name in builtin_strategies:
-        return builtin_strategies[target_name]
-
-    return BuildStrategy([])
+def show_strategies():
+    pass

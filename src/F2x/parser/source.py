@@ -31,6 +31,11 @@ import time
 import plyplus
 
 
+CONFIG_DEFAULTS = {
+
+}
+
+
 PREPROCESS_RULES = (
     # Disambiguate END statements by joining them into single keyword
     (u'end/function',   r'(?i)END[ \t\u000C]+FUNCTION',     r'ENDFUNCTION'),
