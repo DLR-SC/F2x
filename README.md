@@ -20,7 +20,7 @@ This design makes the whole process very flexible as you can easily replace the 
 ## Requirements and acknowledgements
 F2x reuses a lot of stuff from other Open Source projects. Namely the following parts were really helpful:
 
-* It is developed in Python (and should run with both Python 2 and 3).
+* It is developed in Python 3 and does currently not support Python 2 out of the box.
 * The PLY project is used as parser generator. PlyPlus does the heavy lifiting of converting ANTLR-like grammars to PLY.
 * The FORTRAN grammar that comes bundled with F2x originates from the OpenFortranProject.
 * Templates are based on Jinja2.

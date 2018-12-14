@@ -75,7 +75,7 @@ class VarDecl(tree.VarDecl):
                 self["setter"] = "subroutine"
             except ValueError:
                 try:
-                    self["strlen"] = type_spec.select1("char_selector /\*/")
+                    self["strlen"] = type_spec.select1("char_selector /(\*|:)/")
                     self["intent"] = "IN"
                     self["type"] = "TYPE(C_PTR)"
                     self["pytype"] = "ctypes.c_char_p"
@@ -87,7 +87,7 @@ class VarDecl(tree.VarDecl):
                     self["getter"] = "function"
                     self["setter"] = "subroutine"
 
-        for attr in full_spec.select("component_attr_spec"):
+        for attr in full_spec.select(self._prefix + "attr_spec"):
             if 'ALLOCATABLE' in attr.tail:
                 self["dynamic"] = 'ALLOCATABLE'
             elif 'POINTER' in attr.tail:
@@ -95,17 +95,26 @@ class VarDecl(tree.VarDecl):
 
         # Identify array dimensions
         for ast in (self._ast, full_spec):
-            dims = ast.select(self._prefix + "array_spec int_literal_constant")
-            if dims:
-                self["dims"] = [int(dim.tail[0]) for dim in dims]
-                break
+            dim_nodes = ast.select(self._prefix + "array_spec array_spec_element")
+            if not dim_nodes:
+                continue
 
-            dims = ast.select(self._prefix + "array_spec array_spec_element")
-            if not dims:
-                dims = ast.select(self._prefix + "array_spec deferred_shape_spec_list")
+            dims = []
+            for node in dim_nodes:
+                dim = node.select("int_literal_constant")
+                if dim:
+                    dims.append(dim[0].tail[0])
+                    continue
+
+                dim = node.select("part_ref")
+                if dim:
+                    dims.append(dim[0].tail[0])
+                    break
+
+                dims.append(0)
+
             if dims:
-                self["dims"] = [0] * len(dims[0].tail)
-                break
+                self["dims"] = dims
 
         if "dims" in self \
         and "strlen" not in self:
@@ -196,6 +205,10 @@ class FuncDef(SubDef):
             except KeyError:
                 self["ret"] = var_specs[self["name"]]
 
+        if "dims" in self["ret"]:
+            self["ret"]["getter"] = "subroutine"
+            self["ret"]["intent"] = "OUT"
+
 
 class Module(tree.Module):
     def _init_children(self):
@@ -235,7 +248,8 @@ class Module(tree.Module):
 #                            l_size_var = l_aux_line[len(method["ret"]["name"])+1:-1].split(',')
 #                            method["ret"]["dims"] = l_size_var
                     if method["ret"]["getter"] == "subroutine":
-                        method["ret"]["name"] = method["export_name"].upper() + '_OUT'
+                        if method["ret"]["name"] == method["name"]:
+                            method["ret"]["name"] = method["export_name"].upper() + '_OUT'
                         method["ret"]["intent"] = "OUT"
                     else:
                         method["ret"]["name"] = method["export_name"].upper() + '_RESULT'
@@ -265,6 +279,7 @@ class Module(tree.Module):
             section_key = "{0}:Cleanup".format(method["name"])
 
             if config.has_section(section_key):
+                if "ret" in method: print("FREE", section_key, method["ret"]["name"])
                 if "ret" in method and config.has_option(section_key, method["ret"]["name"]):
                     method["ret"]["free"] = config.get(section_key, method["ret"]["name"])
 
