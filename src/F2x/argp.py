@@ -5,7 +5,7 @@ import F2x
 
 
 def get_args_parser():
-    argp = argparse.ArgumentParser(description=F2x.program_name)
+    argp = argparse.ArgumentParser(prog=F2x.program_name, description=f'{F2x.program_name} - {F2x.program_description}')
 
     argp_parser = argp.add_argument_group(u"Fortran parser")
     argp_parser.add_argument('-G', '--grammar', default=u"@fortran.g",

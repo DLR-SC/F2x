@@ -15,7 +15,9 @@
 This file provides information about the version of F2x you are using.
 """
 
-program_name = 'F2x - a versatile Fortran wrapper'
+program_name = 'F2x'
+program_description = 'A versatile Fortran wrapper'
+
 __version__ = (0, 2, 'dev1')
 
 
