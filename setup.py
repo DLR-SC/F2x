@@ -23,6 +23,7 @@ sys.path.append(os.path.abspath('src'))
 try:
     # Try to extract program information from sources.
     import F2x
+
     name = F2x.program_name
     major, minor, patch = F2x.__version__
     version = F2x.get_version_string()
@@ -37,7 +38,24 @@ except ImportError:
 
 cmdclass = {}
 command_options = {}
+package_data = {
+    'F2x.parser.plyplus.grammar': ["*.g"],
+}
 
+try:
+    import F2x.template
+
+    for template in F2x.template._templates.values():
+        package_data[template.__name__] = list(map(lambda path: os.path.relpath(path, template.package_dir), [
+            os.path.join(F2x.template.package_dir, filename[1:])
+            for filename in template.templates
+        ] + template.depends + F2x.template.get_library_sources(template))) + (template.modules or [])
+
+except ImportError:
+    pass
+
+
+# Provide specialize build_sphinx documentation command
 try:
     # Register Sphinx build process if possible
 
@@ -110,10 +128,7 @@ setup(
 
     packages=setuptools.find_packages('src'),
     package_dir={ '': 'src' },
-    package_data={
-        'F2x.parser.plyplus.grammar': ["*.g"],
-        'F2x.template.*': ["*.t", "*.tl", "*/*.tl", "lib/*"],
-    },
+    package_data=package_data,
 
     setup_requires=[
         'pytest-runner',
