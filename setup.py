@@ -19,8 +19,6 @@ import sys
 import setuptools
 from distutils.core import setup
 
-from numpy.distutils.misc_util import fortran_ext_match
-
 sys.path.append(os.path.abspath('src'))
 try:
     # Try to extract program information from sources.
@@ -63,6 +61,8 @@ try:
             super(build_sphinx, self).run()
 
         def document_template_libs(self):
+            from numpy.distutils.misc_util import fortran_ext_match
+
             from F2x.main import main
             from F2x.template import _templates
 
