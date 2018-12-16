@@ -112,7 +112,7 @@ setup(
     package_dir={ '': 'src' },
     package_data={
         'F2x.parser.plyplus.grammar': ["*.g"],
-        'F2x.template': ["*/*.t", "*/*.tl"],
+        'F2x.template.*': ["*.t", "*.tl", "*/*.tl", "lib/*"],
     },
 
     setup_requires=[
