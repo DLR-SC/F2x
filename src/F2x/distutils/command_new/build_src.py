@@ -128,8 +128,8 @@ class build_src(numpy_build_src.build_src):
             self.wrap_sources(sources_to_wrap)
 
             for extension in self.extensions:
-                strategy.finish_wrap_sources(self, extension, target_dir, extension.output)
                 target_dir = self.get_target_dir(extension)
+                strategy.finish_wrap_sources(self, extension, target_dir, extension.output)
 
         base_strategy.finish_distribution(self, self.distribution)
 
