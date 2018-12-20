@@ -1,4 +1,4 @@
-from F2x_test.interface import sub_call_glue as sub_call
+from F2x_test.interface.lib import sub_call_glue as sub_call
 
 
 def test_subcall_input_args():
