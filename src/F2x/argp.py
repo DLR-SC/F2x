@@ -9,7 +9,7 @@ def get_args_parser():
 
     argp_parser = argp.add_argument_group(u"Fortran parser")
     argp_parser.add_argument('-G', '--grammar', default=u"@fortran.g",
-                             help="Use specified grammar. Use '@'-prefix for bundled grammars. "
+                             help="Use specified grammar. Bundled grammars should be prefixed by @. "
                                   "(Default:  %(default)s)")
     argp_parser.add_argument('-C', '--config-suffix', default=u"-wrap",
                              help="Suffix for per-source configuration file. (Default: %(default)s)")
@@ -29,24 +29,22 @@ def get_args_parser():
                                 help="Set the library name.")
     argp_wrapping.add_argument('-s', '--autosplit', action='store_true', default=False,
                                help="Automatically create an own extension for each source file.")
-    argp_wrapping.add_argument('-S', '--add-strategy', action='append',
-                               help="Load a STRATEGY for later use. STRATEGY should be the path to a Python module "
-                                    "that defines annd adds strategies.")
+    argp_wrapping.add_argument('-S', '--add-strategy', action='append', nargs=2, metavar=('NAME', 'CLASS'),
+                               help="Load a strategy for later use. NAME should be the name for the strategy and "
+                                    "CLASS should be the fully qualified class name of a build strategy.")
 
     argp_generator = argp.add_argument_group(u"Code generation")
-    argp_generator.add_argument(u'-t', u'--template', action=u'append',
-                                help=u"Generate wrapping code for each template given. Prefix pathes with \@ to "
-                                     u"reference bundled templates.")
+    argp_generator.add_argument('-R', '--register-template', action='append', metavar='PACKAGE',
+                                help="Load a template pacakge into the regitry for later use. PACAKGE should be the "
+                                     "fully qualified name of a F2x template package.")
+    argp_generator.add_argument(u'-t', u'--template', action=u'append', metavar='NAME',
+                                help="Generate wrapping for the given template. NAME should be the name of a F2x "
+                                     "template package, the path to a template that can be found in the template path "
+                                     "or a bundled template that should be prefixed by @.")
     argp_generator.add_argument('-T', '--template-path', action='append', metavar='PATH', default=[],
                                 help="Add PATH to the template search path.")
     argp_generator.add_argument('-x', '--jinja-ext', action='append', metavar='EXTENSION', default=['jinja2.ext.do'],
                                 help="Add EXTENSION to Jinja2 environment.")
-
-    argp_deprecated = argp.add_argument_group("Deprecated")
-    argp_deprecated.add_argument(u'-d', u'--copy-glue', action=u"store_true", default=False,
-                                 help=u"Copy 'glue.py' (used by ctypes template) into destination folder.")
-    argp_deprecated.add_argument(u'--py-absolute-import', action=u"store_true", default=False,
-                                 help=u"Use absolute import for Python helper modules (e.g. F2x.template.ctypes.glue).")
 
     argp_logging = argp.add_argument_group(u"Logging")
     argp_logging.add_argument(u'-l', u'--logfile', action='store',
@@ -63,6 +61,12 @@ def get_args_parser():
                              help=u"Get [requires, modules, libraries] for the given templates.")
     argp_action.add_argument(u'source', nargs=u'*', metavar=u"SOURCE",
                              help=u"Wrap the given templates to the SOURCE files.")
+
+    argp_deprecated = argp.add_argument_group("Deprecated")
+    argp_deprecated.add_argument(u'-d', u'--copy-glue', action=u"store_true", default=False,
+                                 help=u"Copy 'glue.py' (used by ctypes template) into destination folder.")
+    argp_deprecated.add_argument(u'--py-absolute-import', action=u"store_true", default=False,
+                                 help=u"Use absolute import for Python helper modules (e.g. F2x.template.ctypes.glue).")
 
     return argp
 

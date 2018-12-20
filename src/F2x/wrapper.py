@@ -104,9 +104,9 @@ class F2xWrapper(object):
             template = None
             if name[0] != '@':
                 try:
-                    template = loader.load(env, name)
+                    template = loader.load(env, filename)
                 except IOError as e:
-                    self.log.info(f'error reading template {name} from environment ({e})')
+                    self.log.info(f'error reading template {filename} from environment ({e})')
 
             if template is None:
                 with open(filename, 'r') as template_file:
@@ -114,7 +114,7 @@ class F2xWrapper(object):
                     template.name = name
                     template.filename = filename
 
-                templates.append((template, suffix))
+            templates.append((template, suffix))
 
         return templates
     

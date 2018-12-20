@@ -17,8 +17,6 @@
 """
 import warnings
 
-from F2x.wrapper import F2xWrapper
-
 warnings.simplefilter('ignore', ResourceWarning)
 
 import os
@@ -165,6 +163,8 @@ def main(argv=None, from_distutils=False):
 
     else:
         # Run actual wrapper
+        from F2x.wrapper import F2xWrapper
+
         wrapper = F2xWrapper(args, log)
         wrapper.run()
 
