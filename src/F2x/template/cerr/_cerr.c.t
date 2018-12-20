@@ -68,8 +68,8 @@ void *{{ method.export_name }}_cerr(
         f2x_err_reset();
         result = {{ method.export_name }}(
     {%- for arg in method.args -%}
-        {%- if arg.dims %}arg{{ loop.index0 }}_size, {% endif -%}
-        {%- if arg.strlen == '*' %}arg{{ loop.index0 }}_length, {% endif -%}
+        {%- if 0 in arg.dims %}arg{{ loop.index0 }}_size, {% endif -%}
+        {%- if arg.strlen in ('*', ':') %}arg{{ loop.index0 }}_length, {% endif -%}
         arg{{ loop.index0 }}
         {%- if not loop.last %}, {% endif -%}
     {%- endfor -%}
@@ -111,8 +111,8 @@ void {{ method.export_name }}_cerr(
         f2x_err_reset();
         {{ method.export_name }}(
     {%- for arg in method.args -%}
-        {%- if arg.dims %}arg{{ loop.index0 }}_size, {% endif -%}
-        {%- if arg.strlen == '*' %}arg{{ loop.index0 }}_length, {% endif -%}
+        {%- if 0 in arg.dims %}arg{{ loop.index0 }}_size, {% endif -%}
+        {%- if arg.strlen in ('*', ':') %}arg{{ loop.index0 }}_length, {% endif -%}
         arg{{ loop.index0 }}, {% endfor -%}
     {%- if 0 in method.ret.dims %}out_size, {% endif -%}
     {%- if method.ret.strlen in ('*', ':') %}out_length, {% endif -%}
@@ -126,8 +126,22 @@ void {{ method.export_name }}_cerr(
 
 {% macro export_subroutine(method) -%}
 /* Prototype for BIND(C) routine {{ method.name }} */
-void {{ method.export_name }}({% for arg in method.args %}{% if arg.dims %}void *, {% endif %}{% if arg.strlen == '*' %}void *, {% endif %}void *{% if not loop.last %}, {% endif %}{% endfor %});
-void {{ method.export_name }}_cerr({% for arg in method.args %}{% if arg.dims %}void *arg{{ loop.index0 }}_size, {% endif %}{% if arg.strlen == '*' %}void *arg{{ loop.index0 }}_length, {% endif %}void *arg{{ loop.index0 }}{% if not loop.last %}, {% endif %}{% endfor %}) {
+void {{ method.export_name }}(
+    {%- for arg in method.args -%}
+        {%- if 0 in arg.dims %}void *, {% endif -%}
+        {%- if arg.strlen in ('*', ':') %}void *, {% endif -%}
+        void *
+        {%- if not loop.last %}, {% endif -%}
+    {%- endfor -%}
+);
+void {{ method.export_name }}_cerr(
+    {%- for arg in method.args -%}
+        {%- if 0 in arg.dims %}void *arg{{ loop.index0 }}_size, {% endif -%}
+        {%- if arg.strlen in ('*', ':') %}void *arg{{ loop.index0 }}_length, {% endif -%}
+        void *arg{{ loop.index0 }}
+        {%- if not loop.last %}, {% endif -%}
+    {%- endfor -%}
+) {
     jmp_buf *_jmp_buf = f2x_prepare_jmp_buffer();
 
     if (_jmp_buf == 0) {

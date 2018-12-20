@@ -59,10 +59,17 @@ def _find_depends(basedir, files):
     return depends
 
 
+_TOC_LIBRARIES = """
+
+.. toctree::
+    :caption: Libraries
+    
+"""
+
 def register_template(template):
     if not all(map(lambda attr: hasattr(template, attr), _REQUIRED_ATTRS)):
         missing = [attr for attr in _REQUIRED_ATTRS if not hasattr(template, attr)]
-        log.warn(f'template "{template.__name__}" missing required attributes: {missing}')
+        log.warning(f'template "{template.__name__}" missing required attributes: {missing}')
         return
 
     if not hasattr(template, 'package_dir'):
@@ -70,11 +77,10 @@ def register_template(template):
         template.depends = _find_depends(template.package_dir, template.templates)
 
         if template.libraries:
-            lib_entry = ".. toctree::\n   :caption: Libraries\n\n"
-            for lib_name, lib_info in template.libraries:
-                lib_entry += "\n".join([f'   lib/{lib_name}/{source}\n'
-                                        for source, ext in map(os.path.splitext, lib_info.get('sources', []))])
-                template.__doc__ += '\n\n' + lib_entry
+            lib_entry = _TOC_LIBRARIES + '\n'.join([
+                f'    lib/{lib_name}/toc' for lib_name, _ in template.libraries
+            ])
+            template.__doc__ += lib_entry
 
     if template.name in _templates:
         log.debug(f'replacing template "{template.name}"')

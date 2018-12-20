@@ -27,7 +27,9 @@
    :param method: The :type FuncDef: node to generate the header for.
 #}
 {% macro func_decl(method, ifort_dll=False) -%}
-    FUNCTION {{ method.export_name.upper() }}({{ dummy_args(method.args) }}) BIND(C, name="{{ method.export_name }}")
+    FUNCTION {{ method.export_name.upper() }}({{ dummy_args(method.args) }})
+    {%- if method.ret.name.upper() != method.export_name.upper() %} RESULT({{ method.ret.name.upper() }})
+    {%- endif %} BIND(C, name="{{ method.export_name }}")
 	{%- if ifort_dll %}
 !DEC$ ATTRIBUTES DLLEXPORT :: {{ method.export_name }}
 	{%- endif %}
