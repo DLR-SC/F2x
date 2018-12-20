@@ -17,8 +17,26 @@
 Welcome to F2x's documentation!
 ===============================
 
-F2x is a ...
+**F2x** is a Python tool that allows you to take your Fortran code and make it accessible from other languages. Compared
+to it's main competitor `f2py <https://f2py.org>`_ it comes with two important differences:
 
+- A superior Fortran parser based on the work by the `OpenFortranParser <https://openfortranparser.github.com>`_
+- A very flexible code generation backend that uses `Jinja2 <https://jinja.pocoo.net>`_ templates
+
+
+Requirements
+------------
+
+F2x currently requires `Python 3 <https://python.org>`_ to work. It relies on the following pacakges available from
+`PyPI <https://pypi.python.org>`_:
+
+- `pyplus <https://...>`_
+- `jinja2 <https://...>`_
+- `numpy <https://...>`_
+- `Cython <https://...>`_ (optional)
+
+Additional requirements for building documentation and running tests exists. Please consult the `setup.py` for further
+details. All requirements should be automatically provided during installation of **F2x**.
 
 Quick Steps
 -----------
@@ -32,23 +50,27 @@ Quick Steps
    content/introduction/trouble_shooting
 
 
-Table Of Contents
------------------
+User Manual
+-----------
 
 .. toctree::
-   :name: mastertoc
    :titlesonly:
 
-   content/introduction/toc
    content/user_manual/toc
    content/advanced/toc
    content/publications
-   api/F2x
+
+.. toctree::
+    :hidden:
+
+    full_toc
 
 
 Indices and tables
 ------------------
 
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
+- :doc:`full_toc`
+- :doc:`api/F2x`
+- :ref:`genindex`
+- :ref:`modindex`
+- :ref:`search`

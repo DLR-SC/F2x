@@ -17,8 +17,12 @@
 F2X_ERR
 =======
 
-.. c:function:: void F2X_ERR_HANDLE(int CODE)
+.. f:module:: F2X_ERR
+    :synopsis: Interface to the error handling code.
 
-   Return to Python with an error.
 
-   :param CODE: The error code to return.
+.. f:subroutine:: F2X_ERR_HANDLE(CODE)
+
+    Set an error code and return to Python caller. The Fortran control flow is interrupted.
+
+    :param INTEGER CODE: The error code to be set (will be included in Python exception).

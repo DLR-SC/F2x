@@ -1,3 +1,4 @@
+
 # -*- coding: utf-8 -*-
 #
 # Configuration file for the Sphinx documentation builder.
@@ -21,8 +22,9 @@
 
 import os
 import sys
-sys.path.insert(0, os.path.abspath('../src'))
-sys.path.insert(1, os.path.abspath('ext'))
+sys.path.insert(0, os.path.abspath('../../src'))  # F2x source dir
+sys.path.insert(1, os.path.abspath('../contrib/sphinx-fortran'))
+sys.path.insert(2, os.path.abspath('../contrib/ext'))     # own extensions
 
 
 # -- Project information -----------------------------------------------------
@@ -45,6 +47,7 @@ extensions = [
     'sphinx.ext.autodoc',
     'sphinx.ext.autosummary',   # Required by 'f2x'.
     'sphinxarg.ext',
+    'sphinxfortran.fortran_domain',
     'f2x_ext',
 ]
 

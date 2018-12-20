@@ -14,11 +14,7 @@
    limitations under the License.
 
 
-Command Line Tool
-=================
+Creating Own Templates
+======================
 
-.. argparse::
-   :module: F2x.argp
-   :func: get_args_parser
-   :prog: F2x
-
+You can add custom templates to F2x. This can be done either using the `-L` option.

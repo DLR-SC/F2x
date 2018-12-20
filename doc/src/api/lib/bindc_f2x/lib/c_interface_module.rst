@@ -17,3 +17,5 @@
 C_INTERFACE_MODULE
 ==================
 
+.. f:module:: C_INTERFACE_MODULE
+    :synopsis: Some helper routines for mashalling data between Fortran and C.

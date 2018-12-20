@@ -23,4 +23,5 @@ User Manual
    command_line
    interface_config
    compilers
+   templates
    strategies
