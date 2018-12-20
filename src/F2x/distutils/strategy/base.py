@@ -17,7 +17,8 @@ import configparser
 import glob
 import os
 
-from distutils.dep_util import newer
+from distutils.errors import DistutilsFileError
+from distutils.dep_util import newer, newer_group
 from numpy.distutils import log
 from numpy.distutils.misc_util import fortran_ext_match, f90_module_name_match
 
@@ -28,8 +29,7 @@ class BuildStrategy(object):
     """
     Basic build strategy.
 
-    A build strategy follows the build brocess and interacts with it at certain
-    well-defined points.
+    A build strategy follows the build process and interacts with it at certain well-defined points.
 
     1. :code:`build_src` - Generate and prepare sources for compilation.
 
@@ -58,7 +58,7 @@ class BuildStrategy(object):
         self.templates = self.load_templates(templates or [])
 
     def prepare_distribution(self, build_src, distribution):
-        """ Make sure :code:`distribution.libraries` is at least an empty list. """
+        """ Make sure `distribution.libraries` is at least an empty list. """
         if distribution.libraries is None:
             distribution.libraries = []
 
@@ -75,7 +75,7 @@ class BuildStrategy(object):
             self._split_extension(build_src, extension)
             return
 
-        for template, *_ in self.templates:
+        for template, *_ in (extension.templates or self.templates):
             for lib_name, lib_info in template.libraries or []:
                 self._add_library(build_src, template.package_dir, lib_name, lib_info)
 
@@ -104,10 +104,10 @@ class BuildStrategy(object):
 
         This method collects the following information about the module surces and passes them on:
 
-        * name of original source file
-        * target name of source file (from where code generation will take place)
-        * names of new files to be expected
-        * dependencies of those new files (i.e., templates, sources, interface config)
+        - name of original source file
+        - target name of source file (from where code generation will take place)
+        - names of new files to be expected
+        - dependencies of those new files (i.e., templates, sources, interface config)
         """
         wrap_sources = []
         common_depends = self.get_template_files(with_imports=True) + list(extension.depends)
@@ -115,12 +115,16 @@ class BuildStrategy(object):
         for source, ext_info in extension.ext_modules:
             target_file = os.path.join(target_dir, os.path.basename(source))
             output = [os.path.join(target_dir, output_file) for output_file in ext_info['output']]
-            depends = ext_info.get('depends', []) + common_depends
+            depends = ext_info.get('depends', []) + common_depends + [target_file]
 
-            wrap_sources.append((source, target_file, output, depends))
+            for output_file in output:
+                if build_src.force or newer_group(depends, output_file, missing='newer'):
+                    wrap_sources.append((source, target_file, output, depends))
+                    break
+
         return wrap_sources
 
-    def finish_wrap_sources(self, build_src, extension, target_dir, output):
+    def finish_wrap_sources(self, build_src, extension, target_dir):
         """
         Clean up after code generation. Put newly generated files where they belong.
 
@@ -128,7 +132,7 @@ class BuildStrategy(object):
         """
         # Add generated libraries where they belong
         sources, py_sources = build_src.filter_py_files(extension.sources)
-        output, py_output = build_src.filter_py_files(output)
+        output, py_output = build_src.filter_py_files(self._get_wrap_output(extension, target_dir))
         *package_path, ext_name = build_src.get_ext_fullname(extension.name).split('.')
         package_name = '.'.join(package_path)
 
@@ -154,16 +158,25 @@ class BuildStrategy(object):
         if not build_src.inplace:
             build_py = build_src.get_finalized_command('build_py')
             source_dir = build_py.get_package_dir(package_name)
-            py_sources += [source for *_, source in build_py.find_package_modules(package_name, source_dir)]
+
+            # Be graceful if package directory does not yet exists.
+            try:
+                py_sources += [source for *_, source in build_py.find_package_modules(package_name, source_dir)]
+            except DistutilsFileError:
+                pass
 
         if py_sources:
             self._add_python_modules(build_src, package_name, py_sources)
 
     def finish_distribution(self, build_src, distribution):
-        """ Update :code:`build_clib` step with newly collected libraries. """
+        """ Update `build_clib` and `build_py` steps with newly collected libraries. """
         build_clib = build_src.get_finalized_command('build_clib')
         build_clib.include_dirs.append(build_clib.build_temp)
         build_clib.libraries = distribution.libraries
+
+        build_py = build_src.get_finalized_command('build_py')
+        build_py.package_dir.update(distribution.package_dir)
+        build_py.packages += [package for package in distribution.packages if package not in build_py.packages]
 
     # build_ext
 
@@ -227,12 +240,13 @@ class BuildStrategy(object):
             template_files.append(template_path)
             if with_imports:
                 template_files += template.depends
+
         return template_files
 
     # internal helpers
 
     def _collect_ext_sources(self, build_src, extension):
-        templates = self.templates or extension.strategy.templates
+        templates = (extension.templates or self.templates)
         template_suffixes = [os.path.splitext(os.path.basename(file))[0] for _, file, *_ in templates]
         ext_sources = []
 
@@ -240,6 +254,7 @@ class BuildStrategy(object):
         sources = []
         for source_glob in extension.sources:
             sources += glob.glob(source_glob)
+
         extension.sources[:] = sources
 
         # Collect source information
@@ -269,6 +284,15 @@ class BuildStrategy(object):
 
         return ext_sources
 
+    def _get_wrap_output(self, extension, target_dir):
+        wrap_output = []
+
+        for _, ext_info in extension.ext_modules:
+            ext_output = [os.path.join(target_dir, output_file) for output_file in ext_info['output']]
+            wrap_output += [output_file for output_file in ext_output if output_file not in wrap_output]
+
+        return wrap_output
+
     def _split_extension(self, build_src, extension):
         index = build_src.extensions.index(extension)
         package_name = '.'.join(extension.name.split('.')[:-1])
@@ -295,7 +319,9 @@ class BuildStrategy(object):
                 match = f90_module_name_match(line)
                 if match:
                     return match.group('name')
+
                 line = source_file.readline()
+
         return None
 
     def _add_library(self, build_src, package_dir, lib_name, lib_info):
@@ -312,15 +338,19 @@ class BuildStrategy(object):
         build_src.distribution.libraries.append((lib_name, t_lib_info))
 
     def _add_python_modules(self, build_src, package_name, sources):
+        package_path = package_name.split('.')
+
         if build_src.distribution.package_dir is None:
             build_src.distribution.package_dir = {}
 
         if build_src.inplace:
             target_dir = build_src.get_package_dir(package_name)
+
         else:
-            target_dir = os.path.join(build_src.build_src, *package_name.split('.'))
+            target_dir = os.path.join(build_src.build_src, *package_path)
             if package_name not in build_src.distribution.package_dir:
-                build_src.distribution.package_dir[package_name] = build_src.build_src
+                build_src.distribution.package_dir[package_name] = target_dir
+
             elif build_src.distribution.package_dir[package_name] != build_src.build_src:
                 log.warn(f'misatching package directories for "{package_name} '
                          f'{build_src.build_src}, {build_src.distribution.package_dir[package_name]}')
@@ -340,7 +370,20 @@ class BuildStrategy(object):
                     build_src.mkpath(target_dir)
                     build_src.copy_file(source, target_file)
 
+        # Ensure the whole thing is a package by now
+        if build_src.inplace:
+            package_dir = build_src.get_package_dir(package_name)
+
+        else:
+            package_dir = os.path.join(build_src.build_src, *package_path)
+
+        package_init = os.path.join(package_dir, '__init__.py')
+        if not os.path.isfile(package_init):
+            with open(package_init, 'w') as init_file:
+                init_file.write('# Automatically created by F2x.' + os.linesep)
+
         if build_src.distribution.packages is None:
             build_src.distribution.packages = []
+
         if package_name not in build_src.distribution.packages:
             build_src.distribution.packages.append(package_name)

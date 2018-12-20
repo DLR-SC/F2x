@@ -13,10 +13,24 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.build_src
+"""
+F2x implementation of the `build_ext` command for distutils (`setup.py`).
+
+This implementation basically inserts some interaction points. Namely, it calls
+:py:meth:`prepare_build_extension <F2x.distutils.strategy.base.BuildStrategy.prepare_build_extension>`,
+:py:meth:`finish_build_extension <F2x.distutils.strategy.base.BuildStrategy.finish_build_extension>`, and
+:py:meth:`get_ext_filename <F2x.distutils.strategy.base.BuildStrategy.get_ext_filename>`.
+It also ensures that a build strategy is available.
+
+.. seealso::
+
+    :py:mod:`F2x.distutils.strategy.base`
+        Details about the build process and build strategies are documented in the documentation of the base
+        :py:class:`BuildStrategy <F2x.distutils.strategy.base.BuildStrategy>`.
+"""
 import os
 
 from numpy.distutils.command.build_ext import build_ext as numpy_build_ext
-from numpy.distutils.command import build_clib
 
 from F2x.distutils.strategy import get_strategy, base
 
@@ -46,4 +60,5 @@ class build_ext(numpy_build_ext):
         filename = self.strategy.get_ext_filename(self, ext_name)
         if filename is None:
             filename = super(build_ext, self).get_ext_filename(ext_name)
+
         return os.path.join(*package_path, filename)

@@ -131,12 +131,12 @@ setup(
     package_data=package_data,
 
     setup_requires=[
-        'pytest-runner',
         'sphinx',
         'sphinx-fortran',
         'sphinxext-argparse',
     ],
     tests_require=[
+        'pytest-runner',
         'pytest',
     ],
     install_requires=[
