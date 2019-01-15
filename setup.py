@@ -80,13 +80,6 @@ setup(
     package_dir={ '': 'src' },
     package_data=package_data,
 
-    setup_requires=[
-        'six',
-        'sphinx',
-        'sphinx-fortran',
-        'sphinxcontrib-jinjadomain',
-        'sphinxext-argparse',
-    ],
     tests_require=[
         'pytest-runner',
         'pytest',
@@ -98,6 +91,13 @@ setup(
     ],
     extras_require={
         'cython': ['Cython', ],
+
+        'docs': [
+            'six',
+            'sphinx',
+            'sphinxcontrib-jinjadomain',
+            'sphinxext-argparse',
+        ],
     },
 
     entry_points={
