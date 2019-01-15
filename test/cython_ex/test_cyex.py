@@ -17,5 +17,5 @@ from cython_ex import simple_glue as simple, second_glue as second
 
 
 def test_calls():
-    simple.SIMPLE_CALL(123)
-    second.OTHER_CALL()
+    simple.simple_call(123)
+    second.other_call()

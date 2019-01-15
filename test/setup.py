@@ -16,8 +16,8 @@
 from F2x.distutils import setup, Extension, strategy
 from F2x.template import register_template
 
-from F2x_test.template import cython as cython_template
-from F2x_test.template.cython.strategy import CythonExtBuildStrategy
+from cython_ex.template import cython as cython_template
+from cython_ex.template.cython.strategy import CythonExtBuildStrategy
 
 register_template(cython_template)
 strategy.register_strategy('cython', CythonExtBuildStrategy(['cython']))
@@ -34,15 +34,17 @@ setup(
                   strategy='lib',
                   inline_sources=False),
 
-        Extension('F2x_test.interface.bindc_new.*', ['F2x_test/interface/src/*.f90', 'cython_ex/*.f90'],
+        Extension('F2x_test.interface.bindc_new.*', ['F2x_test/interface/src/*.f90',
+                                                     'cython_ex/simple.f90', 'cython_ex/second.f90'],
                   library_name='flib_bindc_new',
                   strategy='lib',
                   inline_sources=False,
                   templates=['bindc_new', 'ctypes_new']),
 
-        Extension('cython_ex.*', ['cython_ex/*.f90'],
+        Extension('cython_ex.*', ['cython_ex/simple.f90', 'cython_ex/second.f90'],
                   strategy='cython',
-                  inline_sources=True),
+                  inline_sources=True,
+                  autosplit=True),
 
 #        Extension('F2x_test.doc.interface.*', ['F2x_test/interface/src/*.f90'],
 #                  autosplit=True,
