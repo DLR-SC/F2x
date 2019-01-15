@@ -1,3 +1,6 @@
+{#- Marshal types. -#}
+
+
 {%- macro ctypes_type(arg) -%}
     {%- if arg.ftype or arg.strlen -%}
         ctypes.c_void_p

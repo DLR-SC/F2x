@@ -17,7 +17,7 @@
 Generate a ISO C compliant interface to a Fortran module using BIND(C).
 """
 name = 'bindc_new'
-templates = ['@bindc_new/_glue.f90.t']
+templates = ['_glue.f90.t']
 requires = None
 modules = None
 libraries = [

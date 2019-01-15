@@ -17,7 +17,7 @@
 Generates a Sphinx documentation for a module.
 """
 name = 'sphinx'
-templates = ['@sphinx/.rst.t']
+templates = ['.rst.t']
 requires = None
 modules = None
 libraries = None

@@ -1,3 +1,6 @@
+{#- Marshalling types. -#}
+
+
 {%- macro bindc_type(arg) -%}
     {%- if arg.ftype -%}
         TYPE(C_PTR)

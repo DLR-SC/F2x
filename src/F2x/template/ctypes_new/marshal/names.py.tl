@@ -1,3 +1,6 @@
+{#- Marshal names. -#}
+
+
 {%- macro py_method_name(method) -%}
     {{ method.name|lower }}
 {%- endmacro -%}

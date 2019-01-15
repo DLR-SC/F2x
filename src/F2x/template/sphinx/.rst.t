@@ -1,3 +1,6 @@
+{#- Sphinx documentation. -#}
+
+
 {{ module.name }}
 {{ '=' * module.name|length }}
 
