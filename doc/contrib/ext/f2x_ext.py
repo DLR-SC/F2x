@@ -179,7 +179,7 @@ class TemplateSummary(F2xSummaryTable):
         return [
             f'`{fullname}`' if mod is None else f':mod:`{mod.name} <{fullname}>`',
             NO_TEMPLATES if mod is None else ', '.join([f':code:`{template}`' for template in mod.templates]),
-            UNDOCUMENTED if mod is None else (mod.__pure_doc__ or UNDOCUMENTED),
+            UNDOCUMENTED if mod is None else (mod.__py_doc__ or UNDOCUMENTED),
         ]
 
 

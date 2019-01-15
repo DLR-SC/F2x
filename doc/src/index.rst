@@ -21,7 +21,7 @@ Welcome to F2x Documentation!
 to it's main competitor `f2py <https://f2py.org>`_ it comes with two important differences:
 
 - A superior Fortran parser based on the work by the `OpenFortranParser <https://openfortranparser.github.com>`_
-- A very flexible code generation backend that uses `Jinja2 <https://jinja.pocoo.net>`_ templates
+- A very flexible code generation backend that uses `Jinja2 templates <https://jinja.pocoo.net>`_
 
 
 Requirements
@@ -31,7 +31,7 @@ F2x currently requires `Python 3 <https://python.org>`_ to work. It relies on th
 `PyPI <https://pypi.python.org>`_:
 
 - `pyplus <https://...>`_
-- `jinja2 <https://...>`_
+- `Jinja2 <https://...>`_
 - `numpy <https://...>`_
 - `Cython <https://...>`_ (optional)
 

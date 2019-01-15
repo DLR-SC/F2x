@@ -37,14 +37,14 @@ The following strategies are already available:
    lib
    lib_noerr
 
-The chapter :ref:`strategies` explains build strategies in more detail.
+The chapter :doc:`../user_manual/strategies` explains build strategies in more detail.
 
 
 Including own templates
 -----------------------
 
 You can use your own templates by adding them to the template registry. Your template needs to be contained in a
-:ref:`F2x template package <templates#template_package>`. Then you can simply add that package to the registry:
+:doc:`F2x template package <../user_manual/templates>`. Then you can simply add that package to the registry:
 
 .. code:: python
 

@@ -45,7 +45,7 @@ Ususally, error handling should be done using return values etc. However, in man
 :code:`STOP` running if they face a condition. This is a big show stopper for Python as the whole process will be
 killed. To accomodate this problem, F2x implements a thin C wrapper using :py:mod:`F2x.template.cerr` that qualifies as
 :code:`longjmp` traget. This allows us to replace all the calls to :code:`STOP` by a calls to
-:ref:`F2X_HANDLE_ERROR`. This triggers the :code:`longjmp` and program flow returns to Python.
+:f:subr:`F2X_ERR_HANDLE`. This triggers the :code:`longjmp` and program flow returns to Python.
 
 To support this method, you need to make sure to use the correct strategy or templates:
 
