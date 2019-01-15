@@ -95,8 +95,8 @@ setup(
         'docs': [
             'six',
             'sphinx',
+            'sphinx-argparse',
             'sphinxcontrib-jinjadomain',
-            'sphinxext-argparse',
         ],
     },
 
