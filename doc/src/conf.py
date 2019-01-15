@@ -21,9 +21,11 @@
 
 import os
 import sys
-sys.path.insert(0, os.path.abspath('../../src'))  # F2x source dir
-sys.path.insert(1, os.path.abspath('../contrib/sphinx-fortran'))
-sys.path.insert(2, os.path.abspath('../contrib/ext'))     # own extensions
+
+dirname = os.path.dirname(__file__)
+sys.path.insert(0, os.path.abspath(os.path.join(dirname, '..', '..', 'src')))  # F2x source dir
+sys.path.insert(1, os.path.abspath(os.path.join(dirname, '..', 'contrib', 'sphinx-fortran')))
+sys.path.insert(2, os.path.abspath(os.path.join(dirname, '..', 'contrib', 'ext')))  # own extensions
 
 
 # -- Project information -----------------------------------------------------
