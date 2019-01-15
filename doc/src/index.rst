@@ -14,8 +14,8 @@
    limitations under the License.
 
 
-Welcome to F2x's documentation!
-===============================
+Welcome to F2x Documentation!
+=============================
 
 **F2x** is a Python tool that allows you to take your Fortran code and make it accessible from other languages. Compared
 to it's main competitor `f2py <https://f2py.org>`_ it comes with two important differences:

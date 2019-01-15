@@ -14,7 +14,28 @@
    limitations under the License.
 
 
-Creating Own Templates
-======================
+Templates
+=========
 
-You can add custom templates to F2x. This can be done either using the `-L` option.
+**F2x** uses templates to generate the code. There are a bunch of templates that come bundled with **F2x**:
+
+.. f2x:templatesummary::
+    F2x.template.bindc
+    F2x.template.cerr
+    F2x.template.ctypes
+    F2x.template.ctypes_noerr
+    F2x.template.sphinx
+
+
+Choosing a Template on Command Line
+===================================
+
+When you use the :doc:`F2x CLI <command_line>` to wrap your sources, you can select templates by specifying the `-t`
+switch. You have three possibilities of accessing template files:
+
+- The name of a built-in template. These start with an '@' character and are listed in the table above.
+- The full (relative) path to a template file.
+- A path relative to one of the template path directories. You can adjust the template path using the `-T` switch.
+
+
+

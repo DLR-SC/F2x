@@ -18,7 +18,7 @@ Command Line Tool
 =================
 
 .. argparse::
-   :module: F2x.argp
+   :module: F2x.runtime.argp
    :func: get_args_parser
    :prog: F2x
 

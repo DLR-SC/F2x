@@ -1,4 +1,3 @@
-
 # -*- coding: utf-8 -*-
 #
 # Configuration file for the Sphinx documentation builder.
@@ -44,10 +43,21 @@ release = F2x.get_version_string(full=True)
 # -- General configuration ---------------------------------------------------
 
 extensions = [
+    # Automatic generation for Python API docs
     'sphinx.ext.autodoc',
-    'sphinx.ext.autosummary',   # Required by 'f2x'.
-    'sphinxarg.ext',
+
+    # Required by f2x_ext - F2xSummaryTable (f2x:templatesummary, f2x:strategysummary)
+    'sphinx.ext.autosummary',
+
+    # Language support: Fortran, Jinja2
     'sphinxfortran.fortran_domain',
+    'sphinxcontrib.jinjadomain',
+    'sphinxcontrib.autojinja.jinja',
+
+    # Generate doc from ArgParser
+    'sphinxarg.ext',
+
+    # Custom extensions for F2x
     'f2x_ext',
 ]
 
@@ -149,3 +159,13 @@ epub_exclude_files = ['search.html']
 
 
 # -- Extension configuration -------------------------------------------------
+
+# -- sphinxjinja.autojinja.jinja ---------------------------------------------
+
+jinja_template_path = os.path.join(os.path.dirname(__file__), '..', '..', 'src', 'F2x', 'template')
+
+# -- F2x ---------------------------------------------------------------------
+
+f2x_examples = [
+    ('content/example', 'mylib', 'src.zip'),
+]

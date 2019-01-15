@@ -34,7 +34,7 @@ place, you can go ahead and install **F2x** by cloning the repository and runnin
    $ cd F2x
    $ python setup.py install
 
-Of course you need a working :doc:`Fortran compiler <../user_manual/compilers>`. As F2x relies on the build chain
+Of course you need a working :doc:`Fortran compiler </content/user_manual/compilers>`. As F2x relies on the build chain
 provided by numpy, this usually mean that if you can build numpy extensions, you should also be able to build F2x
 extensions.
 
@@ -44,14 +44,14 @@ This should install all dependencies and a command line tool :code:`F2x` to wrap
 One-shot building
 -----------------
 
-A :download:`tiny example <example/src.zip>` is available to try F2x. Extract it to some location and from the
+A :download:`tiny example </content/example/src.zip>` is available to try F2x. Extract it to some location and from the
 containing folder run:
 
 .. code::
 
    $ F2x -s lib mylib/test.f90
 
-This applies a :doc:`strategy <../user_manual/strategies>` to generate the wrapper modules and compile the extension
+This applies a :doc:`strategy </content/user_manual/strategies>` to generate the wrapper modules and compile the extension
 in one shot. You can try your results by running tests against it:
 
 .. code::
@@ -70,7 +70,7 @@ The general synopsis is:
    $ F2x [-t template]... [source file]...
 
 This will make **F2x** parse the source files and apply each template to each source file to generate the wrapper
-output. A full overview of all options is available `here<command_line>`.
+output. A full overview of all options is available `here <command_line>`.
 
 The following templates are the recommended choice:
 
@@ -112,10 +112,10 @@ Example
 
 Consider the following example Fortran source:
 
-.. literalinclude:: example/mylib/test.f90
+.. literalinclude:: /content/example/mylib/test.f90
    :start-after: !-------
    :language: fortran
-   :caption: :download:`mylib/test.f90 <example/mylib/test.f90>`
+   :caption: :download:`mylib/test.f90 </content/example/mylib/test.f90>`
    :name: mylib/test.f90
    :linenos:
 
@@ -143,6 +143,6 @@ Advanced Options
 There are several other ways to interact with **F2x** which are described in more detail in their respective sections.
 
 * :doc:`Using setup.py to build extensions <using_distutils>`
-* :doc:`Tuning interface generation parameters for a Fortran source <../user_manual/interface_config>`
-* :doc:`Extending F2x with your own templates <../advanced/extra_templates>`
-* :doc:`Using an alternate parser for F2x <../advanced/alternate_parser>`
+* :doc:`Tuning interface generation parameters for a Fortran source </content/user_manual/interface_config>`
+* :doc:`Extending F2x with your own templates </content/advanced/extra_templates>`
+* :doc:`Using an alternate parser for F2x </content/advanced/alternate_parser>`
