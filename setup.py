@@ -81,6 +81,7 @@ setup(
     package_data=package_data,
 
     setup_requires=[
+        'six',
         'sphinx',
         'sphinx-fortran',
         'sphinxcontrib-jinjadomain',
