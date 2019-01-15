@@ -143,7 +143,9 @@ class BuildStrategy(object):
                 'sources': ext_sources,
                 'libraries': extension.libraries,
             }
+
             self._add_library(build_src, target_dir, ext_lib_name, ext_lib_info)
+
             if ext_lib_name not in extension.libraries:
                 extension.libraries.append(ext_lib_name)
 
@@ -162,6 +164,7 @@ class BuildStrategy(object):
             # Be graceful if package directory does not yet exists.
             try:
                 py_sources += [source for *_, source in build_py.find_package_modules(package_name, source_dir)]
+
             except DistutilsFileError:
                 pass
 
@@ -217,14 +220,8 @@ class BuildStrategy(object):
                 log.warn(f'unknwon template "{template_name}"')
                 continue
 
-            for template_file in template.templates or []:
-                if template_file.startswith('@'):
-                    package_dir = None
-                    template_path = os.path.join(template_package_dir, template_file[1:])
-                else:
-                    package_dir = template.package_dir
-                    template_path = os.path.join(package_dir, template_file)
-
+            for template_file, template_path in zip(template.templates, template.template_files):
+                package_dir = None if template_file.startswith('@') else template.package_dir
                 templates.append((template, template_file, template_path, package_dir))
 
         return templates
@@ -330,7 +327,6 @@ class BuildStrategy(object):
         for t_lib_name, t_lib_info in build_src.distribution.libraries:
             if t_lib_name == lib_name:
                 t_lib_info['sources'] += [source for source in sources if source not in t_lib_info['sources']]
-
                 return
 
         t_lib_info = dict(lib_info)

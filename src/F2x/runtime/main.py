@@ -27,8 +27,8 @@ import jinja2
 import plyplus
 
 import F2x
-from F2x import argp
 from F2x.parser.plyplus import source
+from F2x.runtime import argp
 from F2x.template import get_template, package_dir as template_package_dir
 
 
@@ -163,7 +163,7 @@ def main(argv=None, from_distutils=False):
 
     else:
         # Run actual wrapper
-        from F2x.wrapper import F2xWrapper
+        from F2x.runtime.wrapper import F2xWrapper
 
         wrapper = F2xWrapper(args, log)
         wrapper.run()

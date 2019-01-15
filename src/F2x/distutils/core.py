@@ -16,10 +16,8 @@
 from numpy.distutils.core import numpy_cmdclass, setup
 
 from F2x import template
-from F2x.distutils.command_new import build_src, build_ext
+from F2x.distutils.command import build_src, build_ext
 
-
-template.init_templates()
 
 numpy_cmdclass['build_src'] = build_src.build_src
 numpy_cmdclass['build_ext'] = build_ext.build_ext

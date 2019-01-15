@@ -19,15 +19,27 @@ import sys
 import setuptools
 from distutils.core import setup
 
+
+package_data = {
+    'F2x.parser.plyplus.grammar': ["*.g"],
+}
+
+cmdclass = {}
+command_options = {}
+
+
 sys.path.append(os.path.abspath('src'))
 try:
     # Try to extract program information from sources.
     import F2x
+    from F2x.template import collect_template_data
 
     name = F2x.program_name
-    major, minor, patch = F2x.__version__
     version = F2x.get_version_string()
     release = F2x.get_version_string(full=True)
+
+    for package, data_files in collect_template_data():
+        package_data[package.__name__] = package_data.get(package.__name__, []) + data_files
 
 except ImportError:
     # Fallback: set them manual :(
@@ -36,72 +48,10 @@ except ImportError:
     release = '0.0'
 
 
-cmdclass = {}
-command_options = {}
-package_data = {
-    'F2x.parser.plyplus.grammar': ["*.g"],
-}
-
 try:
-    import F2x.template
+    from F2x.distutils.command import build_sphinx
 
-    for template in F2x.template._templates.values():
-        package_data[template.__name__] = list(map(lambda path: os.path.relpath(path, template.package_dir), [
-            os.path.join(F2x.template.package_dir, filename[1:])
-            for filename in template.templates
-        ] + template.depends + F2x.template.get_library_sources(template))) + (template.modules or [])
-
-except ImportError:
-    pass
-
-
-# Provide specialize build_sphinx documentation command
-try:
-    # Register Sphinx build process if possible
-
-    from sphinx.ext import apidoc
-    from sphinx.setup_command import BuildDoc
-
-    class build_sphinx(BuildDoc):
-        """
-        Build documentation based on Sphinx.
-
-        This implementation adds automatic generation of the API documentation (:code:`sphinx-apidoc ...`) during the build.
-        """
-
-        def run(self):
-            source_dirs = list(self.distribution.package_dir.values()) \
-                          or [os.path.dirname(__file__)]
-
-            apidoc.main(['-f', '-T', '-e', '-M', '-o', os.path.join(self.source_dir, 'api')] + source_dirs)
-            #self.document_template_libs()
-
-            super(build_sphinx, self).run()
-
-        def document_template_libs(self):
-            from numpy.distutils.misc_util import fortran_ext_match
-
-            from F2x.main import main
-            from F2x.template import _templates
-
-            # Find libraries in templates.
-            sources = []
-            for template in _templates.values():
-                for lib_name, lib_info in template.libraries or []:
-                    add_sources = [os.path.join(template.package_dir, source)
-                                    for source in lib_info.get('sources', [])
-                                    if fortran_ext_match(source)]
-                    for source in add_sources:
-                        with open(source + '-wrap', 'w') as config:
-                            config.write(f'[generate]\nlibrary={lib_name}\n')
-                    sources += add_sources
-
-            # Generate documentation.
-            argv = ['-t', '@sphinx/.rst.t'] + sources
-            print('Generating docs...', argv)
-            main(argv)
-
-    cmdclass['build_sphinx'] = build_sphinx
+    cmdclass['build_sphinx'] = build_sphinx.build_sphinx
     command_options['build_sphinx'] = {
         'project': ('setup.py', name),
         'version': ('setup.py', version),
@@ -133,6 +83,7 @@ setup(
     setup_requires=[
         'sphinx',
         'sphinx-fortran',
+        'sphinxcontrib-jinjadomain',
         'sphinxext-argparse',
     ],
     tests_require=[
@@ -150,7 +101,7 @@ setup(
 
     entry_points={
         'console_scripts': [
-            'F2x=F2x.main:main',
+            'F2x=F2x.runtime.main:main',
         ],
     },
 )

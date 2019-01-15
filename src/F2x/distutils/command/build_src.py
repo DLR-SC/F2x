@@ -13,38 +13,44 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-import configparser
 import os
 import shlex
 import sys
 
-from distutils import errors as distutils_errors
 from distutils.dep_util import newer, newer_group
 from distutils.util import get_platform
-
 from numpy.distutils import log
-from numpy.distutils.command.build_src import build_src as numpy_build_src
+from numpy.distutils.command import build_src as numpy_build_src
 
-from F2x.template import show_templates
-from F2x.main import main as F2x_main
+from F2x.runtime import argp
+from F2x.distutils.strategy import get_strategy, show_strategies, base as strategy_base
+from F2x.template import get_template, show_templates
 
 
-class build_src(numpy_build_src):
+class build_src(numpy_build_src.build_src):
+    """
+    Build sources for an F2x extension.
+
+    This module creates source files for an extension. It proceeds by applying F2x with a given set of templates on the
+    (appropriate) sources. For transformation of the sources, a given :class:`BuildStrategy` may be applied.
+    """
     description = 'build sources from F2x'
 
     user_options = [
-        ('build-src=',     'd',  'directory to "build" sources to'),
-        ('f2x-templates=', None, 'list of F2x templates to use'),
-        ('f2x-opts=',      None, 'list of F2x command line options'),
-        ('force',          'f',  'forcibly build everything (ignore file timestamps)'),
-        ('inplace',        'i',  'ignore build-lib and put compiled extensions into the source directory '
-                                 'alongside your pure Python modules'),
+        ('build-src=',   'd',  'directory to "build" sources to'),
+        ('strategy=',    None, 'appy the given strategy'),
+        ('templates=',   None, 'list of F2x templates to use'),
+        ('f2x-options=', None, 'list of F2x command line options'),
+        ('force',        'f',  'forcibly build everything (ignore file timestamps)'),
+        ('inplace',      'i',  'ignore build-lib and put compiled extensions into the source directory '
+                               'alongside your pure Python modules'),
     ]
 
     boolean_options = ['force', 'inplace']
 
     help_options = [
-        ('help-templates', None, 'list available built-in templates', show_templates),
+        ('help-strategies', None, 'list available strategies', show_strategies),
+        ('help-templates', None, 'list available templates', show_templates),
     ]
 
     def initialize_options(self):
@@ -57,13 +63,14 @@ class build_src(numpy_build_src):
         self.build_base = None
         self.force = None
         self.inplace = None
-        self.package_dir = None
-        self.f2x_templates = None
-        self.f2x_opts = None
+        self.strategy = None
+        self.templates = None
+        self.f2x_options = None
 
     def finalize_options(self):
-        self.set_undefined_options('build',
-                                   ('build_base', 'build_base'), ('build_lib', 'build_lib'), ('force', 'force'))
+        self.set_undefined_options('build', ('build_base', 'build_base'),
+                                            ('build_lib', 'build_lib'),
+                                            ('force', 'force'))
 
         if self.package is None:
             self.package = self.distribution.ext_package
@@ -71,211 +78,213 @@ class build_src(numpy_build_src):
         self.extensions = self.distribution.ext_modules
         self.libraries = self.distribution.libraries or []
         self.py_modules = self.distribution.py_modules or []
+        self.py_modules_dict = {}
         self.data_files =  self.distribution.data_files or []
 
         if self.build_src is None:
             self.build_src = os.path.join(self.build_base, f"src.{get_platform()}-{sys.version[:3]}")
 
-        self.py_modules_dict = {}
+        if self.templates is not None:
+            self.templates = [get_template(name) for name in shlex.split(self.templates)]
 
-        if self.f2x_templates is not None:
-            self.f2x_templates = [(filename, os.path.dirname(filename)) for filename in shlex.split(self.f2x_templates)]
+        if self.strategy is not None:
+            self.strategy = get_strategy(self.strategy)
 
-        if self.f2x_opts is None:
-            self.f2x_opts = []
+        if self.f2x_options is None:
+            self.f2x_options = []
         else:
-            self.f2x_opts = shlex.split(self.f2x_opts)
+            self.f2x_options = shlex.split(self.f2x_options)
 
-        build_ext = self.get_finalized_command('build_ext')
         if self.inplace is None:
+            build_ext = self.get_finalized_command('build_ext')
             self.inplace = build_ext.inplace
 
     def build_sources(self):
         if self.inplace:
             self.get_package_dir = self.get_finalized_command('build_py').get_package_dir
 
+        base_strategy = self.strategy or strategy_base.BuildStrategy()
+        base_strategy.prepare_distribution(self, self.distribution)
+
+        sources_to_wrap = dict()
         if self.extensions:
             self.check_extensions_list(self.extensions)
 
+            # Update distribution with extension contents.
             for extension in self.extensions[:]:
-                extension.f2x_target.finish_distribution(self, extension)
+                strategy = extension.strategy or base_strategy
+                strategy.prepare_extension(self, extension)
+                self.populate_build_src(extension)
 
-            for extension in self.extensions[:]:
-                self.build_extension_sources(extension)
+            for extension in self.extensions:
+                strategy = extension.strategy or base_strategy
+                target_dir = self.get_target_dir(extension)
 
-    def build_extension_sources(self, extension):
-        log.info(f'building extension "{extension.name}" sources')
+                # Wrap the sources.
+                strategy.prepare_wrap_sources(self, extension, target_dir)
+                self.select_sources(extension, strategy, target_dir, sources_to_wrap)
 
-        extension.f2x_target.build_sources(self, extension)
+            self.wrap_sources(sources_to_wrap)
 
-        build_clib = self.get_finalized_command('build_clib')
-        build_clib.libraries = self.distribution.libraries
+            for extension in self.extensions:
+                target_dir = self.get_target_dir(extension)
+                strategy.finish_wrap_sources(self, extension, target_dir)
 
-    def scan_f_sources(self, extension):
-        templates = self.f2x_templates or extension.templates or extension.f2x_target.template_files
-        template_suffixes = [os.path.splitext(os.path.basename(path))[0] for path, _ in templates]
+        base_strategy.finish_distribution(self, self.distribution)
 
-        target_dir = os.path.join(self.build_src, *self.get_ext_fullname(extension.name).split('.')[:-1])
-        f2x_sources = []
+    def get_target_dir(self, extension):
+        *package_path, _ = self.get_ext_fullname(extension.name).split('.')
 
-        for source, module in extension.find_modules():
-            if self.inplace:
-                target_file = source
-            else:
-                target_file = os.path.join(target_dir, os.path.basename(source))
-            base, _ = os.path.splitext(target_file)
-
-            f2x_info = {
-                'source': source,
-                'module': module,
-                'output': [base + suffix for suffix in template_suffixes],
-            }
-
-            source_wrap = source + '-wrap'
-            if os.path.isfile(source_wrap):
-                config = configparser.RawConfigParser()
-                config.read(source_wrap)
-                f2x_info['config'] = config
-                if self.inplace:
-                    f2x_info['wrapper'] = source_wrap
-                else:
-                    f2x_info['wrapper'] = os.path.join(target_dir, os.path.basename(source_wrap))
-
-                if config.has_option('generate', 'library'):
-                    f2x_info['library'] = config.get('generate', 'library')
-
-            f2x_sources.append((target_file, f2x_info))
-
-        return f2x_sources
-
-    def populate_target(self, extension):
-        build_py = self.get_finalized_command('build_py')
-        sources = list(extension.sources)
-        new_sources = []
-
-        package_path = self.get_ext_fullname(extension.name).split('.')[:-1]
-
-        package_name = '.'.join(package_path[:-1])
+        # Decide where to write output to.
         if self.inplace:
-            package_dir = build_py.get_package_dir(package_name)
-
+            return self.get_package_dir('.'.join(package_path))
         else:
-            package_dir = os.path.join(self.build_src, *package_path)
-            self.mkpath(package_dir)
+            return os.path.join(self.build_src, *package_path)
 
-        package_init = os.path.join(package_dir, '__init__.py')
-        if not os.path.isfile(package_init):
-            with open(package_init, 'w'):
-                pass
-        sources.append(package_init)
+    def populate_build_src(self, extension):
+        for source_file, ext_info in extension.ext_modules:
+            target_dir = self.get_target_dir(extension)
+            target_file = os.path.join(target_dir, os.path.basename(source_file))
 
-        if package_name in self.distribution.packages:
-            modules = build_py.find_package_modules(package_name, build_py.get_package_dir(package_name))
-            sources += [source for (_, _, source) in modules if source not in sources]
+            if source_file != target_file:
+                self.mkpath(target_dir)
+                if not os.path.isfile(target_file) or newer(source_file, target_file):
+                    self.copy_file(source_file, target_file)
 
-        for target_file, f2x_info in extension.f2x_sources:
-            source = f2x_info['source']
-            sources.remove(source)
+    def prepare_package(self, package_name):
+        package_path = package_name.split('.')
+        package_dir = os.path.join(self.build_src, *package_path)
+        if not os.path.isdir(package_dir):
+            self.mkpath(os.path.join(self.build_src, *package_path))
 
-            if not self.inplace:
-                if not os.path.isfile(target_file) or newer(source, target_file):
-                    self.copy_file(source, target_file)
+        package_dir = self.build_src
+        for package in package_path:
+            package_dir = os.path.join(package_dir, package)
+            package_init = os.path.join(package_dir, '__init__.py')
+            if not os.path.isfile(package_init):
+                with open(package_init, 'w') as init_file:
+                    init_file.write("# Autogenerated by F2x\n")
 
-                wrapper = f2x_info.get('wrapper')
-                if wrapper is not None:
-                    source_wrapper = f2x_info['source'] + '-wrap'
+    def select_sources(self, extension, strategy, target_dir, sources_to_wrap):
+        templates = extension.templates or strategy.templates
+        wrap_input = strategy.select_wrap_sources(self, extension, target_dir)
 
-                    if not os.path.isfile(wrapper) or newer(source_wrapper, wrapper):
-                        self.copy_file(source_wrapper, wrapper)
+        if wrap_input:
+            for _, template_file, _, template_dir in templates:
+                if template_dir not in sources_to_wrap:
+                    sources_to_wrap[template_dir] = { template_file: [] }
+                elif template_file not in sources_to_wrap[template_dir]:
+                    sources_to_wrap[template_dir][template_file] = []
 
-            for source in sources:
-                if self.inplace:
-                    target_file = source
-                else:
-                    target_file = os.path.join(package_dir, os.path.basename(source))
-                    if not os.path.isfile(target_file) or newer(source, target_file):
-                        self.copy_file(source, target_file)
-                new_sources.append(target_file)
+                template_sources = sources_to_wrap[template_dir][template_file]
 
-        if package_name not in self.py_modules_dict:
-            self.py_modules_dict[package_name] = []
+                for source_file, target_file, output, depends in wrap_input:
+                    depends = [target_file] + depends
+                    if target_file not in template_sources:
+                        if self.force or any([newer_group(depends, output_file) for output_file in output]):
+                            template_sources.append(target_file)
 
-        # TODO check if this is required
-        if package_name not in self.distribution.packages:
-            self.distribution.packages.append(package_name)
+    def _filter_compile_sets(self, sources_to_wrap):
+        input_file_sets = dict()  # Collect (input files) -> (templates)
+        template_sets = dict()    # Collect (templates) -> (input files)
 
-        if not self.inplace:
-            if self.distribution.package_dir is None:
-                self.distribution.package_dir = dict()
+        for template_dir, templates in sources_to_wrap.items():
+            for template_file, input_files in templates.items():
+                input_files = set(input_files)
+                input_files_key = tuple(sorted(input_files))
 
-            if package_name not in self.distribution.package_dir:
-                self.distribution.package_dir[package_name] = self.build_src
+                # We need a stack of templates to circumvent templates with identical names...
+                if input_files_key not in input_file_sets:
+                    input_file_sets[input_files_key] = [(set(), set())]
+                (template_dirs, template_files), *tail = input_file_sets[input_files_key]
 
-        extension.sources[:] = new_sources
+                # Now find a template collection that won't have name collisions...
+                if template_dir not in template_dirs:
+                    while template_file in template_files:
+                        if tail:
+                            (template_dirs, template_files), *tail = tail
+                        else:
+                            template_dirs, template_files = set(), set()
+                            input_file_sets[input_files_key].append((template_dirs, template_files))
 
-    def generate_wrapper(self, extension):
-        f2x_input = []
-        build_ext = self.get_finalized_command('build_ext')
+                # Add current template to input files entry
+                if template_dir is not None:
+                    template_dirs.add(template_dir)
+                template_files.add(template_file)
 
-        extension.module_dirs = extension.module_dirs or []
-        if build_ext.build_temp not in extension.module_dirs:
-            extension.module_dirs.append(build_ext.build_temp)
+                # Create new entroes for this template
+                def update_template_set(update_template_dirs, update_template_files, update_input_files):
+                    if update_input_files:
+                        update_template_key = (tuple(sorted(update_template_dirs)), tuple(sorted(update_template_files)))
+                        if update_template_key not in template_sets:
+                            template_sets[update_template_key] = set(update_input_files)
+                        else:
+                            template_sets[update_template_key].intersection_update(update_input_files)
 
-        for target_file, f2x_info in extension.f2x_sources:
-            f2x_input.append((target_file, f2x_info, extension))
+                # Base entry for just this template
+                template_dirs, template_files = set(), {template_file}
+                if template_dir is not None:
+                    template_dirs.add(template_dir)
+                update_template_set(template_dirs, template_files, input_files)
 
-        f2x_input = extension.f2x_target.finish_wrapper_input(self, extension, f2x_input)
+                # Update any possible combination
+                for other_template, other_input_files in list(template_sets.items()):
+                    other_template_dirs, other_template_files = map(set, other_template)
+                    update_template_set(template_dirs.union(other_template_dirs),
+                                        template_files.union(other_template_files),
+                                        input_files.intersection(other_input_files))
 
-        if f2x_input:
-            log.info('generating wrappers for %s', ', '.join([i[0] for i in f2x_input]))
+        # Collection (input files) -> (templates) into a list (template_dirs, template_files, input_files)
+        compile_sets = []
+        for input_file_set, templates in input_file_sets.items():
+            for template_dirs, template_files in templates:
+                compile_sets.append((template_dirs, template_files, tuple(sorted(input_file_set))))
+        input_file_sets = compile_sets
 
-            argv = self.f2x_opts + extension.f2x_options
-            path = []
-            templates = self.f2x_templates or extension.templates or extension.f2x_target.template_files
+        # Find out optimal (templates) -> (input files) by look for longest templates list.
+        compile_sets = []
+        # Sort items by length of (template_dirs + template_files)
+        template_sets = list(map(lambda p: (*map(set, p[0]), p[1]),
+                                 sorted(template_sets.items(),
+                                        key=lambda i: sum(map(len, i[0])),
+                                        reverse=True)))
 
-            for template, template_path in templates:
-                if template_path and template_path not in path:
-                    argv += ['-T', template_path]
-                    path.append(template_path)
-                argv += ['-t', template]
+        # Process list of sets until everything is consumed
+        while template_sets:
+            # Keep head (i.e., longest list of templates) for output
+            (template_dirs, template_files, input_file_set), *tail = template_sets
+            compile_sets.append(tuple(map(lambda s: tuple(sorted(s)), (template_dirs, template_files, input_file_set))))
+            template_sets = []
 
-            for target_file, f2x_info, extension in f2x_input:
-                argv.append(target_file)
+            # Check which parts of the tail to keep (i.e., input files list is not empty)
+            for other_template_dirs, other_template_files, other_input_file_set in tail:
 
-            F2x_main(argv)
+                # Make sure nothing is wrapped twice
+                if not other_template_files.isdisjoint(template_files) \
+                        or not other_template_dirs.isdisjoint(template_dirs):
+                    other_input_file_set = other_input_file_set.difference(input_file_set)
 
-    def find_library(self, name):
-        for lib_name, build_info in self.distribution.libraries or []:
-            if lib_name == name:
-                return lib_name, build_info
-        return name, None
+                if other_input_file_set:
+                    template_sets.append((other_template_dirs, other_template_files, other_input_file_set))
+        template_sets = compile_sets
 
-    def find_library_name(self, extension):
-        lib_names = set()
+        return input_file_sets, template_sets
 
-        for target_file, f2x_info in extension.f2x_sources:
-            if 'library' in f2x_info:
-                lib_names.add(f2x_info['library'])
+    def wrap_sources(self, sources_to_wrap):
+        from F2x.runtime.wrapper import F2xWrapper
 
-        if len(lib_names) < 1:
-            library_name = extension.library_name or extension.name.split('.')[-1]
+        compile_sets, *_ = sorted(self._filter_compile_sets(sources_to_wrap), key=len)
 
-        elif len(lib_names) > 1:
-            raise distutils_errors.DistutilsError(f'Too many library names found in "{extension.name}". {lib_names}')
+        for template_dirs, template_files, input_files in compile_sets:
+            join = lambda head, *tail: (head) if not tail else (head + join(*tail))
 
-        else:
-            library_name = list(lib_names)[0]
+            argv = self.f2x_options[:]
+            argv = join(argv, *(['-T', template_dir] for template_dir in template_dirs))
+            argv = join(argv, *(['-t', template_file] for template_file in template_files))
 
-        if extension.library_name is not None and extension.library_name != library_name:
-            raise distutils_errors.DistutilsError(f'Library names do not match in "{extension.name}". '
-                                                  f'{library_name}, {extension.library_name}')
+            log.info(f'wrapping sources {", ".join(input_files)}...')
+            log.info(f'  F2x args: {" ".join(argv)}')
 
-        return library_name
-
-    def find_extension(self, ext_name):
-        for extension in self.distribution.ext_modules:
-            ext_full_name = self.get_ext_fullname(extension.name)
-            if ext_name == ext_full_name:
-                return extension
-
-        return None
+            args = argp.get_args_parser().parse_args(argv + list(input_files))
+            wrapper = F2xWrapper(args, log)
+            wrapper.run()

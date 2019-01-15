@@ -12,28 +12,53 @@
 # distributed under the License is distributed on an "AS IS" BASIS,
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
-# limitations under the License.
+# limitations under the License.build_src
+"""
+F2x implementation of the `build_ext` command for distutils (`setup.py`).
+
+This implementation basically inserts some interaction points. Namely, it calls
+:py:meth:`prepare_build_extension <F2x.distutils.strategy.base.BuildStrategy.prepare_build_extension>`,
+:py:meth:`finish_build_extension <F2x.distutils.strategy.base.BuildStrategy.finish_build_extension>`, and
+:py:meth:`get_ext_filename <F2x.distutils.strategy.base.BuildStrategy.get_ext_filename>`.
+It also ensures that a build strategy is available.
+
+.. seealso::
+
+    :py:mod:`F2x.distutils.strategy.base`
+        Details about the build process and build strategies are documented in the documentation of the base
+        :py:class:`BuildStrategy <F2x.distutils.strategy.base.BuildStrategy>`.
+"""
+import os
+
 from numpy.distutils.command.build_ext import build_ext as numpy_build_ext
+
+from F2x.distutils.strategy import get_strategy, base
 
 
 class build_ext(numpy_build_ext):
-    def run(self):
-        super(build_ext, self).run()
+    def initialize_options(self):
+        super(build_ext, self).initialize_options()
+        self.strategy = None
+
+    def finalize_options(self):
+        super(build_ext, self).finalize_options()
+
+        if self.strategy is not None:
+            self.strategy = get_strategy(self.strategy)
+        else:
+            self.strategy = base.BuildStrategy()
+
+    def build_extension(self, ext):
+        old_strategy, self.strategy = self.strategy, ext.strategy
+        ext.strategy.prepare_build_extension(self, ext)
+        super(build_ext, self).build_extension(ext)
+        ext.strategy.finish_build_extension(self, ext)
+        self.strategy = old_strategy
 
     def get_ext_filename(self, ext_name):
-        build_src = self.get_finalized_command('build_src')
-        extension = build_src.find_extension(ext_name)
-        filename = None
-
-        if extension is not None:
-            filename = extension.f2x_target.get_ext_filename(build_src, extension)
-
+        *package_path, ext_name = ext_name.split('.')
+        filename = self.strategy.get_ext_filename(self, ext_name)
         if filename is None:
             filename = super(build_ext, self).get_ext_filename(ext_name)
 
-        return filename
-
-    def get_libraries(self, ext):
-        libraries = super(build_ext, self).get_libraries(ext)
-        libraries = ext.f2x_target.finish_libraries(ext, libraries)
-        return libraries
+        return os.path.join(*package_path, filename)

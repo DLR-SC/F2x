@@ -68,6 +68,11 @@ class Extension(numpy_Extension):
         kwargs.pop('autosplit', None)
         return Extension(name, sources or self.sources, **kwargs)
 
+    def copy_to(self, other):
+        for attr in self._kwarg_keys:
+            setattr(other, attr, getattr(self, attr))
+            other.module_dirs = (other.module_dirs or []) + self.module_dirs
+
 
 if __name__ == '__main__':
     import sys

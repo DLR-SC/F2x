@@ -22,16 +22,17 @@ def get_args_parser():
 
     argp_wrapping = argp.add_argument_group("Automatic wrapping")
     argp_wrapping.add_argument('-W', '--wrap', action=u'store', metavar='STRATEGY',
-                                help=u"Wrap sources by applying the given strategy.")
+                                help=u"Wrap sources by applying the given STRATEGY.")
     argp_wrapping.add_argument('-m', '--module-name', action='store', default='ext.*',
                                 help="Full name of the module to generate.")
     argp_wrapping.add_argument('-n', '--library-name', action='store',
                                 help="Set the library name.")
     argp_wrapping.add_argument('-s', '--autosplit', action='store_true', default=False,
                                help="Automatically create an own extension for each source file.")
-    argp_wrapping.add_argument('-S', '--add-strategy', action='append', nargs=2, metavar=('NAME', 'CLASS'),
+    argp_wrapping.add_argument('-S', '--add-strategy', action='append', nargs=3, metavar=('NAME', 'CLASS', 'TEMPLATES'),
                                help="Load a strategy for later use. NAME should be the name for the strategy and "
-                                    "CLASS should be the fully qualified class name of a build strategy.")
+                                    "CLASS should be the fully qualified class name of a build strategy. TEMPLATES is "
+                                    "a comma separated list of templates to use.")
 
     argp_generator = argp.add_argument_group(u"Code generation")
     argp_generator.add_argument('-R', '--register-template', action='append', metavar='PACKAGE',

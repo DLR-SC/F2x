@@ -26,12 +26,15 @@ from F2x.distutils.strategy.extension import ExtensionBuildStrategy
 class ExtensionLibBuildStrategy(ExtensionBuildStrategy):
     def prepare_extension(self, build_src, extension):
         *package_path, ext_name = extension.name.split('.')
+
         if ext_name == '*':
             if extension.library_name:
                 extension.name = '.'.join(package_path + [extension.library_name])
+
             elif len(extension.ext_modules) == 1:
                 filename, _ = extension.ext_modules[0]
                 extension.name = '.'.join(package_path + [os.path.splitext(os.path.basename(filename))])
+
             elif not extension.autosplit:
                 log.warn(f'forcing autosplit for extension "{extension.name}"')
                 extension.autosplit = True
@@ -47,6 +50,7 @@ class ExtensionLibBuildStrategy(ExtensionBuildStrategy):
             config = ext_info['config']
             if not config.has_section('generate'):
                 config.add_section('generate')
+
             config.set('generate', 'dll', self.get_ext_filename(build_src, extension.library_name or extension.name))
 
     def select_wrap_sources(self, build_src, extension, target_dir):
@@ -69,12 +73,14 @@ class ExtensionLibBuildStrategy(ExtensionBuildStrategy):
 
     def prepare_build_extension(self, build_ext, extension):
         super(ExtensionLibBuildStrategy, self).prepare_build_extension(build_ext, extension)
+
         if extension.library_name:
             library_name = '.'.join(extension.name.split('.')[:-1] + [extension.library_name])
             extension.name, extension.library_name = library_name, extension.name
 
     def finish_build_extension(self, build_ext, extension):
         super(ExtensionLibBuildStrategy, self).finish_build_extension(build_ext, extension)
+
         if extension.library_name:
             extension.name, extension.library_name = extension.library_name, extension.name.split('.')[-1]
 
