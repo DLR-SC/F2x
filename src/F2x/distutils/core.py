@@ -16,8 +16,9 @@
 from numpy.distutils.core import numpy_cmdclass, setup
 
 from F2x import template
-from F2x.distutils.command import build_src, build_ext
+from F2x.distutils.command import build_src, build_ext, build_sphinx
 
 
 numpy_cmdclass['build_src'] = build_src.build_src
 numpy_cmdclass['build_ext'] = build_ext.build_ext
+numpy_cmdclass['build_sphinx'] = build_sphinx

@@ -69,7 +69,8 @@ class BuildStrategy(object):
         * Decide whether to split and split.
         * Collect libraries and modules form templates.
         """
-        extension.ext_modules = self._collect_ext_sources(build_src, extension)
+        if not extension.ext_modules:
+            extension.ext_modules = self._collect_ext_sources(build_src, extension)
 
         if extension.autosplit and len(extension.ext_modules) > 1:
             self._split_extension(build_src, extension)

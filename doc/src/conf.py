@@ -23,7 +23,9 @@ import os
 import sys
 
 dirname = os.path.dirname(__file__)
-sys.path.insert(0, os.path.abspath(os.path.join(dirname, '..', '..', 'src')))  # F2x source dir
+srcdir = os.path.abspath(os.path.join(dirname, '..', '..', 'src'))
+
+sys.path.insert(0, srcdir)  # F2x source dir
 sys.path.insert(1, os.path.abspath(os.path.join(dirname, '..', 'contrib', 'ext')))  # own extensions
 
 
@@ -170,3 +172,14 @@ jinja_template_path = os.path.join(os.path.dirname(__file__), '..', '..', 'src',
 f2x_examples = [
     ('content/example', 'mylib', 'src.zip'),
 ]
+
+
+# -- Read The Docs -----------------------------------------------------------
+if os.getenv('READTHEDOCS', False):
+    from sphinx.ext import apidoc
+
+    from F2x.distutils.command.build_sphinx import document_templates
+
+
+    apidoc.main(['-f', '-T', '-e', '-M', '-o', os.path.join(dirname, 'api'), srcdir])
+    document_templates(dirname)

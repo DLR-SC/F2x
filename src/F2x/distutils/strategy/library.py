@@ -31,13 +31,16 @@ class ExtensionLibBuildStrategy(ExtensionBuildStrategy):
             if extension.library_name:
                 extension.name = '.'.join(package_path + [extension.library_name])
 
-            elif len(extension.ext_modules) == 1:
-                filename, _ = extension.ext_modules[0]
-                extension.name = '.'.join(package_path + [os.path.splitext(os.path.basename(filename))])
+            else:
+                extension.ext_modules = self._collect_ext_sources(build_src, extension)
 
-            elif not extension.autosplit:
-                log.warn(f'forcing autosplit for extension "{extension.name}"')
-                extension.autosplit = True
+                if len(extension.ext_modules) == 1:
+                    filename, _ = extension.ext_modules[0]
+                    extension.name = '.'.join(package_path + [os.path.splitext(os.path.basename(filename))[0]])
+
+                elif not extension.autosplit:
+                    log.warn(f'forcing autosplit for extension "{extension.name}"')
+                    extension.autosplit = True
 
         super(ExtensionLibBuildStrategy, self).prepare_extension(build_src, extension)
 
