@@ -16,11 +16,11 @@
 from F2x.distutils import setup, Extension, strategy
 from F2x.template import register_template
 
-#from cython_ex.template import cython as cython_template
-#from cython_ex.template.cython.strategy import CythonExtBuildStrategy
-#
-#register_template(cython_template)
-#strategy.register_strategy('cython', CythonExtBuildStrategy(['cython']))
+from cython_ex.template import cython as cython_template
+from cython_ex.template.cython.strategy import CythonExtBuildStrategy
+
+register_template(cython_template)
+strategy.register_strategy('cython', CythonExtBuildStrategy(['cython']))
 
 
 setup(
