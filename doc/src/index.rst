@@ -18,7 +18,7 @@ Welcome to F2x Documentation!
 =============================
 
 **F2x** is a Python tool that allows you to take your Fortran code and make it accessible from other languages. Compared
-to it's main competitor `f2py <https://f2py.org>`_ it comes with two important differences:
+to the popular tool `f2py <https://f2py.org>`_ it comes with two important differences:
 
 - A superior Fortran parser based on the work by the `OpenFortranParser <https://openfortranparser.github.com>`_
 - A very flexible code generation backend that uses `Jinja2 templates <https://jinja.pocoo.net>`_

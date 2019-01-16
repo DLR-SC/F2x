@@ -3,10 +3,10 @@
 *A versatile, template-based Fortran wrapper written in Python.*
 
 F2x is a Python tool that allows you to take your Fortran code and make it accessible from other languages
-(mainly Python). Compared to it’s main competitor [f2py](https://docs.scipy.org/doc/numpy/f2py/) it comes
+(mainly Python). Compared to the popular tool [f2py](https://docs.scipy.org/doc/numpy/f2py/) it comes
 with two important differences:
 
-* A superior Fortran parser based on the work by the [OpenFortranParser](http://fortran-parser.sourceforge.net)
+* A full Fortran parser based on the work by the [OpenFortranParser](http://fortran-parser.sourceforge.net)
 * A very flexible code generation backend that uses [Jinja2 templates](http://jinja.pocoo.org)
 
 
