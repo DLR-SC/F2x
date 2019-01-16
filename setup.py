@@ -96,7 +96,6 @@ setup(
             'six',
             'sphinx',
             'sphinx-argparse',
-            'sphinxcontrib-jinjadomain',
         ],
     },
 
