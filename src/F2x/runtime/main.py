@@ -124,11 +124,12 @@ def _get_file_list(args):
 
             if what == 'libraries':
                 for _, info in getattr(mod, what) or []:
-                    all += info.get('sources', [])
-            else:
-                all += getattr(mod, what, []) or []
+                    all += [(mod, source) for source in info.get('sources', [])]
 
-    print(' '.join([os.path.join(mod.package_dir, entry) for entry in all]))
+            else:
+                all += [(mod, source) for source in (getattr(mod, what, []) or [])]
+
+    print(' '.join([os.path.join(mod.package_dir, entry) for mod, entry in all]))
 
 
 def main(argv=None, from_distutils=False):
