@@ -80,10 +80,6 @@ setup(
     package_dir={ '': 'src' },
     package_data=package_data,
 
-    tests_require=[
-        'pytest-runner',
-        'pytest',
-    ],
     install_requires=[
         'plyplus',
         'jinja2',
@@ -96,6 +92,11 @@ setup(
             'six',
             'sphinx',
             'sphinx-argparse',
+        ],
+
+        'tests': [
+            'pytest-runner',
+            'pytest',
         ],
     },
 
