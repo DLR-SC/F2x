@@ -178,6 +178,9 @@ class BuildStrategy(object):
         build_clib.libraries = distribution.libraries
 
         build_py = build_src.get_finalized_command('build_py')
+        if build_py.packages is None:
+            build_py.packages = []
+
         build_py.package_dir.update(distribution.package_dir)
         build_py.packages += [package for package in distribution.packages if package not in build_py.packages]
 
