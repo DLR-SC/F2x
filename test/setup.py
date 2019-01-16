@@ -41,10 +41,10 @@ setup(
                   inline_sources=False,
                   templates=['bindc_new', 'ctypes_new']),
 
-#       Extension('cython_ex.*', ['cython_ex/simple.f90', 'cython_ex/second.f90'],
-#                 strategy='cython',
-#                 inline_sources=True,
-#                 autosplit=True),
+       Extension('cython_ex.*', ['cython_ex/simple.f90', 'cython_ex/second.f90'],
+                 strategy='cython',
+                 inline_sources=True,
+                 autosplit=True),
 
 #        Extension('F2x_test.doc.interface.*', ['F2x_test/interface/src/*.f90'],
 #                  autosplit=True,
