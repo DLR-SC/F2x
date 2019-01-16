@@ -28,8 +28,6 @@ from sphinx.ext.autosummary import Autosummary, autosummary_table
 from sphinx.util.docutils import switch_source_input
 from sphinx.util.logging import getLogger
 
-from sphinxcontrib.autojinja import jinja
-
 from F2x import template
 from F2x.distutils.strategy.base import BuildStrategy
 

@@ -9,21 +9,21 @@
 
 import re
 import os
-try:
-    import cStringIO as StringIO
-except ImportError:
-    import StringIO
+from io import StringIO
 
 from docutils import nodes
 from docutils.statemachine import ViewList
 
 from sphinx.util import force_decode
-from sphinx.util.compat import Directive
+from sphinx.directives import SphinxDirective as Directive
 from sphinx.util.nodes import nested_parse_with_titles
 from sphinx.util.docstrings import prepare_docstring
 from sphinx.pycode import ModuleAnalyzer
 
-from sphinxcontrib import jinjadomain
+from sphinxcontrib_ext import jinjadomain
+
+
+basestring = str
 
 
 def jinja_directive(path, content):

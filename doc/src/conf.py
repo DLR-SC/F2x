@@ -52,8 +52,8 @@ extensions = [
 
     # Language support: Fortran, Jinja2
     'sphinxfortran.fortran_domain',
-    'sphinxcontrib.jinjadomain',
-    'sphinxcontrib.autojinja.jinja',
+    'sphinxcontrib_ext.jinjadomain',
+    'sphinxcontrib_ext.autojinja.jinja',
 
     # Generate doc from ArgParser
     'sphinxarg.ext',
