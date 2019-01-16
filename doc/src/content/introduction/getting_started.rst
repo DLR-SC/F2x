@@ -49,7 +49,7 @@ containing folder run:
 
 .. code::
 
-   $ F2x -s lib mylib/test.f90
+   $ F2x -W lib mylib/test.f90
 
 This applies a :doc:`strategy </content/user_manual/strategies>` to generate the wrapper modules and compile the extension
 in one shot. You can try your results by running tests against it:

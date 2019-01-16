@@ -38,7 +38,7 @@ def get_args_parser():
     argp_generator.add_argument('-R', '--register-template', action='append', metavar='PACKAGE',
                                 help="Load a template pacakge into the regitry for later use. PACAKGE should be the "
                                      "fully qualified name of a F2x template package.")
-    argp_generator.add_argument(u'-t', u'--template', action=u'append', metavar='NAME',
+    argp_generator.add_argument(u'-t', u'--template', action=u'append', metavar='NAME', default=[],
                                 help="Generate wrapping for the given template. NAME should be the name of a F2x "
                                      "template package, the path to a template that can be found in the template path "
                                      "or a bundled template that should be prefixed by @.")
