@@ -124,8 +124,8 @@ This file will be wrapped and the resulting sources are compiled to a dynamic li
 .. code::
 
    $ F2x -t @bindc/_glue.f90.t -t @ctypes_noerr/_glue.py.t mylib/test.f90
-   $ gfortran -shared -o mylib/libTEST.so mylib/test.f90 mylib/test_glue.f90 \
-       $(F2x -t bindc -t ctypes_noerr --get libraries)
+   $ gfortran -fPIC -shared -o mylib/libTEST.so $(F2x -t bindc -t ctypes_noerr --get libraries) \
+       mylib/test.f90 mylib/test_glue.f90 
    $ cp $(F2x -t bindc -t ctypes_noerr --get modules) mylib
 
 Now you should be able to call :code:`CALL_TEST` from Python:
@@ -146,3 +146,4 @@ There are several other ways to interact with **F2x** which are described in mor
 * :doc:`Tuning interface generation parameters for a Fortran source </content/user_manual/interface_config>`
 * :doc:`Extending F2x with your own templates </content/advanced/extra_templates>`
 * :doc:`Using an alternate parser for F2x </content/advanced/alternate_parser>`
+
