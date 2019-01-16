@@ -126,7 +126,7 @@ def _get_file_list(args):
                 for _, info in getattr(mod, what) or []:
                     all += info.get('sources', [])
             else:
-                all += getattr(mod, what, [])
+                all += getattr(mod, what, []) or []
 
     print(' '.join([os.path.join(mod.package_dir, entry) for entry in all]))
 
