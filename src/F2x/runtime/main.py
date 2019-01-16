@@ -114,11 +114,11 @@ def _templates_from_args(log, args):
 
 
 def _get_file_list(args):
-    templates = _templates_from_args(None, args)
+    templates, _, _ = _templates_from_args(None, args)
     all = []
 
     for what in args.get:
-        for mod in templates:
+        for mod, _, _, _ in templates:
             if mod is None:
                 continue
 
