@@ -58,8 +58,9 @@ def get_args_parser():
     argp_action = argp.add_argument_group(u"Action")
     argp_action.add_argument('-f', '--force', action='store_true', default=False,
                              help="Force rebuild of wrapper.")
-    argp_action.add_argument(u'--get', nargs=1, choices=['depends', 'modules', 'libraries'],
-                             help=u"Get [requires, modules, libraries] for the given templates.")
+    argp_action.add_argument(u'--get', nargs=1, choices=['depends', 'modules', 'libraries', 'extlib'],
+                             help="Collect template information about dependencies, modules, libraries, or "
+                                  "the name of the extension library.")
     argp_action.add_argument(u'source', nargs=u'*', metavar=u"SOURCE",
                              help=u"Wrap the given templates to the SOURCE files.")
 

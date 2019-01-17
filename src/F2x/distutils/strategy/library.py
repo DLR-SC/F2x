@@ -17,7 +17,7 @@ import configparser
 import os
 
 from distutils.sysconfig import get_config_vars as distuils_get_config_vars
-from numpy.distutils import log
+from numpy.distutils import log, system_info
 
 from F2x import template as F2x_template
 from F2x.distutils.strategy.extension import ExtensionBuildStrategy
@@ -88,6 +88,5 @@ class ExtensionLibBuildStrategy(ExtensionBuildStrategy):
             extension.name, extension.library_name = extension.library_name, extension.name.split('.')[-1]
 
     def get_ext_filename(self, build_src, ext_name):
-        suffix = distuils_get_config_vars('SHLIB_SUFFIX')[0]
-        *_, ext_name = build_src.get_ext_fullname(ext_name).split('.')
-        return f'lib{ext_name}{suffix}'
+        *_, ext_name = ext_name.split('.')
+        return f'lib{ext_name}{system_info.so_ext}'

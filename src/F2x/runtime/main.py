@@ -116,20 +116,28 @@ def _templates_from_args(log, args):
 def _get_file_list(args):
     templates, _, _ = _templates_from_args(None, args)
     all = []
+    filelist = lambda d, l: map(lambda f: os.path.join(d, f), l)
 
     for what in args.get:
-        for mod, _, _, _ in templates:
-            if mod is None:
-                continue
+        if what == 'extlib':
+            ext = _make_extension(args)
+            ext.strategy.prepare_extension(None, ext)
+            extlib_name = ext.strategy.get_ext_filename(None, args.library_name or ext.name)
 
-            if what == 'libraries':
-                for _, info in getattr(mod, what) or []:
-                    all += [(mod, source) for source in info.get('sources', [])]
+            if extlib_name:
+                all.append(extlib_name)
 
-            else:
-                all += [(mod, source) for source in (getattr(mod, what, []) or [])]
+        else:
+            for mod, _, _, _ in templates:
+                if what == 'libraries':
+                    for _, info in mod.libraries or []:
+                        all.extend(filelist(mod.package_dir, info.get('sources', [])))
 
-    print(' '.join([os.path.join(mod.package_dir, entry) for mod, entry in all]))
+                else:
+                    all.extend(filelist(mod.package_dir, getattr(mod, what, []) or []))
+
+    print(' '.join(all))
+
 
 
 def main(argv=None, from_distutils=False):
@@ -149,7 +157,6 @@ def main(argv=None, from_distutils=False):
     if args.wrap:
         # If a strategy is given, load it and build extension
         from F2x.distutils import core
-        from F2x.distutils.extension import Extension
 
         # Enforce 'inplace' build for command line call
         sys.argv = sys.argv[:1] + ['build_ext', '--inplace']
@@ -157,9 +164,7 @@ def main(argv=None, from_distutils=False):
             sys.argv.append('--force')
 
         # Build the extension
-        ext = Extension(args.module_name or args.library_name or 'ext.*', args.source,
-                        strategy=args.wrap, f2x_options=[],
-                        autosplit=args.autosplit, inline_sources=True)
+        ext = _make_extension(args)
         core.setup(ext_modules=[ext])
 
     else:
@@ -168,6 +173,15 @@ def main(argv=None, from_distutils=False):
 
         wrapper = F2xWrapper(args, log)
         wrapper.run()
+
+
+def _make_extension(args):
+    from F2x.distutils.extension import Extension
+
+    ext = Extension(args.module_name or args.library_name or 'ext.*', args.source,
+                    strategy=args.wrap, f2x_options=[], templates=args.template,
+                    autosplit=args.autosplit, inline_sources=True)
+    return ext
 
 
 def _run_wrapper(templates, template_path, args, log):

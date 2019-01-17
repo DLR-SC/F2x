@@ -43,12 +43,13 @@ class Extension(numpy_Extension):
 
         super(Extension, self).__init__(name, sources, **kwargs)
 
-        if isinstance(self.strategy, str):
+        if self.strategy is None or isinstance(self.strategy, str):
             from F2x.distutils.strategy import get_strategy
-            self.strategy = get_strategy(self.strategy)
+            self.strategy = get_strategy(self.strategy or 'lib')
 
         if self.templates:
             self.templates = self.strategy.load_templates(self.templates)
+
         else:
             self.templates = self.strategy.templates
 

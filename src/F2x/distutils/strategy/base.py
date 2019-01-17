@@ -326,6 +326,9 @@ class BuildStrategy(object):
         return None
 
     def _add_library(self, build_src, package_dir, lib_name, lib_info):
+        if build_src is None:
+            return
+
         sources = [os.path.relpath(os.path.join(package_dir, source)) for source in lib_info['sources']]
 
         for t_lib_name, t_lib_info in build_src.distribution.libraries:
@@ -338,6 +341,9 @@ class BuildStrategy(object):
         build_src.distribution.libraries.append((lib_name, t_lib_info))
 
     def _add_python_modules(self, build_src, package_name, sources):
+        if build_src is None:
+            return
+
         package_path = package_name.split('.')
 
         if build_src.distribution.package_dir is None:

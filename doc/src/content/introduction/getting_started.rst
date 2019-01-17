@@ -125,8 +125,8 @@ This file will be wrapped and the resulting sources are compiled to a dynamic li
 .. code::
 
    $ F2x -t @bindc/_glue.f90.t -t @ctypes_noerr/_glue.py.t mylib/test.f90
-   $ gfortran -fPIC -shared -o mylib/libTEST.so $(F2x -t bindc -t ctypes_noerr --get libraries) \
-       mylib/test.f90 mylib/test_glue.f90 
+   $ gfortran -fPIC -shared -o mylib/$(F2x --get extlib mylib/test.f90) \
+       $(F2x -t bindc -t ctypes_noerr --get libraries) mylib/test.f90 mylib/test_glue.f90
    $ cp $(F2x -t bindc -t ctypes_noerr --get modules) mylib
 
 Now you should be able to call :code:`CALL_TEST` from Python:
