@@ -32,7 +32,6 @@ test-documentation-example-python-3:
     - source env/bin/activate
     - pip install -U pip setuptools
     - pip install -e .[tests]
-    - python setup.py build_sphinx
     - cp -r ./doc/src/content/example/mylib .
     - F2x -t @bindc/_glue.f90.t -t @ctypes_noerr/_glue.py.t mylib/test.f90
     - gfortran -fPIC -shared -o mylib/libtest.so $(F2x -t bindc -t ctypes_noerr --get libraries)     mylib/test.f90 mylib/test_glue.f90
