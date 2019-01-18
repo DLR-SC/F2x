@@ -1,26 +1,54 @@
 stages:
   - build
+  - build:docs
+  - test:doc_example
   - test
 
-setup-python-36:
+setup-python-3:
   stage: build
   script:
-    - python36 -m venv env
+    - python3 -m venv env
     - source env/bin/activate
     - pip install -U pip setuptools
     - pip install -e .[cython]
   tags:
     - bacardi
 
-test-build-python-36:
+build-documentation-python-3:
+  stage: build:docs
+  script:
+    - python3 -m venv env
+    - source env/bin/activate
+    - pip install -U pip setuptools
+    - pip install -e .[docs]
+    - python setup.py build_sphinx
+  tags:
+    - bacardi
+
+test-documentation-example-python-3:
+  stage: test:doc_example
+  script:
+    - python3 -m venv env
+    - source env/bin/activate
+    - pip install -U pip setuptools
+    - pip install -e .[tests]
+    - cp -r ./doc/src/content/example/mylib .
+    - F2x -t @bindc/_glue.f90.t -t @ctypes_noerr/_glue.py.t mylib/test.f90
+    - gfortran -fPIC -shared -o mylib/libtest.so $(F2x -t bindc -t ctypes_noerr --get libraries)     mylib/test.f90 mylib/test_glue.f90
+    - cp $(F2x -t bindc -t ctypes_noerr --get modules) mylib
+    - echo -e "from mylib import test_glue as test\ntest.CALL_TEST(123456789)" | python
+  tags:
+    - bacardi
+
+test-build-python-3:
   stage: test
   script:
-    - python36 -m venv env
+    - python3 -m venv env
     - source env/bin/activate
-    - pip install -U pip setuptools pytest
-    - pip install -e .[cython]
+    - pip install -U pip setuptools
+    - pip install -e .[cython,tests]
     - cd test
-    - python setup.py build
-    - pytest F2x_test
+    - python setup.py build_ext --inplace
+    - pytest .
   tags:
     - bacardi
