@@ -19,6 +19,7 @@ import warnings
 
 warnings.simplefilter('ignore', ResourceWarning)
 
+import importlib
 import os
 import sys
 import time
@@ -29,7 +30,7 @@ import plyplus
 import F2x
 from F2x.parser.plyplus import source
 from F2x.runtime import argp
-from F2x.template import get_template, package_dir as template_package_dir
+from F2x.template import get_template, register_template, package_dir as template_package_dir
 
 
 IGNORE_DELTA = 3
@@ -67,7 +68,6 @@ def _templates_from_args(log, args):
         # Load strategy and build extension
         from F2x.distutils.strategy import get_strategy
         strategy = get_strategy(args.wrap)
-
 
         if not args.template:
             for name in strategy.templates:
@@ -153,6 +153,25 @@ def main(argv=None, from_distutils=False):
     if not from_distutils:
         log = argp.init_logger(args)
         log.info(f"{F2x.program_name} Version {F2x.get_version_string()}")
+
+    for template_package in args.register_template:
+        if '.' in template_package:
+            template_package, package_name = template_package.rsplit('.', 1)
+        else:
+            template_package, package_name = None, template_package
+
+        module = importlib.import_module(((template_package + '.') if template_package is not None else '') + package_name, template_package)
+        register_template(module)
+
+    # Register strategies
+    if args.add_strategy:
+        from F2x.distutils import strategy
+
+        for name, cls_name, templates in args.add_strategy:
+            cls_package, cls_module, cls_name = cls_name.rsplit('.', 2)
+            module = importlib.import_module(cls_package + '.' + cls_module, cls_package)
+            cls = getattr(module, cls_name)
+            strategy.register_strategy(name, cls(templates.split(',')))
 
     if args.wrap:
         # If a strategy is given, load it and build extension
