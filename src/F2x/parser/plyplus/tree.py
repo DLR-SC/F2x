@@ -240,13 +240,13 @@ class Module(tree.Module):
                 method = FuncDef(funcdef)
                 method["export_name"] = config.get("export", method["name"].lower(), fallback=f'{self["name"]}_{method["name"]}')
                 if "ret" in method:
-#                    if "dims" in method["ret"]:
-#                        l_line = [line for line in src.source_lines if method["ret"]["name"] in line and "ALLOCATE" in line]
-#                        if len(l_line) == 1:
-#                            #ok, it is a dynamic array, find the size variable of the array
-#                            l_aux_line = l_line[0][l_line[0].find(method["ret"]["name"]):-2]
-#                            l_size_var = l_aux_line[len(method["ret"]["name"])+1:-1].split(',')
-#                            method["ret"]["dims"] = l_size_var
+                    if "dims" in method["ret"]:
+                        l_line = [line for line in src.source_lines if method["ret"]["name"] in line and "ALLOCATE" in line]
+                        if len(l_line) == 1:
+                            #ok, it is a dynamic array, find the size variable of the array
+                            l_aux_line = l_line[0][l_line[0].find(method["ret"]["name"]):-2]
+                            l_size_var = l_aux_line[len(method["ret"]["name"])+1:-1].split(',')
+                            method["ret"]["dims"] = l_size_var
                     if method["ret"]["getter"] == "subroutine":
                         if method["ret"]["name"] == method["name"]:
                             method["ret"]["name"] = method["export_name"].upper() + '_OUT'
@@ -261,12 +261,12 @@ class Module(tree.Module):
             if export_items is None or subdef.select("subroutine_stmt name")[0].tail[0].lower() in export_items:
                 method = SubDef(subdef)
                 method["export_name"] = config.get("export", method["name"].lower(), fallback=f'{self["name"]}_{method["name"]}')
-#                l_array_args = [ l_arg for l_arg in method["args"] if "dims" in l_arg ]
-#                if len(l_array_args) > 0:
-#                    #okay, we have arguments of array type
-#                    sub_start, sub_end = self._get_subroutine(method["name"], src.source_lines)
-#                    for arg in l_array_args:
-#                        self._set_array_size(arg, src.source_lines[sub_start: sub_end])
+                l_array_args = [ l_arg for l_arg in method["args"] if "dims" in l_arg ]
+                if len(l_array_args) > 0:
+                    #okay, we have arguments of array type
+                    sub_start, sub_end = self._get_subroutine(method["name"], src.source_lines)
+                    for arg in l_array_args:
+                        self._set_array_size(arg, src.source_lines[sub_start: sub_end])
 
                 if "ret" in method:
                     method["ret"]["name"] = method["export_name"].upper() + '_OUT'
