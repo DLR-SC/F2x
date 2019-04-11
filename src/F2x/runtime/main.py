@@ -148,7 +148,7 @@ def main(argv=None, from_distutils=False):
     # Load configuration if assigned
     config = ConfigParser()
     if args.config:
-        config.read_file(args.config)
+        config.read(args.config)
 
         # HACK Store config values in args...
         args.grammar = argp.get_arg(args, config, 'grammar', 'parser', "@fortran.g", str)

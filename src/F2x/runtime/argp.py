@@ -140,7 +140,7 @@ def get_arg(args, config, name, section, default, cast):
     if arg != default:
         return arg
 
-    if config.has_section(section) and config.has(section, name):
+    if config.has_section(section) and config.has_option(section, name):
         return cast(config.get(section, name))
 
     return default
