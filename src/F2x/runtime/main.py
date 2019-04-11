@@ -23,6 +23,7 @@ import importlib
 import os
 import sys
 import time
+from configparser import ConfigParser
 
 import jinja2
 import plyplus
@@ -144,6 +145,33 @@ def main(argv=None, from_distutils=False):
     # Parse command line
     args = argp.parse_args(argv)
 
+    # Load configuration if assigned
+    config = ConfigParser()
+    if args.config:
+        config.read_file(args.config)
+
+        # HACK Store config values in args...
+        args.grammar = argp.get_arg(args, config, 'grammar', 'parser', "@fortran.g", str)
+        args.config_suffix = argp.get_arg(args, config, 'config_suffix', 'parser', "-wrap", str)
+        args.output_pre = argp.get_arg(args, config, 'output_pre', 'parser', False, bool)
+        args.configure = argp.get_arg(args, config, 'configure', 'parser', False, bool)
+        args.encoding = argp.get_arg(args, config, 'encoding', 'parser', 'utf8', str)
+        args.tree_class = argp.get_arg(args, config, 'tree_class', 'parser', None, str)
+
+        args.wrap = argp.get_arg(args, config, 'wrap', 'wrap', None, str)
+        args.module_name = argp.get_arg(args, config, 'module_name', 'wrap', None, str)
+        args.library_name = argp.get_arg(args, config, 'library_name', 'wrap', None, str)
+        args.autosplit = argp.get_arg(args, config, 'autosplit', 'wrap', False, str)
+        args.add_strategy = argp.get_arg(args, config, 'add_strategy', 'wrap', [], lambda e: map(lambda s: s.split(','), e.split(';')))
+
+        args.register_template = argp.get_arg(args, config, 'register_template', 'generate', [], lambda p: p.split(';'))
+        args.template = argp.get_arg(args, config, 'template', 'generate', [], lambda t: t.split(';'))
+        args.template_path = argp.get_arg(args, config, 'template_path', 'generate', [], lambda p: p.split(';'))
+        args.jinja_ext = argp.get_arg(args, config, 'jinja_ext', 'generate', ['jinja2.ext.do'], lambda e: e.split(';'))
+
+        args.logfile = argp.get_arg(args, config, 'logfile', 'logging', None, str)
+        # HACK end
+
     # Shortcut if action modus is "get" (i.e., output library files)
     if args.get:
         _get_file_list(args)
@@ -154,7 +182,7 @@ def main(argv=None, from_distutils=False):
         log = argp.init_logger(args)
         log.info(f"{F2x.program_name} Version {F2x.get_version_string()}")
 
-    for template_package in args.register_template:
+    for template_package in args.register_template or []:
         if '.' in template_package:
             template_package, package_name = template_package.rsplit('.', 1)
         else:

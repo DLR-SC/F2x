@@ -7,6 +7,9 @@ import F2x
 def get_args_parser():
     argp = argparse.ArgumentParser(prog=F2x.program_name, description=f'{F2x.program_name} - {F2x.program_description}')
 
+    argp.add_argument('-c', '--config', action="store",
+                      help="Load configuration file.")
+
     argp_parser = argp.add_argument_group(u"Fortran parser")
     argp_parser.add_argument('-G', '--grammar', default=u"@fortran.g",
                              help="Use specified grammar. Bundled grammars should be prefixed by @. "
@@ -19,6 +22,8 @@ def get_args_parser():
                              help="Create/update configuration file.")
     argp_parser.add_argument('-e', '--encoding', default='utf8',
                              help="Use the specified encoding for reading/writing source files.")
+    argp_parser.add_argument('-i', '--tree-class', action="store",
+                             help="Tree class to use for parsing (module.name:ClassName).")
 
     argp_wrapping = argp.add_argument_group("Automatic wrapping")
     argp_wrapping.add_argument('-W', '--wrap', action=u'store', metavar='STRATEGY',
@@ -128,3 +133,14 @@ def init_logger(args, parent=None):
 def parse_args(argv=None):
     args = get_args_parser().parse_args(argv)
     return args
+
+
+def get_arg(args, config, name, section, default, cast):
+    arg = getattr(args, name, default)
+    if arg != default:
+        return arg
+
+    if config.has_section(section) and config.has(section, name):
+        return cast(config.get(section, name))
+
+    return default

@@ -66,7 +66,9 @@ class SourceFile(source.SourceFile):
         grammar = load_grammar(grammar_filename)
         self.tree = grammar.parse(self.source)
 
-    def get_gtree(self):
-        module = tree.Module(self.tree)
+    def get_gtree(self, cls=None):
+        if cls is None:
+            cls = tree.Module
+        module = cls(self.tree)
         module.export_methods(self)
         return module

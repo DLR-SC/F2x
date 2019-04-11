@@ -1,5 +1,6 @@
 import ctypes
 import os
+from importlib import import_module
 
 import jinja2
 import plyplus
@@ -34,6 +35,17 @@ class F2xWrapper(object):
 
         self.progress = 0
         self.total_progress = (len(templates) + 4) * len(self.args.source)
+        if self.args.tree_class is not None:
+            mod_name, cls_name = self.args.tree_class.split(':')
+            if '.' in mod_name:
+                pkg_name, _ = mod_name.rsplit('.', 1)
+                mod = import_module(mod_name, pkg_name)
+            else:
+                mod = import_module(mod_name)
+            cls = getattr(mod, cls_name)
+        else:
+            cls = None
+
         for input_file in self.args.source:
             self.progress += 1
             self.log.info(f'{self._current_progress} reading {input_file}')
@@ -44,7 +56,7 @@ class F2xWrapper(object):
                 continue
             self.progress += 2
 
-            module = src.get_gtree()
+            module = src.get_gtree(cls)
             self.progress += 1
 
             if not src.config.has_option('generate', 'dll'):
