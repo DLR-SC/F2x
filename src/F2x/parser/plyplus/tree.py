@@ -1,25 +1,30 @@
-# Copyright 2018 German Aerospace Center (DLR)
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
 '''
 Created on 08.04.2016
 
 @author: meinel
 '''
-from F2x.parser import tree
 
+class Node(dict):
+    """ This is the base class for the simplified AST that can easily be used
+        in templates. It is simply a dict which stores child nodes as values.
+        This allows to simply use node.child to access the values from a
+        template. E.g. to get the modules name, you can simply use
 
-class VarDecl(tree.VarDecl):
+        {{ module.name }}
+    """
+
+    def __init__(self, ast):
+        """ Node constructor stores local AST node in self._ast and calls
+            self._init_children() which should be overwritten by child classes.
+        """
+        self._ast = ast
+        self._init_children()
+
+    def _init_children(self):
+        """ Implement this to store useful values (i.e. lists or dicts) in the properties. """
+        raise NotImplementedError()
+
+class VarDecl(Node):
     """
     A variable declaration.
 
@@ -53,11 +58,21 @@ class VarDecl(tree.VarDecl):
         "TYPE(C_PTR)": "IntPtr",
     }
 
+    def __init__(self, ast, prefix=""):
+        """ Slightly modified constructor to allow for re-use for type-specs and var-specs.
+
+        For the grammar to work, component arrays have their own rule which divers from the
+        variable array only in the prefix "component_" which can be passed in.
+        """
+        self._prefix = prefix
+        super(VarDecl, self).__init__(ast)
+
     def _init_children(self):
         self["name"] = self._ast.select1("name").tail[0]
 
         # Identify FORTRAN type and store properties accordingly
         full_spec = self._ast.parent().parent()
+        #print("full_spec: {}".format(full_spec))
         type_spec = full_spec.select1("declaration_type_spec")
         try:
             self["ftype"] = type_spec.select1("derived_type_spec name").tail[0]
@@ -75,7 +90,7 @@ class VarDecl(tree.VarDecl):
                 self["setter"] = "subroutine"
             except ValueError:
                 try:
-                    self["strlen"] = type_spec.select1("char_selector /(\*|:)/")
+                    self["strlen"] = type_spec.select1("char_selector /\*/")
                     self["intent"] = "IN"
                     self["type"] = "TYPE(C_PTR)"
                     self["pytype"] = "ctypes.c_char_p"
@@ -87,7 +102,8 @@ class VarDecl(tree.VarDecl):
                     self["getter"] = "function"
                     self["setter"] = "subroutine"
 
-        for attr in full_spec.select(self._prefix + "attr_spec"):
+        for attr in full_spec.select("component_attr_spec"):
+            #print("attr: {}".format(attr))
             if 'ALLOCATABLE' in attr.tail:
                 self["dynamic"] = 'ALLOCATABLE'
             elif 'POINTER' in attr.tail:
@@ -95,26 +111,17 @@ class VarDecl(tree.VarDecl):
 
         # Identify array dimensions
         for ast in (self._ast, full_spec):
-            dim_nodes = ast.select(self._prefix + "array_spec array_spec_element")
-            if not dim_nodes:
-                continue
-
-            dims = []
-            for node in dim_nodes:
-                dim = node.select("int_literal_constant")
-                if dim:
-                    dims.append(dim[0].tail[0])
-                    continue
-
-                dim = node.select("part_ref")
-                if dim:
-                    dims.append(dim[0].tail[0])
-                    break
-
-                dims.append(0)
-
+            dims = ast.select(self._prefix + "array_spec int_literal_constant")
             if dims:
-                self["dims"] = dims
+                self["dims"] = [int(dim.tail[0]) for dim in dims]
+                break
+
+            dims = ast.select(self._prefix + "array_spec array_spec_element")
+            if not dims:
+                dims = ast.select(self._prefix + "array_spec deferred_shape_spec_list")
+            if dims:
+                self["dims"] = [0] * len(dims[0].tail)
+                break
 
         if "dims" in self \
         and "strlen" not in self:
@@ -155,7 +162,7 @@ class VarDecl(tree.VarDecl):
         return self
 
 
-class TypeDef(tree.TypeDef):
+class TypeDef(Node):
     def _init_children(self):
         self["name"] = self._ast.select1("derived_type_stmt name").tail[0]
         try:
@@ -171,7 +178,7 @@ class TypeDef(tree.TypeDef):
             del field["intent"]
 
 
-class SubDef(tree.SubDef):
+class SubDef(Node):
     _PREFIX = "subroutine"
 
     def _init_children(self):
@@ -205,12 +212,7 @@ class FuncDef(SubDef):
             except KeyError:
                 self["ret"] = var_specs[self["name"]]
 
-        if "dims" in self["ret"]:
-            self["ret"]["getter"] = "subroutine"
-            self["ret"]["intent"] = "OUT"
-
-
-class Module(tree.Module):
+class Module(Node):
     def _init_children(self):
         self["name"] = self._ast.select1("module_stmt name").tail[0]
         self["uses"] = [use.tail[0] for use in self._ast.select("use_stmt name")]
@@ -228,50 +230,48 @@ class Module(tree.Module):
 #    def export_methods(self, config):
     def export_methods(self, src):
         config = src.config
-        if config.has_section("export"):
-            export_items = [key for key, _ in config.items("export")]
-
-        else:
-            export_items = None
+        if not config.has_section("export"):
+            return
             
         methods = []
-        for funcdef in self._ast.select("function_subprogram") :
-            if export_items is None or funcdef.select("function_stmt name")[0].tail[0].lower() in export_items:
-                method = FuncDef(funcdef)
-                method["export_name"] = config.get("export", method["name"].lower(), fallback=f'{self["name"]}_{method["name"]}')
-                if "ret" in method:
-                    if "dims" in method["ret"]:
-                        l_line = [line for line in src.source_lines if method["ret"]["name"] in line and "ALLOCATE" in line]
-                        if len(l_line) == 1:
-                            #ok, it is a dynamic array, find the size variable of the array
-                            l_aux_line = l_line[0][l_line[0].find(method["ret"]["name"]):-2]
-                            l_size_var = l_aux_line[len(method["ret"]["name"])+1:-1].split(',')
-                            method["ret"]["dims"] = l_size_var
-                    if method["ret"]["getter"] == "subroutine":
-                        if method["ret"]["name"] == method["name"]:
+        for export in config.items("export"):
+            for funcdef in self._ast.select("function_subprogram") :
+                if funcdef.select("function_stmt name")[0].tail[0].lower() == export[0] :
+                   method = FuncDef(funcdef)
+                   method["export_name"] = config.get("export", method["name"].lower())
+                   if "ret" in method:
+                       if "dims" in method["ret"]:
+                            l_line = [line for line in src.source_lines if method["ret"]["name"] in line and "ALLOCATE" in line]
+                            if len(l_line) == 1:
+                                #ok, it is a dynamic array, find the size variable of the array
+                                l_aux_line = l_line[0][l_line[0].find(method["ret"]["name"]):-2]
+                                l_size_var = l_aux_line[len(method["ret"]["name"])+1:-1].split(',')
+                                method["ret"]["dims"] = l_size_var
+                       if method["ret"]["getter"] == "subroutine":
                             method["ret"]["name"] = method["export_name"].upper() + '_OUT'
-                        method["ret"]["intent"] = "OUT"
-                    else:
-                        method["ret"]["name"] = method["export_name"].upper() + '_RESULT'
-                        del method["ret"]["intent"]
-                methods.append(method)
+                            method["ret"]["intent"] = "OUT"
+                       else:
+                           method["ret"]["name"] = method["export_name"].upper()
+                           del method["ret"]["intent"]
+                   methods.append(method)
+                   break
+            else :
+                for subdef in self._ast.select("subroutine_subprogram") :
+                    if subdef.select("subroutine_stmt name")[0].tail[0].lower() == export[0] :
+                        method = SubDef(subdef)
+                        method["export_name"] = config.get("export", method["name"].lower())
+                        l_array_args = [ l_arg for l_arg in method["args"] if "dims" in l_arg ]
+                        if len(l_array_args) > 0:
+                            #okay, we have arguments of array type
+                            sub_start, sub_end = self._get_subroutine(method["name"], src.source_lines)
+                            for arg in l_array_args:
+                                self._set_array_size(arg, src.source_lines[sub_start: sub_end])
 
-
-        for subdef in self._ast.select("subroutine_subprogram") :
-            if export_items is None or subdef.select("subroutine_stmt name")[0].tail[0].lower() in export_items:
-                method = SubDef(subdef)
-                method["export_name"] = config.get("export", method["name"].lower(), fallback=f'{self["name"]}_{method["name"]}')
-                l_array_args = [ l_arg for l_arg in method["args"] if "dims" in l_arg ]
-                if len(l_array_args) > 0:
-                    #okay, we have arguments of array type
-                    sub_start, sub_end = self._get_subroutine(method["name"], src.source_lines)
-                    for arg in l_array_args:
-                        self._set_array_size(arg, src.source_lines[sub_start: sub_end])
-
-                if "ret" in method:
-                    method["ret"]["name"] = method["export_name"].upper() + '_OUT'
-                    method["ret"]["intent"] = "OUT"
-                methods.append(method)
+                        if "ret" in method:
+                            method["ret"]["name"] = method["export_name"].upper() + '_OUT'
+                            method["ret"]["intent"] = "OUT"
+                        methods.append(method)
+                        break
 
         self["methods"] = methods
 
@@ -342,11 +342,11 @@ class Module(tree.Module):
                                 # Attention: no information is provided, code is not reliable !!
                                 # But at leaset make sure the dimension is correctly set
                                 n = len(l_size_var)
-                                a_argument["dims"] = [ 0 if x == ':' else x for x in l_size_var ]
+                                a_argument["dims"] = [ x.replace(':', '0') for x in l_size_var ] 
                         else :
                             # Same problem as above !! 
                             n = len(l_size_var)
-                            a_argument["dims"] = [ 0 if x == ':' else x for x in l_size_var ]
+                            a_argument["dims"] = [ x.replace(':', '0') for x in l_size_var ] 
                 else :
                     # size variables are set explicitly
                     a_argument["dims"] = l_size_var

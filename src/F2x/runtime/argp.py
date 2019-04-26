@@ -1,16 +1,16 @@
-import argparse
 import logging
 
 import F2x
+from F2x.cmd import args
 
 
 def get_args_parser():
-    argp = argparse.ArgumentParser(prog=F2x.program_name, description=f'{F2x.program_name} - {F2x.program_description}')
+    argp = args.F2xArgumentParser(prog=F2x.program_name, description=f'{F2x.program_name} - {F2x.program_description}')
 
-    argp.add_argument('-c', '--config', action="store",
+    argp.add_argument('-c', '--config', action=args.ParamConfigAction,
                       help="Load configuration file.")
 
-    argp_parser = argp.add_argument_group(u"Fortran parser")
+    argp_parser = argp.add_argument_group(u"Fortran parser", config_section='parser')
     argp_parser.add_argument('-G', '--grammar', default=u"@fortran.g",
                              help="Use specified grammar. Bundled grammars should be prefixed by @. "
                                   "(Default:  %(default)s)")
@@ -25,7 +25,7 @@ def get_args_parser():
     argp_parser.add_argument('-i', '--tree-class', action="store",
                              help="Tree class to use for parsing (module.name:ClassName).")
 
-    argp_wrapping = argp.add_argument_group("Automatic wrapping")
+    argp_wrapping = argp.add_argument_group("Automatic wrapping", config_section='wrap')
     argp_wrapping.add_argument('-W', '--wrap', action=u'store', metavar='STRATEGY',
                                 help=u"Wrap sources by applying the given STRATEGY.")
     argp_wrapping.add_argument('-m', '--module-name', action='store', default='ext.*',
@@ -39,7 +39,7 @@ def get_args_parser():
                                     "CLASS should be the fully qualified class name of a build strategy. TEMPLATES is "
                                     "a comma separated list of templates to use.")
 
-    argp_generator = argp.add_argument_group(u"Code generation")
+    argp_generator = argp.add_argument_group(u"Code generation", config_section='generate')
     argp_generator.add_argument('-R', '--register-template', action='append', metavar='PACKAGE',
                                 help="Load a template pacakge into the regitry for later use. PACAKGE should be the "
                                      "fully qualified name of a F2x template package.")
@@ -52,7 +52,7 @@ def get_args_parser():
     argp_generator.add_argument('-x', '--jinja-ext', action='append', metavar='EXTENSION', default=['jinja2.ext.do'],
                                 help="Add EXTENSION to Jinja2 environment.")
 
-    argp_logging = argp.add_argument_group(u"Logging")
+    argp_logging = argp.add_argument_group(u"Logging", config_section='logging')
     argp_logging.add_argument(u'-l', u'--logfile', action='store',
                               help=u"Write detailed log to LOGFILE.")
     argp_logging.add_argument(u'-v', u'--verbose', action=u'count', default=0,
