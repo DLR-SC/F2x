@@ -3,8 +3,18 @@
 """
 Adaptation of the Python ArugmentParser that allows to use a configuration file and environment variables.
 
-* If environment variables are set, they are used as `default` values.
-* You can add an argument of type `ParamConfigAction` which
+If you pass `env_prefix` to the constructor, the argument parser will check whether an environment variable exists when
+`add_arugment` is called. The name of the variable is build from concatenating the prefix with the upper case `dest` of
+the argument. E.g., if you pass `env_prefix='FOO_'` to the constructor and then call `add_argument('--bar')`, it will
+check whether the enviornment variable `FOO_BAR` exists and use it's value as default.
+
+Additionally, there is a `ParamConfigAction` that can read configuration from a config file. To allow a parameter to be
+stored in such a config file, you need either to pass `config_section` to the `add_arugment` call or add the respective
+arguments to a group that was created using the `config_section` parameter. The config file should be in a format
+readable by the `ConfigParser` from standard Python. The `config_section` describes the section name where this
+parameter should be read from. The option name is the same as `dest` of the respective parameter. The configuration is
+read as soon as the parameter is parsed, hence it overrides values passed before the config file. Parameters parsed
+after this argument will overwrite the values read from the config file.
 """
 import configparser
 import os
