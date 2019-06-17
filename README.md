@@ -14,8 +14,17 @@ with two important differences:
 
 [![Documentation Status](https://readthedocs.org/projects/f2x/badge/?version=latest)](https://f2x.readthedocs.io/en/latest/?badge=latest)
 
+To install the latest version of F2x, you can use the following commands:
+
+1. `git clone https://github.com/DLR-SC/F2x.git`
+2. `cd F2x`
+3. `python setup.py install --user`
+   (Note the `--user` flag to allow installation without admin rights.)
+4. `F2x --help`
+   (Confirms installation of F2x.)
+
 Please refer to the [documentation](https://f2x.readthedocs.io/en/latest/)
-to find infomation about [getting started](https://f2x.readthedocs.io/en/latest/content/introduction/getting_started.html).
+to find more infomation about [getting started](https://f2x.readthedocs.io/en/latest/content/introduction/getting_started.html).
 
 
 ## Requirements and acknowledgements
