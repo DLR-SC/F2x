@@ -103,6 +103,7 @@ setup(
     entry_points={
         'console_scripts': [
             'F2x=F2x.runtime.main:main',
+            'F2x-d=F2x.runtime.daemon:main',
         ],
     },
 )

@@ -97,9 +97,10 @@ class _ParentLogHandler(logging.Handler):
         self.parent.log(record.levelno, record.msg, *record.args)
 
 
-def init_logger(args, parent=None):
+def init_logger(args, parent=None, fmt=None):
     level = max(0, min(args.quiet - args.verbose, len(LOG_LEVELS) - 1))
     root = logging.root
+    fmt = fmt or "%(levelname)-5s %(message)s"
 
     if parent:
         # If a parent logger is present, install it as 'handler'
@@ -110,13 +111,13 @@ def init_logger(args, parent=None):
         # Calculate and set log level: Default is logging.INFO (2*10).
         # Increase for every -q, decrease for every -v. Scale to range logging.DEBUG..logging.FATAL (0..40).
         if not root.hasHandlers():
-            logging.basicConfig(filename=args.logfile, level=LOG_LEVELS[level], format="%(levelname)-5s %(message)s")
+            logging.basicConfig(filename=args.logfile, level=LOG_LEVELS[level], format=fmt)
 
         else:
             root.setLevel(LOG_LEVELS[level])
             for handler in root.handlers:
                 handler.setLevel(LOG_LEVELS[level])
-                handler.setFormatter(logging.Formatter("%(levelname)-5s %(message)s"))
+                handler.setFormatter(logging.Formatter(fmt))
 
     log = logging.getLogger(__name__)
     if not parent:
