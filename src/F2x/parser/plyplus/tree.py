@@ -122,12 +122,12 @@ class VarDecl(tree.VarDecl):
                 del self["setter"]
 
         if "pytype" not in self \
-        and self["type"] in self._PYTYPES:
-            self["pytype"] = self._PYTYPES[self["type"]]
+        and self["type"].upper() in self._PYTYPES:
+            self["pytype"] = self._PYTYPES[self["type"].upper()]
 
         if "cstype" not in self \
-        and self["type"] in self._CSTYPES:
-            self["cstype"] = self._CSTYPES[self["type"]]
+        and self["type"].upper() in self._CSTYPES:
+            self["cstype"] = self._CSTYPES[self["type"].upper()]
 
         try:
             kind_selector = type_spec.select1("kind_selector int_literal_constant")
