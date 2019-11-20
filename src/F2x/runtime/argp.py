@@ -20,7 +20,7 @@ def get_args_parser():
                              help="Write pre-processed source.")
     argp_parser.add_argument('-F', '--configure', action=u"store_true", default=False,
                              help="Create/update configuration file.")
-    argp_parser.add_argument('-e', '--encoding', default='utf8',
+    argp_parser.add_argument('-e', '--encoding', default='latin1',
                              help="Use the specified encoding for reading/writing source files.")
     argp_parser.add_argument('-i', '--tree-class', action="store",
                              help="Tree class to use for parsing (module.name:ClassName).")

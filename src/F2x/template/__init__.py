@@ -68,7 +68,7 @@ def _find_depends(basedir, files):
         else:
             filename = os.path.join(basedir, filename)
 
-        with open(filename, 'r') as file:
+        with open(filename, 'r', encoding="utf8") as file:
             data = file.read()
             for import_file, _, _ in _imports_find_all(data):
                 import_path = os.path.join(basedir, import_file)
