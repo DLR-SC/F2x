@@ -1,3 +1,6 @@
+> [!IMPORTANT]  
+> The software is no longer maintained and is provided only for reference.
+
 # F2x
 
 *A versatile, template-based Fortran wrapper written in Python.*
